@@ -1,0 +1,24 @@
+name: Temporary verified artwork transfer
+on:
+  push:
+    branches: ['transfer/hadramout-artwork-verified']
+permissions:
+  contents: write
+jobs:
+  split-source-artwork:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify Git blob hashes then chunk two PNG files as base64
+        run: python scripts/transfer_hadramout_artwork.py
+      - name: Commit verified ASCII chunks only to temporary transfer branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- .transfer-hadramout-b64
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'transfer: validated binary artwork base64 chunks'
+          git push origin HEAD:transfer/hadramout-artwork-verified
