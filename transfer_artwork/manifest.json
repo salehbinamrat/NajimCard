@@ -1,0 +1,12 @@
+{
+  "default_card.png": {
+    "sha256": "abe369132b84fcf5dc66643989d6c5116145778f47f55341bdacf102af094abd",
+    "bytes": 1262691,
+    "parts": 5
+  },
+  "login_hero.png": {
+    "sha256": "15c1410ca82ae91e86f251067d14106d0cf30d1ab6fd77e3af4ff8b380277152",
+    "bytes": 1153878,
+    "parts": 5
+  }
+}
