@@ -1,0 +1,45 @@
+name: Temporary Hadramout asset transfer chunks
+on:
+  push:
+    branches: ['transfer/hadramout-binary-assets-2026-11-08']
+    paths: ['.github/workflows/export-hadramout-image-parts.yml']
+permissions:
+  contents: write
+jobs:
+  export-artwork-as-text:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Encode original artwork in small verifiable chunks
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json
+          from pathlib import Path
+          records = [
+            ("assets/default_card.png", "c1bcb76cf37d626e39bd65e72e45ddd2286f39bf"),
+            ("assets/login_hero.png", "9c5fbc6117eeef514f78f4ac9a87dcb417e915f0"),
+          ]
+          directory=Path("transfer_chunks")
+          directory.mkdir(exist_ok=True)
+          manifest=[]
+          for path,original_sha in records:
+              data=(Path("Hadramout_Cards")/path).read_bytes()
+              sha=hashlib.sha1(f"blob {len(data)}\0".encode()+data).hexdigest()
+              assert sha==original_sha, (path,sha)
+              text=base64.b64encode(data).decode("ascii")
+              chunks=[]
+              for i,start in enumerate(range(0,len(text),350000)):
+                  name=Path(path).name+f".part{i:03d}.b64"
+                  (directory/name).write_text(text[start:start+350000],encoding="ascii")
+                  chunks.append(name)
+              manifest.append(dict(path=path,sha=sha,size=len(data),parts=chunks))
+          (directory/"manifest.json").write_text(json.dumps(manifest,sort_keys=True),encoding="utf-8")
+          print(json.dumps([(r["path"],len(r["parts"])) for r in manifest]))
+          PY
+      - name: Commit temporary text transport on isolated branch only
+        shell: bash
+        run: |
+          git add transfer_chunks/
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'transfer: encode two verified Hadramout images into text parts'
+          git push origin HEAD:transfer/hadramout-binary-assets-2026-11-08
