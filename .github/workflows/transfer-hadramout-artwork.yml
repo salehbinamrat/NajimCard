@@ -1,0 +1,42 @@
+name: One-time Hadramout artwork transfer preparation
+on:
+  push:
+    branches: ['transfer/hadramout-artwork-verification']
+    paths:
+      - '.github/workflows/transfer-hadramout-artwork.yml'
+permissions:
+  contents: write
+jobs:
+  export-artwork:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: transfer/hadramout-artwork-verification
+      - name: Split original artwork to lossless verifiable base64 fragments
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from base64 import b64encode
+          from hashlib import sha256
+          import json
+          out=Path(".transfer-artwork")
+          out.mkdir(exist_ok=True)
+          items=[]
+          for filename in ("default_card.png","login_hero.png"):
+              source=Path("Hadramout_Cards/assets")/filename
+              content=source.read_bytes()
+              base64_string=b64encode(content).decode("ascii")
+              chunks=[base64_string[i:i+600000] for i in range(0,len(base64_string),600000)]
+              for i,chunk in enumerate(chunks):
+                  (out/(filename+"."+str(i)+".b64")).write_text(chunk,encoding="ascii")
+              items.append(dict(name=filename,sha256=sha256(content).hexdigest(),size=len(content),parts=len(chunks)))
+          (out/"MANIFEST.json").write_text(json.dumps(items,indent=2)+"\n",encoding="utf-8")
+          PY
+      - name: Commit fragments to temporary export branch only
+        shell: bash
+        run: |
+          git add .transfer-artwork/
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'temp(export): verified original Hadramout artwork fragments'
+          git push origin HEAD:transfer/hadramout-artwork-verification
