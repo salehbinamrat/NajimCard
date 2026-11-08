@@ -1,0 +1,42 @@
+name: Temporary verified Hadramout artwork transfer
+on:
+  push:
+    branches: ['migration/hadramout-artwork-export-2026-11-08']
+    paths:
+      - '.github/workflows/temporary-hadramout-artwork.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  chunk-original-images:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Split original binary into checked transfer chunks
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json
+          root=Path('transfer_artwork')
+          root.mkdir(exist_ok=True)
+          manifest={}
+          for name in ('default_card.png','login_hero.png'):
+              src=Path('Hadramout_Cards/assets')/name
+              data=src.read_bytes()
+              encoded=base64.b64encode(data).decode('ascii')
+              parts=[encoded[i:i+380000] for i in range(0,len(encoded),380000)]
+              for j,part in enumerate(parts):
+                  (root/f'{name}.b64.{j:03}').write_text(part,encoding='ascii')
+              manifest[name]={'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data),'parts':len(parts)}
+          (root/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+          print(json.dumps(manifest,indent=2))
+          PY
+      - name: Commit text chunks on throwaway branch
+        shell: bash
+        run: |
+          git add transfer_artwork/
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore: stage original Hadramout artwork in verified text chunks'
+          git push origin HEAD:migration/hadramout-artwork-export-2026-11-08
