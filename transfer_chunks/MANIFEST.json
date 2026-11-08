@@ -1,0 +1,16 @@
+[
+  {
+    "file": "default_card.png",
+    "bytes": 1262691,
+    "sha256": "abe369132b84fcf5dc66643989d6c5116145778f47f55341bdacf102af094abd",
+    "git_blob_sha": "c1bcb76cf37d626e39bd65e72e45ddd2286f39bf",
+    "chunks": 5
+  },
+  {
+    "file": "login_hero.png",
+    "bytes": 1153878,
+    "sha256": "15c1410ca82ae91e86f251067d14106d0cf30d1ab6fd77e3af4ff8b380277152",
+    "git_blob_sha": "9c5fbc6117eeef514f78f4ac9a87dcb417e915f0",
+    "chunks": 5
+  }
+]
