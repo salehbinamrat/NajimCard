@@ -1,0 +1,41 @@
+name: Temporary Hadramout asset transfer (private, source branch only)
+on:
+  push:
+    branches: ['transfer/hadramout-binaries-2026-11-08']
+    paths:
+      - '.github/workflows/export-hadramout-binaries.yml'
+permissions:
+  contents: write
+jobs:
+  export-private-asset-chunks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split source images into UTF-8 base64 chunks (lossless)
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json, subprocess
+          root=Path('Hadramout_Cards/assets')
+          out=Path('transfer_chunks')
+          out.mkdir(exist_ok=True)
+          manifest=[]
+          for filename in ('default_card.png','login_hero.png'):
+              source=root/filename
+              raw=source.read_bytes()
+              encoded=base64.b64encode(raw).decode('ascii')
+              chunks=[encoded[i:i+380000] for i in range(0,len(encoded),380000)]
+              for i,piece in enumerate(chunks):
+                  (out/f'{filename}.{i:03d}.b64.txt').write_text(piece,encoding='ascii')
+              manifest.append({'file':filename,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),
+                               'git_blob_sha':subprocess.check_output(['git','hash-object',str(source)],text=True).strip(),
+                               'chunks':len(chunks)})
+          (out/'MANIFEST.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
+          PY
+      - name: Commit source-consistent private chunks on transfer branch only
+        shell: bash
+        run: |
+          git add transfer_chunks/
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'transfer: expose binary image chunks privately for verified repo migration'
+          git push origin HEAD:transfer/hadramout-binaries-2026-11-08
