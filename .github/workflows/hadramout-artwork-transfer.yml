@@ -1,0 +1,44 @@
+name: Temporary Hadramout artwork transfer
+on:
+  push:
+    branches: ['transfer/hadramout-artwork']
+    paths:
+      - '.github/workflows/hadramout-artwork-transfer.yml'
+permissions:
+  contents: write
+jobs:
+  encode-assets:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Create verifiable base64 chunks (not original binary edits)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64, hashlib, json, pathlib
+          root = pathlib.Path("Hadramout_Cards/assets")
+          output = pathlib.Path("transfer/hadramout-artwork")
+          output.mkdir(parents=True, exist_ok=True)
+          manifest = {}
+          for name in ("default_card.png", "login_hero.png"):
+              raw = (root / name).read_bytes()
+              encoded = base64.b64encode(raw).decode("ascii")
+              chunk_size = 260000  # Divisible by 4; no per-chunk padding needed.
+              chunks = []
+              for i in range(0, len(encoded), chunk_size):
+                  part = output / f"{name}.{i // chunk_size:03d}.txt"
+                  part.write_text(encoded[i:i+chunk_size], encoding="ascii")
+                  chunks.append(part.name)
+              manifest[name] = dict(size=len(raw), sha256=hashlib.sha256(raw).hexdigest(),
+                                    chunks=chunks)
+          (output / "manifest.json").write_text(json.dumps(manifest,indent=2),encoding="utf-8")
+          print(json.dumps(manifest))
+          PY
+          git add -- transfer/hadramout-artwork
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'transfer: encode two original Hadramout artworks in verifiable chunks'
+            git push origin HEAD:transfer/hadramout-artwork
+          fi
