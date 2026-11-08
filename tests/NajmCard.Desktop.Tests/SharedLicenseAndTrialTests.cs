@@ -100,10 +100,12 @@ public sealed class SharedLicenseAndTrialTests
     private static readonly byte[] Seed=Enumerable.Range(0,32).Select(x=>(byte)(x+1)).ToArray();
     private static readonly Ed25519PrivateKeyParameters Secret=new(Seed,0);
     private static byte[] SignedFeed(string code,string device,string status="active",
-        string? expires=null)
+        string? expires=null,DateTimeOffset? issuedAtUtc=null)
     {
         var hash=Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(code)));
-        var issued=DateTimeOffset.UtcNow.AddMinutes(-2).ToString("yyyy-MM-ddTHH:mm:ssZ",System.Globalization.CultureInfo.InvariantCulture);
+        var issued=(issuedAtUtc??DateTimeOffset.UtcNow.AddMinutes(-2))
+            .ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ",
+                System.Globalization.CultureInfo.InvariantCulture);
         var doc=new SortedDictionary<string,object?>
         {
             ["schema"]=1,["product"]="NIDI-MIKROTIK-CARDS",["revision"]=2,
@@ -140,10 +142,27 @@ public sealed class SharedLicenseAndTrialTests
     {
         const string code="0123456789ABCDEF0123456789ABCDEF";
         const string currentDevice="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-        var bytes=SignedFeed(code,registeredDevice,state);
+        // Both sides of this signature contract use the same deterministic
+        // UTC fixture. A live clock here made the generated-at date appear
+        // to be in the future relative to Verify's fixed 2026-11-08 clock.
+        var now=new DateTimeOffset(2026,11,8,12,0,0,TimeSpan.Zero);
+        var bytes=SignedFeed(code,registeredDevice,state,
+            issuedAtUtc:now.AddMinutes(-2));
         var result=PaidLicenseFeedVerifier.Verify(bytes,code,currentDevice,
-            new DateTimeOffset(2026,11,8,12,0,0,TimeSpan.Zero),Secret.GeneratePublicKey().GetEncoded());
+            now,Secret.GeneratePublicKey().GetEncoded());
         Assert.Equal(expected,result.Mode);
+    }
+    [Fact]
+    public void Future_Dated_Signed_Feed_Remains_Denied()
+    {
+        const string code="0123456789ABCDEF0123456789ABCDEF";
+        const string device="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        var now=new DateTimeOffset(2026,11,8,12,0,0,TimeSpan.Zero);
+        var future=SignedFeed(code,device,issuedAtUtc:now.AddHours(1));
+        var outcome=PaidLicenseFeedVerifier.Verify(future,code,device,now,
+            Secret.GeneratePublicKey().GetEncoded());
+        Assert.Equal("feed_invalid",outcome.Mode);
+        Assert.False(outcome.Permitted);
     }
     [Fact]
     public void Tampered_Signature_Cannot_Grant_Access()
