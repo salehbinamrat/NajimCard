@@ -17,7 +17,7 @@ manifest = {}
 for name, (expected_git_sha, expected_size) in FILES.items():
     original = Path("Hadramout_Cards/assets") / name
     raw = original.read_bytes()
-    actual_git_sha = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\\x00" + raw).hexdigest()
+    actual_git_sha = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\x00" + raw).hexdigest()
     if len(raw) != expected_size or actual_git_sha != expected_git_sha:
         raise ValueError(f"Source image verification failed: {name}")
     encoded = base64.b64encode(raw).decode("ascii")
