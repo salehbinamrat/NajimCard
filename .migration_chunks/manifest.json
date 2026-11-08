@@ -1,0 +1,14 @@
+[
+  {
+    "file": "default_card.png",
+    "git_sha": "c1bcb76cf37d626e39bd65e72e45ddd2286f39bf",
+    "size": 1262691,
+    "parts": 9
+  },
+  {
+    "file": "login_hero.png",
+    "git_sha": "9c5fbc6117eeef514f78f4ac9a87dcb417e915f0",
+    "size": 1153878,
+    "parts": 8
+  }
+]
