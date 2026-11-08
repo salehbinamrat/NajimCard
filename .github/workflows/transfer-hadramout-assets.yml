@@ -1,0 +1,53 @@
+name: One-off private Hadramout artwork transfer
+on:
+  push:
+    branches: ['migration/stage-hadramout-images']
+    paths:
+      - '.github/workflows/transfer-hadramout-assets.yml'
+permissions:
+  contents: write
+jobs:
+  stage:
+    name: Encode two original artwork files into Git text blobs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: migration/stage-hadramout-images
+          persist-credentials: true
+      - name: Validate and split artwork without changing bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64,hashlib
+          from pathlib import Path
+          assets = [
+            ('default_card.png','c1bcb76cf37d626e39bd65e72e45ddd2286f39bf'),
+            ('login_hero.png','9c5fbc6117eeef514f78f4ac9a87dcb417e915f0')
+          ]
+          destination=Path('_migration/hadramout_b64')
+          destination.mkdir(parents=True,exist_ok=True)
+          for name, expected in assets:
+              source=Path('Hadramout_Cards/assets')/name
+              content=source.read_bytes()
+              git_sha=hashlib.sha1(b'blob '+str(len(content)).encode()+b'\0'+content).hexdigest()
+              if git_sha != expected:
+                  raise SystemExit(f'Blob mismatch for {name}: {git_sha}')
+              encoded=base64.b64encode(content).decode('ascii')
+              chunks=[encoded[i:i+180000] for i in range(0,len(encoded),180000)]
+              for n,part in enumerate(chunks):
+                  (destination/f'{name}.part{n:03}.txt').write_text(part,encoding='ascii')
+              (destination/f'{name}.count.txt').write_text(str(len(chunks)),encoding='ascii')
+          PY
+      - name: Commit staged Base64 chunks only on temporary branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- _migration/hadramout_b64
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore(migration): stage exact Hadramout large artwork as text parts'
+            git push origin HEAD:migration/stage-hadramout-images
+          fi
