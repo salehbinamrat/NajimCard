@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>NajmCard</AssemblyName>
+    <RootNamespace>NajmCard.Desktop</RootNamespace>
+    <ApplicationIcon>Assets\NajmCard.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <!-- Works also when a developer runs dotnet build or publish manually. -->
+  <Target Name="GenerateNajmIcon" BeforeTargets="PrepareForBuild"
+          Condition="'$(OS)' == 'Windows_NT' and !Exists('$(MSBuildProjectDirectory)\Assets\NajmCard.ico')">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\generate-icon.ps1&quot;" />
+  </Target>
+  <ItemGroup>
+    <ProjectReference Include="..\NajmCard.Core\NajmCard.Core.csproj" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="PDFsharp-WPF" Version="6.2.4" />
+    <!-- Managed RFC 8032 Ed25519 verification for the signed shared license feed. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.0" />
+  </ItemGroup>
+</Project>

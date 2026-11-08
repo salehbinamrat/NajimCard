@@ -1,0 +1,65 @@
+using System.Text.RegularExpressions;
+
+namespace NajmCard.Core.Models;
+
+/// <summary>Safe, reusable NajmCard card design settings (never a voucher password).</summary>
+public sealed record VoucherCardAppearance(
+    string NetworkTitle = "نجم كارد",
+    string FontFamily = "Arial",
+    double UsernameFontSize = 18,
+    string BackgroundColor = "#FFF6EB",
+    string UsernameColor = "#4C1730",
+    string BorderColor = "#B89159",
+    double BorderWidth = 1,
+    bool ShowPassword = true,
+    bool ShowProfile = true,
+    string TemplateImagePath = "")
+{
+    private static readonly HashSet<string> AllowedFonts = new(
+        ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
+
+    public VoucherCardAppearance Validate()
+    {
+        if(string.IsNullOrWhiteSpace(NetworkTitle) || NetworkTitle.Length > 48 ||
+            NetworkTitle.Any(char.IsControl))
+            throw new ArgumentException("اسم الشبكة على الكرت يجب ألا يكون فارغا أو يتجاوز 48 حرفا.");
+        if(!AllowedFonts.Contains(FontFamily))
+            throw new ArgumentException("نوع الخط غير مدعوم؛ اختر Arial أو Tahoma أو Segoe UI أو Calibri.");
+        if(!double.IsFinite(UsernameFontSize) || UsernameFontSize is < 8 or > 40)
+            throw new ArgumentException("حجم رقم الكرت يجب أن يكون بين 8 و40.");
+        if(!double.IsFinite(BorderWidth) || BorderWidth is < 0 or > 5)
+            throw new ArgumentException("سمك حدود الكرت يجب أن يكون بين 0 و5.");
+        if(TemplateImagePath is null || TemplateImagePath.Length>1024 ||
+            (TemplateImagePath.Length>0 && !Path.IsPathFullyQualified(TemplateImagePath)))
+            throw new ArgumentException("مسار صورة القالب المحلية غير صالح.");
+        foreach(var hex in new[] {BackgroundColor,UsernameColor,BorderColor})
+        {
+            if(hex is null || !Regex.IsMatch(hex,@"^#[0-9a-fA-F]{6}$",
+                RegexOptions.CultureInvariant))
+                throw new ArgumentException("لون الكرت يجب أن يكون بصيغة #RRGGBB.");
+        }
+        // WCAG relative luminance: keep voucher numbers legible regardless
+        // of a custom dark burgundy or a bright paper background.
+        if(ContrastRatio(BackgroundColor,UsernameColor)<4.5)
+            throw new ArgumentException(
+                "لون رقم الكرت قريب جدا من لون الخلفية؛ اختر لونا أوضح لتظهر الخطوط بارزة.");
+        return this;
+    }
+
+    private static double ContrastRatio(string a,string b)
+    {
+        static double Luminance(string hex)
+        {
+            static double Channel(int c)
+            {
+                double v=c/255.0;
+                return v<=0.04045 ? v/12.92 : Math.Pow((v+0.055)/1.055,2.4);
+            }
+            return 0.2126*Channel(Convert.ToInt32(hex.Substring(1,2),16))+
+                   0.7152*Channel(Convert.ToInt32(hex.Substring(3,2),16))+
+                   0.0722*Channel(Convert.ToInt32(hex.Substring(5,2),16));
+        }
+        var l1=Luminance(a);var l2=Luminance(b);
+        return (Math.Max(l1,l2)+0.05)/(Math.Min(l1,l2)+0.05);
+    }
+}

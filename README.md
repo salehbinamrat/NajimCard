@@ -1,5 +1,14 @@
-# NajimCard transfer workspace
+# نجم كارد | NajmCard
 
-This private repository is receiving the NajmCard source project and a separate archival copy of Hadramout Cards.
+تطبيق Windows مستقل لإدارة وطباعة كروت MikroTik، يُعاد تطويره من الصفر بلغة **C# / .NET 10 / WPF**.
 
-The initial `main` branch is only a protected handoff placeholder. All software source goes to an import branch for review and test-first CI. No release or merge is approved until Windows Core and Windows Release pass on the same SHA and all four x86/x64 Portable and Installer packages are verified.
+## نطاق المطابقة المعتمد
+
+المطلوب **تطابق جميع صفحات حضرموت ووظائفه وسلوك العمليات والتقارير والطباعة وإدارة MikroTik**؛ وليس مجرد واجهة مشابهة.
+
+- هوية بصرية: العنابي المذهب مع أيقونات متجهية متعددة الألوان، إطارات هندسية، ورسوم بيانية لبيانات الشبكة الفعلية.
+- فصل كامل عن `salehbinzain83-star/Hadramout-cards`، وعن قاعدة بياناته وملفات تشغيله وتراخيصه.
+- لا تُستعمل ملفات Python أو أطر تشغيله داخل التطبيق النهائي.
+- جميع التغييرات تمر عبر PR واختبارات أولاً؛ يتزامن Windows Core وWindows Release على نفس SHA. يُبنى x86/x64 Portable وInstaller بعد الاختبارات ويُمنع الدمج عند أي فشل.
+
+**الحالة:** مستودع جديد قيد التطوير. لم يتم إثبات مطابقة وظائف حضرموت كاملة، ولم تُعتمد حزم Windows بعد. راجع فرع التطوير `feature/port-hadramout-functional-parity` للاختبارات والمصفوفة المرحلية.
