@@ -1,0 +1,52 @@
+name: One-off Hadramout original image recovery
+on:
+  push:
+    branches: ['import/najmcard-hadramout-2026-11-08']
+    paths:
+      - '.github/workflows/hadramout-asset-recovery.yml'
+permissions:
+  contents: write
+jobs:
+  recover-original-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Retrieve and verify original artwork from prior successful Hadramout build
+        env:
+          ARTIFACT_DOWNLOAD_URL: 'https://sdmntprpolandcentral.oaiusercontent.com/files/00000000-ead4-820a-8cd0-b72136221560/raw?se=2026-11-08T16%3A15%3A20Z&sp=r&sv=2026-02-06&sr=b&scid=f3320ee1-6034-5c8e-b8d5-2ae93195a7c9&skoid=061609b8-1cdb-4a5b-9e68-c7ab9a523a8f&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-08T07%3A11%3A50Z&ske=2026-11-09T07%3A11%3A50Z&sks=b&skv=2026-02-06&sig=m3lLOUjZgGCYGDInOUwxxIaGw%2ByFgNzJv%2BZ5ySpA80w%3D'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,io,os,pathlib,urllib.request,zipfile
+          url=os.environ["ARTIFACT_DOWNLOAD_URL"]
+          with urllib.request.urlopen(url,timeout=150) as response:
+              archive=response.read()
+          with zipfile.ZipFile(io.BytesIO(archive)) as outer:
+              nested=outer.read("Hadramout-v1.1.3-x64-Portable.zip")
+          expected={
+            "assets/default_card.png":(1262691,"c1bcb76cf37d626e39bd65e72e45ddd2286f39bf"),
+            "assets/login_hero.png":(1153878,"9c5fbc6117eeef514f78f4ac9a87dcb417e915f0")
+          }
+          with zipfile.ZipFile(io.BytesIO(nested)) as inner:
+              for name,(size,sha) in expected.items():
+                  contents=inner.read("Hadramout/"+name)
+                  actual=hashlib.sha1(("blob "+str(len(contents))+"\0").encode()+contents).hexdigest()
+                  if len(contents)!=size or actual!=sha: raise RuntimeError("Original artwork integrity check failed for "+name)
+                  p=pathlib.Path("Hadramout_Cards")/name
+                  p.parent.mkdir(parents=True,exist_ok=True)
+                  p.write_bytes(contents)
+                  print("Verified original image",p,actual,size)
+          
+          PY
+      - name: Commit verified original images and remove one-off importer
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Hadramout_Cards/assets/default_card.png Hadramout_Cards/assets/login_hero.png
+          git rm -- .github/workflows/hadramout-asset-recovery.yml
+          git commit -m "import: restore verified original Hadramout artwork from successful artifact"
+          git push origin HEAD:refs/heads/import/najmcard-hadramout-2026-11-08
