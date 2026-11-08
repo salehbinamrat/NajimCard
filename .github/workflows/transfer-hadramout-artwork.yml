@@ -1,0 +1,44 @@
+name: Temporary Hadramout artwork chunk export
+on:
+  push:
+    branches: ['transfer/hadramout-large-artwork']
+    paths: ['.github/workflows/transfer-hadramout-artwork.yml']
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Convert two original Git-backed images into verifiable text chunks
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, pathlib
+          original = {
+              'default_card.png': 'c1bcb76cf37d626e39bd65e72e45ddd2286f39bf',
+              'login_hero.png': '9c5fbc6117eeef514f78f4ac9a87dcb417e915f0'
+          }
+          root = pathlib.Path('Hadramout_Cards/assets')
+          chunks = pathlib.Path('.migration_chunks')
+          chunks.mkdir(exist_ok=True)
+          manifest = []
+          for name, sha in original.items():
+              data = (root/name).read_bytes()
+              git_sha = hashlib.sha1(b'blob '+str(len(data)).encode()+bytes([0])+data).hexdigest()
+              if git_sha != sha:
+                  raise RuntimeError(name + ': original Git blob mismatch ' + git_sha)
+              encoded = base64.b64encode(data).decode('ascii')
+              pieces = [encoded[i:i+200000] for i in range(0,len(encoded),200000)]
+              for i,piece in enumerate(pieces):
+                  (chunks/(name+'.part%02d.b64'%i)).write_text(piece,encoding='ascii')
+              manifest.append({'file':name,'git_sha':sha,'size':len(data),'parts':len(pieces)})
+          (chunks/'manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf8')
+          print(json.dumps(manifest,indent=2))
+          PY
+      - name: Commit chunks to isolated transfer branch
+        shell: bash
+        run: |
+          git add .migration_chunks
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "temporary: export original Hadramout artwork as verified text chunks"
+          git push origin HEAD:transfer/hadramout-large-artwork
