@@ -1,0 +1,32 @@
+name: Temporary Hadramout original artwork handoff
+on:
+  push:
+    branches: ['export/hadramout-artwork-transfer-2026-11-08']
+    paths:
+      - '.github/workflows/hadramout-artwork-handoff.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  handoff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original artwork Git blob identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object Hadramout_Cards/assets/default_card.png)" = "c1bcb76cf37d626e39bd65e72e45ddd2286f39bf"
+          test "$(git hash-object Hadramout_Cards/assets/login_hero.png)" = "9c5fbc6117eeef514f78f4ac9a87dcb417e915f0"
+          test "$(wc -c < Hadramout_Cards/assets/default_card.png)" -eq 1262691
+          test "$(wc -c < Hadramout_Cards/assets/login_hero.png)" -eq 1153878
+      - name: Upload two original binary assets for independent repository transfer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hadramout-original-images-transfer
+          path: |
+            Hadramout_Cards/assets/default_card.png
+            Hadramout_Cards/assets/login_hero.png
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
