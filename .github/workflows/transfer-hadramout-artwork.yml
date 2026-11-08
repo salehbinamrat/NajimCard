@@ -1,0 +1,43 @@
+name: Temporary Hadramout artwork transfer
+on:
+  push:
+    branches: ['transfer/hadramout-binary-20261108']
+    paths: ['.github/workflows/transfer-hadramout-artwork.yml']
+permissions:
+  contents: write
+jobs:
+  export-artwork-chunks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Export exact Git image bytes into bounded text chunks
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, pathlib, subprocess
+          folder=pathlib.Path('transfer_artwork_chunks')
+          folder.mkdir(exist_ok=True)
+          manifest={}
+          for name in ('default_card.png','login_hero.png'):
+              path=pathlib.Path('Hadramout_Cards/assets')/name
+              data=path.read_bytes()
+              encoded=base64.b64encode(data).decode('ascii')
+              parts=[encoded[i:i+196608] for i in range(0,len(encoded),196608)]
+              assert base64.b64decode(''.join(parts))==data
+              blob_hash=subprocess.check_output(['git','hash-object',str(path)],text=True).strip()
+              manifest[name]={'sha1':blob_hash,'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data),'parts':len(parts)}
+              for n,part in enumerate(parts):
+                  (folder/f'{name}.part{n:02d}.b64').write_text(part,encoding='ascii')
+          (folder/'manifest.json').write_text(json.dumps(manifest,indent=2),encoding='utf8')
+          print(json.dumps(manifest))
+          PY
+      - name: Commit temporary text chunks to transfer branch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add transfer_artwork_chunks/
+          git commit -m 'transfer: stage verified artwork as reversible base64 chunks'
+          git push origin HEAD:transfer/hadramout-binary-20261108
