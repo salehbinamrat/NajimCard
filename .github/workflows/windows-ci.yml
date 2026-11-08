@@ -1,0 +1,84 @@
+name: NajmCard Windows Core and Release
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main', 'ui/hadramout-layout-match']
+  workflow_dispatch:
+# A single run retains Core and Release in parallel on one SHA. Cancel stale
+# workflow runs when the PR head changes instead of spending Windows minutes
+# on obsolete intermediate commits.
+concurrency:
+  group: najmcard-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  windows-core:
+    name: Windows Core
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore and build all projects including WPF
+        run: dotnet build NajmCard.slnx --configuration Release
+      - name: Validate vector UI and navigation contracts
+        run: python -m unittest discover -s tests -p test_*.py -v
+      - name: Execute Core tests
+        run: dotnet test tests/NajmCard.Core.Tests/NajmCard.Core.Tests.csproj --configuration Release --no-restore
+      - name: Test real SQLite/DPAPI desktop persistence
+        run: dotnet test tests/NajmCard.Desktop.Tests/NajmCard.Desktop.Tests.csproj --configuration Release --no-restore
+  windows-release:
+    name: Windows Release tests (${{ matrix.arch }})
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore and compile
+        run: dotnet build NajmCard.slnx --configuration Release
+      - name: Static UI layout checks
+        run: python -m unittest discover -s tests -p test_*.py -v
+      - name: Tests before packaging
+        run: dotnet test tests/NajmCard.Core.Tests/NajmCard.Core.Tests.csproj --configuration Release --no-restore
+      - name: Desktop persistence tests before packaging
+        run: dotnet test tests/NajmCard.Desktop.Tests/NajmCard.Desktop.Tests.csproj --configuration Release --no-restore
+  windows-packages:
+    name: Windows packages (${{ matrix.arch }})
+    runs-on: windows-2022
+    needs: [windows-core, windows-release]
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install Inno Setup if missing
+        shell: pwsh
+        run: |
+          if (!(Get-Command ISCC.exe -ErrorAction SilentlyContinue) -and !(Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup install failed' }
+          }
+      - name: Build verified Portable and Installer
+        shell: pwsh
+        run: ./scripts/package.ps1 -Arch ${{ matrix.arch }} -Version 0.1.0
+      - name: Upload both packages with SHA-256
+        uses: actions/upload-artifact@v4
+        with:
+          name: NajmCard-v0.1.0-${{ matrix.arch }}
+          path: |
+            out/NajmCard-v0.1.0-${{ matrix.arch }}-Portable.zip
+            out/NajmCard-v0.1.0-${{ matrix.arch }}-Installer.exe
+            out/SHA256SUMS-${{ matrix.arch }}.txt
+          if-no-files-found: error
