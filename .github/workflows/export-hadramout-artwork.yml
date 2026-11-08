@@ -1,0 +1,38 @@
+name: Temporary Hadramout verified binary handoff
+on:
+  push:
+    branches: ['exports/hadramout-large-images-2026-11-08']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-artwork:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original Git blob hashes and stage both images
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib,pathlib,shutil
+          images={
+            'default_card.png':'c1bcb76cf37d626e39bd65e72e45ddd2286f39bf',
+            'login_hero.png':'9c5fbc6117eeef514f78f4ac9a87dcb417e915f0'
+          }
+          output=pathlib.Path('handoff/assets')
+          output.mkdir(parents=True,exist_ok=True)
+          for name,expected in images.items():
+              path=pathlib.Path('Hadramout_Cards/assets')/name
+              content=path.read_bytes()
+              sha=hashlib.sha1(b'blob '+str(len(content)).encode()+b'\0'+content).hexdigest()
+              if sha!=expected: raise SystemExit(f'Git hash mismatch: {name}: {sha}')
+              shutil.copyfile(path,output/name)
+              print(name,len(content),sha)
+          PY
+      - name: Upload original images for verified migration
+        uses: actions/upload-artifact@v4
+        with:
+          name: hadramout-two-original-artwork-files
+          path: handoff/assets/*.png
+          if-no-files-found: error
+          retention-days: 1
