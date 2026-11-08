@@ -1,0 +1,37 @@
+name: Temporary verified Hadramout artwork transfer
+on:
+  push:
+    branches:
+      - migration/extract-hadramout-artwork-2026-11-08
+    paths:
+      - .github/workflows/temp-hadramout-artwork-transfer.yml
+permissions:
+  contents: write
+jobs:
+  transfer:
+    name: Export original asset chunks as text
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Split original art to checked base64 chunks
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64, hashlib, pathlib
+          original=pathlib.Path('Hadramout_Cards/assets')
+          dest=pathlib.Path('.artwork-transfer')
+          dest.mkdir(exist_ok=True)
+          for name in ('default_card.png','login_hero.png'):
+              image=(original/name).read_bytes()
+              encoded=base64.b64encode(image).decode('ascii')
+              for i in range(0,len(encoded),160000):
+                  (dest/f'{name}.{i//160000:03d}.b64').write_text(encoded[i:i+160000],encoding='ascii')
+              (dest/f'{name}.sha256').write_text(hashlib.sha256(image).hexdigest()+'  '+name+'\n',encoding='ascii')
+              print(f'{name}: {len(image)} bytes, SHA256 {hashlib.sha256(image).hexdigest()}')
+          PY
+      - name: Commit staging chunks exclusively to temporary branch
+        shell: bash
+        run: |
+          git add .artwork-transfer
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'temp: stage verified original artwork base64 chunks'
+          git push origin HEAD:migration/extract-hadramout-artwork-2026-11-08
