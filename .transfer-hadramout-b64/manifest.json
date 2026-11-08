@@ -1,0 +1,44 @@
+{
+  "default_card.png": {
+    "bytes": 1262691,
+    "git_sha1": "c1bcb76cf37d626e39bd65e72e45ddd2286f39bf",
+    "sha256": "abe369132b84fcf5dc66643989d6c5116145778f47f55341bdacf102af094abd",
+    "parts": [
+      "default_card/part-000.txt",
+      "default_card/part-001.txt",
+      "default_card/part-002.txt",
+      "default_card/part-003.txt",
+      "default_card/part-004.txt",
+      "default_card/part-005.txt",
+      "default_card/part-006.txt",
+      "default_card/part-007.txt",
+      "default_card/part-008.txt",
+      "default_card/part-009.txt",
+      "default_card/part-010.txt",
+      "default_card/part-011.txt",
+      "default_card/part-012.txt",
+      "default_card/part-013.txt",
+      "default_card/part-014.txt"
+    ]
+  },
+  "login_hero.png": {
+    "bytes": 1153878,
+    "git_sha1": "9c5fbc6117eeef514f78f4ac9a87dcb417e915f0",
+    "sha256": "15c1410ca82ae91e86f251067d14106d0cf30d1ab6fd77e3af4ff8b380277152",
+    "parts": [
+      "login_hero/part-000.txt",
+      "login_hero/part-001.txt",
+      "login_hero/part-002.txt",
+      "login_hero/part-003.txt",
+      "login_hero/part-004.txt",
+      "login_hero/part-005.txt",
+      "login_hero/part-006.txt",
+      "login_hero/part-007.txt",
+      "login_hero/part-008.txt",
+      "login_hero/part-009.txt",
+      "login_hero/part-010.txt",
+      "login_hero/part-011.txt",
+      "login_hero/part-012.txt"
+    ]
+  }
+}
