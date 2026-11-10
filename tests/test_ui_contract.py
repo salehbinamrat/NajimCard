@@ -26,6 +26,9 @@ class UiDesignContract(unittest.TestCase):
         for key, view in key_view.items():
             with self.subTest(key=key):
                 self.assertEqual(len(re.findall(r'Entry\("' + key + r'",', source)), 1)
+                if key=="dashboard":
+                self.assertIn('"dashboard" => _dashboardPage ??= new DashboardView(',source)
+            else:
                 self.assertIn(f'"{key}" => new {view}(', source)
                 source_files = list((DESKTOP / "Views").glob("*.cs"))
                 self.assertTrue(any(re.search(rf'\bclass\s+{view}\b', p.read_text(encoding="utf-8")) for p in source_files))
