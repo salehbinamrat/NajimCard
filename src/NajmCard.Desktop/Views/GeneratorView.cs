@@ -175,9 +175,8 @@ public partial class GeneratorView : UserControl
         packageSaveFeedback.TextWrapping=TextWrapping.Wrap;
         packageSaveFeedback.Visibility=Visibility.Collapsed;
         WirePackageSaveNotification(quickSaveButton,packageSaveFeedback);
-        routeHeader.Children.Add(quickSaveButton);
         servicePanel.Children.Add(routeHeader);
-        var routeInputs=new UniformGrid{Columns=2,Margin=new Thickness(0,1,0,1)};
+        var routeInputs=new UniformGrid{Columns=3,Margin=new Thickness(0,1,0,1)};
         var serverBox=PageUi.Column();
         serverBox.Children.Add(PageUi.Label("السيرفر"));
         serverBox.Children.Add(_server);
@@ -187,6 +186,22 @@ public partial class GeneratorView : UserControl
         routeInputs.Children.Add(serverBox);
         routeInputs.Children.Add(profileBox);
         routeInputs.Children.Add(_customerPanel);
+        var saveCell=PageUi.Column();
+        saveCell.Margin=new Thickness(3,0,3,0);
+        saveCell.Children.Add(PageUi.Label("إعدادات الباقة"));
+        quickSaveButton.MinWidth=145;
+        quickSaveButton.MinHeight=32;
+        quickSaveButton.Padding=new Thickness(12,3,12,3);
+        quickSaveButton.Margin=new Thickness(0);
+        quickSaveButton.Content=new TextBlock
+        {
+            Text="حفظ إعدادات الباقة",Foreground=(Brush)new BrushConverter()
+                .ConvertFrom("#52152F")!,FontFamily=new FontFamily("Arial"),
+            FontWeight=FontWeights.ExtraBold,FontSize=12,
+            TextAlignment=TextAlignment.Center
+        };
+        saveCell.Children.Add(quickSaveButton);
+        routeInputs.Children.Add(saveCell);
         servicePanel.Children.Add(routeInputs);
         var catalogRow=new DockPanel{Margin=new Thickness(0,3,0,0)};
         var refreshCatalog=PageUi.Button("تحديث الباقات",false);
@@ -452,7 +467,7 @@ public partial class GeneratorView : UserControl
             _server.SelectedIndex=0;
             _customerPanel.Visibility = SelectedService == "userman"
                 ? Visibility.Visible : Visibility.Collapsed;
-            routeInputs.Columns=SelectedService=="userman"?3:2;
+            routeInputs.Columns=SelectedService=="userman"?4:3;
             if(IsLoaded)await LoadProfilesAsync();
         };
         _profile.SelectionChanged += (_, _) =>
