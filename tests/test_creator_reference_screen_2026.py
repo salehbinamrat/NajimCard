@@ -20,13 +20,13 @@ class CreatorReferenceScreenTests(unittest.TestCase):
         self.assertIn('ReferenceHeader("إنشاء المستخدم وطباعة الكروت")', self.creator)
         self.assertIn('formatSection.Children.Add(row);', self.creator)
         self.assertIn('Grid.SetRow(formatSurface,0)', self.layout)
-        self.assertIn('Grid.SetColumn(formatSurface,0)', self.layout)
+        self.assertIn('Grid.SetColumn(leftColumn,0)', self.layout)
 
     def test_upper_right_preserves_profile_and_package_save(self):
         self.assertIn('ReferenceHeader("بيانات ومسار الإرسال")', self.creator)
         self.assertIn('var quickSaveButton=PageUi.Button("حفظ إعدادات الباقة",false)', self.creator)
         self.assertIn('servicePanel.Children.Add(_customerPanel)', self.creator)
-        self.assertIn('Grid.SetColumn(routeSurface,1)', self.layout)
+        self.assertIn('Grid.SetColumn(rightColumn,1)', self.layout)
 
     def test_lower_left_is_two_printing_settings_groups(self):
         self.assertIn('ReferenceHeader("إعدادات الطباعة الأساسية")', self.printer)
