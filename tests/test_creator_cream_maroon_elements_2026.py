@@ -62,7 +62,8 @@ class CreatorCreamBurgundyTests(unittest.TestCase):
     def test_credential_layers_drag_independently_and_remain_transparent(self):
         preview=source("GeneratorView.CardDesign.cs")
         self.assertIn("EnableCardEditing(elements,usernamePlate",preview)
-        self.assertIn("EnableCardEditing(elements,_previewPassword",preview)
+        self.assertIn("EnableCardEditing(elements,passwordPlate",preview)
+        self.assertIn("CardCredentialPlate.Build(_previewPassword",preview)
         self.assertIn("Background=Brushes.Transparent",preview)
         self.assertIn("CredentialsPosition=position",preview)
         self.assertIn("PasswordPosition=position",preview)
