@@ -22,8 +22,8 @@ public partial class GeneratorView
         surface.Padding=new Thickness(6);
         surface.Margin=new Thickness(0);
         surface.CornerRadius=new CornerRadius(9);
-        surface.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
-        surface.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
+        surface.Background=(Brush)new BrushConverter().ConvertFrom("#FFF4DF")!;
+        surface.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
         RestyleCompactText(content);
         return surface;
     }
@@ -35,7 +35,7 @@ public partial class GeneratorView
         if(node is FrameworkElement element && Equals(element.Tag,"CardArtwork"))return;
         if(node is TextBlock label && !Equals(label.Tag,"SectionTitle"))
         {
-            label.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
+            label.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
             label.FontWeight=FontWeights.SemiBold;
             // PageUi.Label has 12pt top padding for spacious pages; inside the
             // single Hadramout-style voucher editor this creates tall empty gaps.
@@ -43,7 +43,9 @@ public partial class GeneratorView
             label.FontSize=Math.Min(label.FontSize,13);
         }
         if(node is CheckBox checkbox)
-            checkbox.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
+            checkbox.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
+        if(node is RadioButton radio)
+            radio.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
         switch(node)
         {
             case Panel panel:
@@ -64,7 +66,8 @@ public partial class GeneratorView
     {
         Name="CardPasswordPreview",FontFamily=new FontFamily("Consolas"),FontSize=13,FontWeight=FontWeights.Bold,
         FlowDirection=FlowDirection.LeftToRight,TextAlignment=TextAlignment.Center,
-        MaxWidth=280,TextTrimming=TextTrimming.CharacterEllipsis,Visibility=Visibility.Collapsed
+        MaxWidth=280,Background=Brushes.Transparent,
+        TextTrimming=TextTrimming.CharacterEllipsis,Visibility=Visibility.Collapsed
     };
     private CardElementPanel? _previewElements;
 
@@ -132,11 +135,11 @@ public partial class GeneratorView
         _previewNetworkName.TextAlignment=TextAlignment.Center;
 
         var usernamePlate=new Border{
-            Background=new SolidColorBrush(Color.FromArgb(225,255,250,237)),
-            BorderBrush=(Brush)new BrushConverter().ConvertFrom("#8A50CF")!,
-            BorderThickness=new Thickness(1),
+            Background=Brushes.Transparent,
+            BorderBrush=Brushes.Transparent,
+            BorderThickness=new Thickness(0),
             CornerRadius=new CornerRadius(8),
-            Padding=new Thickness(4,2,4,2),
+            Padding=new Thickness(2,0,2,0),
             Width=280,
             Child=new Viewbox
             {
@@ -194,7 +197,7 @@ public partial class GeneratorView
                 ApplyCardAppearance(after,refreshArtwork:false);
                 if(before.UsernameFontSize!=after.UsernameFontSize)
                     _designFontSize.Text=after.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
-                _designStatus.Text="تم تغيير الحجم. احفظ إعدادات القالب لهذه الباقة للاحتفاظ به.";
+                _designStatus.Text="تم تغيير الحجم. احفظ إعدادات الباقة من الزر العلوي للاحتفاظ به.";
             }
             catch(Exception ex) when(ex is ArgumentException or FormatException or OverflowException)
             {
@@ -358,9 +361,9 @@ public partial class GeneratorView
         var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
         var backing=new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
         _previewNetworkName.Foreground=ink;
-        _previewNetworkName.Background=hasPicture || appearance.TitlePosition is not null?backing:null;
+        _previewNetworkName.Background=Brushes.Transparent;
         _previewPackageName.Foreground=hasPicture || appearance.ProfilePosition is not null?ink:Brushes.White;
-        _previewPackageName.Background=hasPicture || appearance.ProfilePosition is not null?backing:null;
+        _previewPackageName.Background=Brushes.Transparent;
         foreach(var shape in _sampleArtwork)
             shape.Visibility=hasPicture?Visibility.Collapsed:Visibility.Visible;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
@@ -370,10 +373,10 @@ public partial class GeneratorView
         _cardPreview.FontSize=appearance.UsernameFontSize;
         _cardPreview.Foreground=ink;
         _previewPassword.Foreground=ink;
-        _previewPassword.Background=backing;
+        _previewPassword.Background=Brushes.Transparent;
         _templateImagePath=appearance.TemplateImagePath;
         if(_previewUsernamePlate is not null)
-            _previewUsernamePlate.Background=backing;
+            _previewUsernamePlate.Background=Brushes.Transparent;
         if(_appearancePreviewBorder is not null)
         {
             _appearancePreviewBorder.BorderBrush=(Brush)new BrushConverter()
