@@ -59,7 +59,7 @@ internal static class NajmNetCardArtwork
             BorderBrush=new SolidColorBrush(Color.FromRgb(150,59,192)),
             Background=new SolidColorBrush(Color.FromArgb(190,255,255,255))
         };
-        Canvas.SetLeft(central,113);Canvas.SetTop(63);
+        Canvas.SetLeft(central,113);Canvas.SetTop(central,63);
         canvas.Children.Add(central);
         var footer=new Border
         {
@@ -68,7 +68,7 @@ internal static class NajmNetCardArtwork
             BorderBrush=new SolidColorBrush(Color.FromRgb(179,105,211)),
             Background=new SolidColorBrush(Color.FromArgb(190,255,255,255))
         };
-        Canvas.SetLeft(footer,135);Canvas.SetTop(155);
+        Canvas.SetLeft(footer,135);Canvas.SetTop(footer,155);
         canvas.Children.Add(footer);
         var star=new Path
         {
