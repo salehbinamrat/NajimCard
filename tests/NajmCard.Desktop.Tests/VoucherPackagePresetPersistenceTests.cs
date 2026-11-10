@@ -55,7 +55,7 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         store.SavePackagePreset(Preset(title:"الأولى بعد التعديل",count:100));
         Assert.Equal(100,store.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!.Quantity);
         Assert.Equal("الثانية",store.LoadPackagePreset("192.168.1.1:8728","hotspot","premium")!.Appearance.NetworkTitle);
-        Assert.Equal("نجم كارد",store.LoadCardAppearance().NetworkTitle);
+        Assert.Equal("نجم نت",store.LoadCardAppearance().NetworkTitle);
     }
 
     [Fact]
