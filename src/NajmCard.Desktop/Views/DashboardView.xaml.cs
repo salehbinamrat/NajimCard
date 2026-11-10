@@ -16,6 +16,7 @@ public partial class DashboardView : UserControl
     private UserManagerV6Inventory? _lastLifecycle;
     private bool _lifecycleReading;
     private bool _refreshing;
+    private IReadOnlyList<VoucherActivityRow>? _displayedActivities;
     private CancellationTokenSource? _refreshToken;
     private CancellationTokenSource? _initialLifecycleToken;
     private CancellationTokenSource? _lifecycleToken;
@@ -27,10 +28,13 @@ public partial class DashboardView : UserControl
         _navigate = navigate;
         InitializeComponent();
         RouterEndpointInfo.Text = "عنوان الراوتر: " + (string.IsNullOrWhiteSpace(routerAddress) ? "غير محدد" : routerAddress);
-        Loaded += async (_, _) => await RefreshAsync();
         // Hadramout automatically warms the detailed voucher counts once after login.
         // Do not block the lightweight dashboard or bypass the gateway 5-minute cache.
-        Loaded += async (_, _) => await ScheduleInitialLifecycleAsync();
+        Loaded += async (_, _) =>
+        {
+            await RefreshAsync();
+            if(IsLoaded)await ScheduleInitialLifecycleAsync();
+        };
         Unloaded += (_, _) =>
         {
             _refreshToken?.Cancel();
@@ -54,24 +58,19 @@ public partial class DashboardView : UserControl
     {
         if (_refreshing || !IsLoaded) return;
         _refreshing=true;
+        RefreshButton.IsEnabled=false;
         using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(100));
         _refreshToken=timeout;
         ErrorStatus.Text="جارٍ تحديث العدادات المباشرة من الراوتر...";
+        var refreshActivity=RefreshActivityAsync(timeout.Token);
         try
         {
             // Do not load tens of thousands of User Manager vouchers every time
             // the dashboard opens. These are 3 count-only requests; lifecycle
             // is a separate explicit heavyweight read with a 5-minute cache.
             var resource=await _gateway.ReadResourceAsync(timeout.Token);
-            var live=await _gateway.ReadDashboardLiveCountsAsync(timeout.Token);
-            var activities=await Task.Run(()=>_store.ReadRecentActivities(6),timeout.Token);
             timeout.Token.ThrowIfCancellationRequested();
             if(!IsLoaded)return;
-            AllUsers.Text=live.UserManagerTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
-            Online.Text=live.OnlineTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
-            OnlineBreakdown.Text="Hotspot "+(live.HotspotOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
-                " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
-                (live.IsPartial?" | قراءة جزئية":"");
             RouterName.Text=string.IsNullOrWhiteSpace(resource.Identity)?"MikroTik":resource.Identity;
             RouterVersion.Text=resource.Version;
             RouterBoard.Text=resource.Board;
@@ -88,7 +87,14 @@ public partial class DashboardView : UserControl
                 MemoryUsePercent.Text=use.ToString("F0",CultureInfo.InvariantCulture)+"%";
             }
             else {MemoryProgress.Value=0;MemoryUsePercent.Text="—";}
-            RenderActivity(activities);
+            var live=await _gateway.ReadDashboardLiveCountsAsync(timeout.Token);
+            timeout.Token.ThrowIfCancellationRequested();
+            if(!IsLoaded)return;
+            AllUsers.Text=live.UserManagerTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
+            Online.Text=live.OnlineTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
+            OnlineBreakdown.Text="Hotspot "+(live.HotspotOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
+                " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
+                (live.IsPartial?" | قراءة جزئية":"");
             var stamp=DateTime.Now.ToString("HH:mm:ss");
             RefreshHistory.Text=stamp+" · تحديث مباشر للعدادات، دون جلب قوائم مستخدمين كاملة";
             ErrorStatus.Text=(live.IsPartial?"توجد عدادات متصلين غير متاحة. ":"")+
@@ -101,12 +107,34 @@ public partial class DashboardView : UserControl
         }
         catch(Exception ex)
         {
-            ErrorStatus.Text="تعذر التحديث؛ لم تُستبدل الأعداد ببيانات مزيفة: "+ex.Message;
+            if(IsLoaded)ErrorStatus.Text="تعذر التحديث؛ لم تُستبدل الأعداد ببيانات مزيفة: "+ex.Message;
         }
         finally
         {
+            await refreshActivity;
             if(ReferenceEquals(_refreshToken,timeout))_refreshToken=null;
             _refreshing=false;
+            RefreshButton.IsEnabled=true;
+        }
+    }
+
+    private async Task RefreshActivityAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var activities=await Task.Run(()=>_store.ReadRecentActivities(6),cancellationToken);
+            if(IsLoaded && !cancellationToken.IsCancellationRequested &&
+                (_displayedActivities is null || !_displayedActivities.SequenceEqual(activities)))
+            {
+                RenderActivity(activities);
+                _displayedActivities=activities;
+                ActivityRows.ClearValue(ToolTipProperty);
+            }
+        }
+        catch(OperationCanceledException) { }
+        catch(Exception ex)
+        {
+            if(IsLoaded)ActivityRows.ToolTip="تعذر تحديث سجل العمليات: "+ex.Message;
         }
     }
 

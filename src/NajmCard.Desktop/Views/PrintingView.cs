@@ -41,20 +41,22 @@ public class PrintingView : UserControl
     private readonly Action<CardPrintOptions> _applyOptions;
     private readonly Func<bool> _preparePreview;
     private readonly Action _printBatch;
-    private readonly Func<string,bool> _exportPdf;
-    private readonly Func<IReadOnlyList<Voucher>,VoucherCardAppearance,CardPrintOptions,string,Task> _exportDraftPdf;
+    private readonly Func<string,Task<bool>> _exportPdf;
+    private readonly Func<IReadOnlyList<Voucher>,VoucherCardAppearance,CardPrintOptions,string,Task> _renderPdfAsync;
     private readonly Action _invalidate;
     private readonly TextBlock _status;
 
     private static Border ReferenceHeader(string title)=>new()
     {
         Background=(Brush)new BrushConverter().ConvertFrom("#57213E")!,
-        Padding=new Thickness(9,6,9,6),
-        Margin=new Thickness(0,0,0,3),
+        BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!,
+        BorderThickness=new Thickness(0,0,0,1),
+        Padding=new Thickness(8,4,8,4),
+        Margin=new Thickness(0,0,0,2),
         CornerRadius=new CornerRadius(5,5,0,0),
         Child=new TextBlock
         {
-            Text=title,FontFamily=new FontFamily("Arial"),FontSize=14,
+            Text=title,FontFamily=new FontFamily("Arial"),FontSize=15,
             FontWeight=FontWeights.ExtraBold,Foreground=Brushes.White,
             TextAlignment=TextAlignment.Right
         }
@@ -65,7 +67,7 @@ public class PrintingView : UserControl
     public void ApplyOptions(CardPrintOptions options)=>_applyOptions(options);
     public bool PreparePreview()=>_preparePreview();
     public void PrintBatch()=>_printBatch();
-    public bool SavePdfToPath(string path)=>_exportPdf(path);
+    public Task<bool> SavePdfToPathAsync(string path)=>_exportPdf(path);
     public void Invalidate()=>_invalidate();
 
     public string? ChoosePdfDestination()
@@ -81,20 +83,20 @@ public class PrintingView : UserControl
         return dlg.ShowDialog()==true?dlg.FileName:null;
     }
 
-    public void SavePdf()
+    public async Task SavePdfAsync()
     {
         var path=ChoosePdfDestination();
-        if(path is not null)SavePdfToPath(path);
+        if(path is not null)await SavePdfToPathAsync(path);
     }
 
-    public void PreviewPdf()
+    public async Task PreviewPdfAsync()
     {
         if(!PageUi.Confirm("سيتم فتح ملف PDF مؤقت قد يحتوي كلمات مرور الكروت المرسلة. هل تريد المتابعة؟"))
             return;
         try
         {
             var path=NewPreviewPdfPath();
-            if(SavePdfToPath(path))OpenPreviewPdf(path);
+            if(await SavePdfToPathAsync(path))OpenPreviewPdf(path);
         }
         catch(Exception ex){_status.Text="تعذر فتح معاينة PDF: "+ex.Message;}
     }
@@ -103,7 +105,7 @@ public class PrintingView : UserControl
         VoucherCardAppearance appearance,CardPrintOptions options)
     {
         var path=NewPreviewPdfPath();
-        await _exportDraftPdf(cards,appearance,options,path);
+        await _renderPdfAsync(cards,appearance,options,path);
         return path;
     }
 
@@ -213,7 +215,7 @@ public class PrintingView : UserControl
         if(embedded)
         {
             printPanel.Padding=new Thickness(6);
-            printPanel.CornerRadius=new CornerRadius(8);
+            printPanel.CornerRadius=new CornerRadius(9);
             printPanel.Margin=new Thickness(0);
             // Size to the last working control; never fill the left column
             // with an empty 300px bordered block.
@@ -322,13 +324,14 @@ public class PrintingView : UserControl
             }
             var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
             var borderInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.BorderColor)!;
+            var slotsByPage=plan.Slots.ToLookup(slot=>slot.PageIndex);
             for(int pageNo=0;pageNo<plan.PdfPages;pageNo++)
             {
                 var page=new FixedPage
                 {
                     Width=Dip(plan.PageWidthMm),Height=Dip(plan.PageHeightMm),Background=Brushes.White
                 };
-                foreach(var slot in plan.Slots.Where(x=>x.PageIndex==pageNo))
+                foreach(var slot in slotsByPage[pageNo])
                 {
                     var card=cards[slot.VoucherIndex];
                     var content=new StackPanel
@@ -429,7 +432,7 @@ public class PrintingView : UserControl
             return doc;
         }
 
-        _exportDraftPdf=(cards,appearance,options,path)=>
+        _renderPdfAsync=(cards,appearance,options,path)=>
         {
             var completion=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             // WPF creates and rasterizes the document on the same STA thread.
@@ -447,27 +450,34 @@ public class PrintingView : UserControl
             return completion.Task;
         };
 
+        (Voucher[] Cards,VoucherCardAppearance Style,CardPrintOptions Options)? ConfirmPrintJob()
+        {
+            var cards=(selectedBatch is null
+                ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
+                :selectedBatch())
+                .Where(x=>x.DeliveryStatus=="SENT"&&x.SentToRouter).ToArray();
+            if(cards.Length==0)
+            {
+                _status.Text="لا توجد كروت مؤكدة الإرسال من الدفعة المختارة؛ لا تُطبع حالات UNKNOWN/FAILED.";
+                return null;
+            }
+            if(cards.Select(x=>x.Username).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=cards.Length)
+                throw new InvalidOperationException("تكرار أرقام الكروت في الدفعة يمنع الطباعة.");
+            var style=(selectedAppearance?.Invoke()??store.LoadCardAppearance()).Validate();
+            var opts=Options();
+            if(!PageUi.Confirm("هل تريد معاينة "+cards.Length+
+                " كرتا مؤكدا إرساله، "+(style.ShowPassword?"مع كلمات المرور؟":"دون كلمات المرور؟")))
+                return null;
+            return (cards,style,opts);
+        }
+
         bool Prepare()
         {
             Clear();
             try
             {
-                var cards=(selectedBatch is null
-                    ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
-                    :selectedBatch())
-                    .Where(x=>x.DeliveryStatus=="SENT"&&x.SentToRouter).ToArray();
-                if(cards.Length==0)
-                {
-                    _status.Text="لا توجد كروت مؤكدة الإرسال من الدفعة المختارة؛ لا تُطبع حالات UNKNOWN/FAILED.";
-                    return false;
-                }
-                if(cards.Select(x=>x.Username).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=cards.Length)
-                    throw new InvalidOperationException("تكرار أرقام الكروت في الدفعة يمنع الطباعة.");
-                var style=(selectedAppearance?.Invoke()??store.LoadCardAppearance()).Validate();
-                var opts=Options();
-                if(!PageUi.Confirm("هل تريد معاينة "+cards.Length+
-                    " كرتا مؤكدا إرساله، "+(style.ShowPassword?"مع كلمات المرور؟":"دون كلمات المرور؟")))
-                    return false;
+                if(ConfirmPrintJob() is not { } job)return false;
+                var (cards,style,opts)=job;
                 prepared=MakeDocument(cards,opts,style);
                 preparedCount=cards.Length;designUsed=style;
                 viewer.Document=prepared;
@@ -494,13 +504,13 @@ public class PrintingView : UserControl
             }
             catch(Exception ex){_status.Text="تعذرت الطباعة: "+ex.Message;}
         }
-        bool Export(string path)
+        async Task<bool> Export(string path)
         {
-            if(!Prepare())return false;
             try
             {
-                _status.Text="جارٍ إخراج PDF من نفس معاينة الكروت وبخطوطها...";
-                VoucherPdfExporter.Export(prepared!,path);
+                if(ConfirmPrintJob() is not { } job)return false;
+                _status.Text="جارٍ إخراج PDF للدفعة المؤكدة...";
+                await _renderPdfAsync(job.Cards,job.Style,job.Options,path);
                 _status.Text="تم حفظ PDF للدفعة المؤكدة: "+path;
                 return true;
             }

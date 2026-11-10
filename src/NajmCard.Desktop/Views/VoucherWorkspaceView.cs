@@ -37,7 +37,7 @@ public sealed class VoucherWorkspaceView : UserControl
         input.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
         input.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(6,4,6,4)));
         root.Resources[typeof(TextBox)]=input;
-        var fields=new Grid{ClipToBounds=true};
+        var fields=new Grid{ClipToBounds=true,UseLayoutRounding=true};
         fields.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         fields.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         // The top-level page title comes from MainWindow, never a second heading.
@@ -117,6 +117,7 @@ public sealed class VoucherWorkspaceView : UserControl
             var button=PageUi.Button(title,false);
             button.Margin=new Thickness(2);
             button.MinWidth=0;
+            button.Padding=new Thickness(5,3,5,3);
             button.Height=43;
             button.Background=(Brush)new BrushConverter().ConvertFromInvariantString(bg)!;
             button.Foreground=(Brush)new BrushConverter().ConvertFromInvariantString(fg)!;
@@ -168,7 +169,7 @@ public sealed class VoucherWorkspaceView : UserControl
                 status.Text="لم تنجح كروت مؤكدة؛ لم ينشأ ملف PDF.";
                 return;
             }
-            status.Text=printer.SavePdfToPath(destination)
+            status.Text=await printer.SavePdfToPathAsync(destination)
                 ?"أُرسلت الكروت المؤكدة وحُفظ PDF بنجاح.":
                 "حُفظت نتائج الإرسال لكن فشل إخراج PDF؛ لا تعِد الإرسال بسبب فشل الملف.";
         });
@@ -206,13 +207,10 @@ public sealed class VoucherWorkspaceView : UserControl
             }
             else await PreviewDraftPdf();
         });
-        actions[4].Click+=(_,_)=>_ = Execute(()=>
-        {
-            printer.SavePdf();return Task.CompletedTask;
-        });
+        actions[4].Click+=async(_,_)=>await Execute(printer.SavePdfAsync);
         actions[5].Click+=async(_,_)=>await Execute(async()=>
         {
-            if(creator.HasBatch)printer.PreviewPdf();
+            if(creator.HasBatch)await printer.PreviewPdfAsync();
             else await PreviewDraftPdf();
         });
         actions[6].Click+=(_,_)=>_ = Execute(()=>
