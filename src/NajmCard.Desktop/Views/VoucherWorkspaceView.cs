@@ -30,8 +30,8 @@ public sealed class VoucherWorkspaceView : UserControl
             Background=(Brush)new BrushConverter().ConvertFrom("#1D0B19")!};
         // Scoped burgundy/gold controls including dropdown items retain readable contrast.
         var CardDropdownStyle=new Style(typeof(ComboBox));
-        CardDropdownStyle.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#301529")!));
-        CardDropdownStyle.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF4E6")!));
+        CardDropdownStyle.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
+        CardDropdownStyle.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
         CardDropdownStyle.Setters.Add(new Setter(Control.BorderBrushProperty,(Brush)new BrushConverter().ConvertFrom("#D2AA61")!));
         CardDropdownStyle.Setters.Add(new Setter(Control.FontWeightProperty,FontWeights.SemiBold));
         CardDropdownStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,29d));
