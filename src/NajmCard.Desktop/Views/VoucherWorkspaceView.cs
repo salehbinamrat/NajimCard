@@ -117,7 +117,7 @@ public sealed class VoucherWorkspaceView : UserControl
         };
         var status=new TextBlock
         {
-            Text="حفظ الباقة من قسم التصميم. الطباعة وPDF للكروت المؤكد إرسالها فقط.",
+            Text="احفظ إعدادات كل باقة من أعلى قسم الباقة ومسار الإرسال. الطباعة وPDF للكروت المؤكد إرسالها فقط.",
             Foreground=new SolidColorBrush(Color.FromRgb(255,224,169)),
             TextWrapping=TextWrapping.Wrap,FontSize=11,
             FontWeight=FontWeights.SemiBold,
@@ -196,8 +196,9 @@ public sealed class VoucherWorkspaceView : UserControl
         {
             if(creator.HasBatch)
             {
-                printer.PreparePreview();
-                status.Text="معاينة الكروت التي ثبت إرسالها في الدفعة المحددة.";
+                status.Text=printer.PreparePreview()
+                    ? "معاينة الكروت التي ثبت إرسالها في الدفعة المحددة."
+                    : "لم تُجهز معاينة الطباعة؛ راجع حالات إرسال الدفعة وإعدادات الورق.";
             }
             else
             {

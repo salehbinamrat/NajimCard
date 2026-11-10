@@ -49,7 +49,7 @@ public partial class GeneratorView : UserControl
     private readonly ComboBox _credentialMode = new()
     {
         ItemsSource=new[]{"اسم مستخدم فقط","اسم مستخدم وكلمة مرور"},
-        SelectedIndex=1
+        SelectedIndex=0
     };
     private readonly RadioButton _credentialsSame = new()
     {Content="متطابقتين",GroupName="NajmPasswordRule",IsChecked=true};
@@ -145,7 +145,35 @@ public partial class GeneratorView : UserControl
 
         var form = PageUi.Column();
         var servicePanel=PageUi.Column();
-        servicePanel.Children.Add(ReferenceHeader("الباقة ومسار الإرسال"));
+        // Keep Hadramout's direct per-package save action visible beside
+        // the routing header. It persists locally without sending RouterOS commands.
+        var routeHeader=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        routeHeader.Children.Add(ReferenceHeader("الباقة ومسار الإرسال"));
+        var quickSaveButton=PageUi.Button("حفظ إعدادات الباقة",false);
+        quickSaveButton.HorizontalAlignment=HorizontalAlignment.Left;
+        quickSaveButton.VerticalAlignment=VerticalAlignment.Center;
+        quickSaveButton.Margin=new Thickness(5,1,5,4);
+        quickSaveButton.Padding=new Thickness(9,2,9,2);
+        quickSaveButton.MinHeight=26;
+        quickSaveButton.FontSize=11;
+        quickSaveButton.FontWeight=FontWeights.Bold;
+        quickSaveButton.Foreground=Brushes.White;
+        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#165B65")!;
+        quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
+        var packageSaveFeedback=PageUi.Status();
+        packageSaveFeedback.FontSize=11;
+        packageSaveFeedback.TextWrapping=TextWrapping.Wrap;
+        packageSaveFeedback.Visibility=Visibility.Collapsed;
+        quickSaveButton.Click+=(_,_)=>
+        {
+            var saved=SaveCurrentPackage();
+            packageSaveFeedback.Text=_status.Text;
+            packageSaveFeedback.Foreground=(Brush)new BrushConverter().ConvertFrom(
+                saved?"#A5F3CD":"#FFC1BF")!;
+            packageSaveFeedback.Visibility=Visibility.Visible;
+        };
+        routeHeader.Children.Add(quickSaveButton);
+        servicePanel.Children.Add(routeHeader);
         var routeInputs=new UniformGrid{Columns=2,Margin=new Thickness(1,3,1,1)};
         var serverBox=PageUi.Column();
         serverBox.Children.Add(PageUi.Label("السيرفر"));
@@ -258,9 +286,21 @@ public partial class GeneratorView : UserControl
         _server.ItemsSource=new[]{"all"};
         _server.SelectedIndex=0;
         servicePanel.Children.Add(_customerPanel);
+        // Feedback appears only on explicit save, within the routing section.
+        servicePanel.Children.Add(packageSaveFeedback);
         void UpdatePasswordMode()
         {
             bool userOnly=_credentialMode.SelectedIndex==0;
+            // Collapse option captions as well as controls, to avoid
+            // empty gutters when the username-only format is selected.
+            sameCell.Visibility=differentCell.Visibility=
+                userOnly?Visibility.Collapsed:Visibility.Visible;
+            credentialsTop.ColumnDefinitions[0].Width=new GridLength(
+                userOnly?1:2.2,GridUnitType.Star);
+            credentialsTop.ColumnDefinitions[1].Width=new GridLength(
+                userOnly?0:1,GridUnitType.Star);
+            credentialsTop.ColumnDefinitions[2].Width=new GridLength(
+                userOnly?0:1,GridUnitType.Star);
             _credentialsSame.Visibility=_credentialsDifferent.Visibility=
                 userOnly?Visibility.Collapsed:Visibility.Visible;
             if(userOnly)_samePassword.IsChecked=true;
@@ -375,6 +415,8 @@ public partial class GeneratorView : UserControl
 
         _service.SelectionChanged += async (_, _) =>
         {
+            packageSaveFeedback.Text="";
+            packageSaveFeedback.Visibility=Visibility.Collapsed;
             _batch = [];
             BatchChanged?.Invoke();
             ServiceChanged?.Invoke();
@@ -390,6 +432,8 @@ public partial class GeneratorView : UserControl
         _profile.SelectionChanged += (_, _) =>
         {
             if(_restoringPreset)return;
+            packageSaveFeedback.Text="";
+            packageSaveFeedback.Visibility=Visibility.Collapsed;
             _batch=[];
             BatchChanged?.Invoke();
             SelectMatchingOwner();
@@ -397,7 +441,10 @@ public partial class GeneratorView : UserControl
         };
         _customer.SelectionChanged += (_,_) =>
         {
-            if(!_restoringPreset)RestorePackagePreset();
+            if(_restoringPreset)return;
+            packageSaveFeedback.Text="";
+            packageSaveFeedback.Visibility=Visibility.Collapsed;
+            RestorePackagePreset();
         };
         Loaded += async (_, _) => await LoadProfilesAsync();
     }
@@ -418,6 +465,8 @@ public partial class GeneratorView : UserControl
     {
         try
         {
+            if(_sending||_preparing||_restoringPreset)
+                throw new InvalidOperationException("لا يمكن حفظ إعدادات الباقة أثناء إرسال الكروت أو استعادة الإعدادات.");
             var profile=_profile.SelectedItem?.ToString()??"";
             if(profile.Length==0)throw new ArgumentException("اختر الباقة من الراوتر.");
             if(SelectedService=="hotspot" && _server.SelectedItem?.ToString()!="all")
@@ -472,7 +521,8 @@ public partial class GeneratorView : UserControl
                 _samePassword.IsChecked=v?.SamePassword??true;
                 _credentialsSame.IsChecked=v?.SamePassword??true;
                 _credentialsDifferent.IsChecked=!(v?.SamePassword??true);
-                _credentialMode.SelectedIndex=v?.UsernameOnly==true?0:1;
+                // A never-saved package follows Hadramout's username-only default.
+                _credentialMode.SelectedIndex=v?.UsernameOnly==false?1:0;
                 _lengthWithPrefix.IsChecked=v?.LengthIncludesPrefix??true;
                 var d=v?.Appearance??new VoucherCardAppearance();
                 _designTitle.Text=d.NetworkTitle;
