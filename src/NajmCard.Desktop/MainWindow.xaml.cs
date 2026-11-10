@@ -16,7 +16,7 @@ public sealed record NavEntry(string Key, Geometry Glyph, Brush Accent,
 
 public partial class MainWindow : Window
 {
-    private RouterOsClient? _session;
+    private ResilientRouterSession? _session;
     private RouterGateway? _gateway;
     private readonly VoucherStore _store = new();
     private readonly HttpClient _licenseHttp = new();
@@ -451,7 +451,11 @@ public partial class MainWindow : Window
                 UserInput.Text.Trim(), CurrentPassword, TlsInput.IsChecked == true);
             if(ActiveConnectionMode=="remote" && string.IsNullOrWhiteSpace(endpoint.Host))
                 throw new ArgumentException("أدخل عنوان الراوتر عبر اتصال VPN القائم أولا.");
-            var session = await RouterOsClient.ConnectAsync(endpoint);
+            var authenticated = await RouterOsClient.ConnectAsync(endpoint);
+            // All pages share one recoverable session. Slow User Manager scans
+            // have their own lane; no writes are replayed after connection loss.
+            var session = new ResilientRouterSession(authenticated,
+                async token => await RouterOsClient.ConnectAsync(endpoint,token));
             var gateway = new RouterGateway(session);
             try { await gateway.ReadResourceAsync(); }
             catch { await session.DisposeAsync(); throw; }
