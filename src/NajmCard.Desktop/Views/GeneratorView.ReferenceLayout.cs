@@ -13,19 +13,19 @@ public partial class GeneratorView
     private static Border ReferenceHeader(string title, string icon = "IconPackages")
     {
         var cream = new SolidColorBrush(Color.FromRgb(255, 245, 230));
-        var heading = new DockPanel { FlowDirection = FlowDirection.RightToLeft };
+        var heading = new DockPanel { FlowDirection = FlowDirection.LeftToRight };
         var glyph = new System.Windows.Shapes.Path
         {
             Data = (Geometry)Application.Current.FindResource(icon),
             Stroke = cream, StrokeThickness = 1.7, Stretch = Stretch.Uniform,
             Width = 15, Height = 15, Margin = new Thickness(6, 0, 0, 0)
         };
-        DockPanel.SetDock(glyph, Dock.Left);
+        DockPanel.SetDock(glyph, Dock.Right);
         heading.Children.Add(glyph);
         heading.Children.Add(new TextBlock
         {
             Text = title, Tag = "SectionTitle", FontFamily = new FontFamily("Arial"),
-            FontSize = 14, FontWeight = FontWeights.Bold, Foreground = cream,
+            FontSize = 15, FontWeight = FontWeights.Bold, Foreground = cream,
             TextAlignment = TextAlignment.Right
         });
         return new Border

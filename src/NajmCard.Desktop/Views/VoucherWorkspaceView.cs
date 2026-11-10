@@ -31,7 +31,7 @@ public sealed class VoucherWorkspaceView : UserControl
         creator.RefreshPageCount();
 
         var root=new DockPanel{LastChildFill=true,FlowDirection=FlowDirection.RightToLeft,
-            Background=(Brush)new BrushConverter().ConvertFrom("#1D0B19")!};
+            Background=(Brush)new BrushConverter().ConvertFrom("#FFF4DF")!};
         // Keep the creator's compact dimensions on the shared dark templates.
         var dropdown=new Style(typeof(ComboBox),(Style)Application.Current.FindResource("DarkComboBox"));
         dropdown.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,26d));
@@ -90,6 +90,7 @@ public sealed class VoucherWorkspaceView : UserControl
             btn.Padding=new Thickness(5,3,5,3);
             btn.FontSize=14;
             btn.FontWeight=FontWeights.ExtraBold;
+            btn.Content=new TextBlock {Text=title,FontWeight=FontWeights.Bold};
             btn.Margin=new Thickness(1);
             btn.Click+=(_,_)=>creator.SelectService(service);
             tabs.Children.Add(btn);
@@ -109,7 +110,9 @@ public sealed class VoucherWorkspaceView : UserControl
                 btn.Background=(Brush)new BrushConverter().ConvertFrom(palette.Item1)!;
                 btn.Foreground=(Brush)new BrushConverter().ConvertFrom(palette.Item2)!;
                 btn.Opacity=selected?1.0:0.85;
-                btn.FontSize=selected?15:14;
+                var label=(TextBlock)btn.Content;
+                label.Foreground=btn.Foreground;
+                label.FontSize=selected?15:14;
             }
         }
         creator.ServiceChanged+=PaintTabs;

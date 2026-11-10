@@ -169,6 +169,11 @@ public partial class GeneratorView : UserControl
         quickSaveButton.FontWeight=FontWeights.Bold;
         quickSaveButton.Foreground=(Brush)new BrushConverter().ConvertFrom("#49142C")!;
         quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#EAC477")!;
+        quickSaveButton.Content=new TextBlock
+        {
+            Text="حفظ إعدادات الباقة",Foreground=quickSaveButton.Foreground,
+            FontSize=13,FontWeight=FontWeights.Bold
+        };
         quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
         quickSaveButton.Click+=(_,_) =>
         {
@@ -258,7 +263,15 @@ public partial class GeneratorView : UserControl
         // The user may type exact ASCII character sets, without duplicate characters.
         var formatSection=PageUi.Column();
         var formatHeader=new DockPanel();
-        var advancedGeneration=new Expander { Header="خيارات متقدمة", Margin=new Thickness(2,0,2,0) };
+        var advancedGeneration=new Expander
+        {
+            Header=new TextBlock
+            {
+                Text="خيارات متقدمة",Foreground=PageUi.Muted,
+                FontSize=11,FontWeight=FontWeights.Bold
+            },
+            Margin=new Thickness(2,0,2,0)
+        };
         DockPanel.SetDock(advancedGeneration,Dock.Right);
         formatHeader.Children.Add(advancedGeneration);
         formatHeader.Children.Add(ReferenceHeader("إنشاء المستخدم","IconPeople"));

@@ -100,7 +100,7 @@ public partial class GeneratorView
             button.Background=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
             toolbar.Children.Add(button);
         }
-        toolbar.HorizontalAlignment=HorizontalAlignment.Left;
+        toolbar.HorizontalAlignment=HorizontalAlignment.Right;
         toolbar.Width=188;
         Grid.SetRow(toolbar,0);
         designer.Children.Add(toolbar);

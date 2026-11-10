@@ -309,16 +309,19 @@ public partial class GeneratorView
     private void PlacePreviewElements(VoucherCardAppearance appearance)
     {
         if(_previewElements is null || _previewUsernamePlate is null)return;
-        _previewElements.Place(_previewNetworkName,appearance.TitlePosition??CardElementPanel.DefaultTitle);
+        _previewElements.Place(_previewNetworkName,appearance.TitlePosition??
+            (_showDemoArtwork?new CardElementPosition(0.53,0.12):CardElementPanel.DefaultTitle));
         _previewElements.Place(_previewUsernamePlate,appearance.CredentialsPosition??CardElementPanel.DefaultCredentials);
         _previewElements.Place(_previewPasswordPlate!,appearance.PasswordPosition??
             CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
         _previewElements.Place(_previewCapacity,appearance.CapacityPosition??new CardElementPosition(0.75,0.13));
-        _previewElements.Place(_previewPhone,appearance.PhonePosition??new CardElementPosition(0.08,0.91));
+        _previewElements.Place(_previewPhone,appearance.PhonePosition??
+            (_showDemoArtwork?new CardElementPosition(0.24,0.97):new CardElementPosition(0.08,0.91)));
         _previewElements.Place(_previewQr,appearance.QrPosition??new CardElementPosition(0.85,0.45));
         _previewElements.Place(_previewTime,appearance.TimePosition??new CardElementPosition(0.74,0.90));
-        _previewElements.Place(_previewDate,appearance.DatePosition??new CardElementPosition(0.48,0.90));
+        _previewElements.Place(_previewDate,appearance.DatePosition??
+            (_showDemoArtwork?new CardElementPosition(0.83,0.97):new CardElementPosition(0.48,0.90)));
         _previewElements.Place(_previewSequence,appearance.SequencePosition??new CardElementPosition(0.08,0.57));
         _previewElements.Place(_previewRoute,appearance.RoutePosition??new CardElementPosition(0.08,0.13));
     }
@@ -448,11 +451,13 @@ public partial class GeneratorView
         var changed=_currentAppearance!=appearance;
         _currentAppearance=appearance;
         if(changed)CardAppearanceChanged?.Invoke();
-        PlacePreviewElements(appearance);
         _showDemoArtwork=string.IsNullOrEmpty(appearance.TemplateImagePath) &&
             appearance.BackgroundColor==new VoucherCardAppearance().BackgroundColor &&
             string.IsNullOrEmpty(appearance.CapacityText) && string.IsNullOrEmpty(appearance.PhoneText) &&
             appearance.NetworkTitle==new VoucherCardAppearance().NetworkTitle;
+        PlacePreviewElements(appearance);
+        _previewPhone.FontSize=_showDemoArtwork?7:9;
+        _previewDate.FontSize=_showDemoArtwork?7:9;
         _previewNetworkName.Text=_showDemoArtwork?"نجم نت ★":appearance.NetworkTitle;
         _previewNetworkName.Visibility=appearance.ShowTitle?Visibility.Visible:Visibility.Collapsed;
         _previewCapacity.Text=appearance.CapacityText;
@@ -496,7 +501,12 @@ public partial class GeneratorView
             label.Foreground=ink;
         _templateImagePath=appearance.TemplateImagePath;
         if(_previewUsernamePlate is not null)
-            _previewUsernamePlate.Background=Brushes.Transparent;
+        {
+            _previewUsernamePlate.Background=_showDemoArtwork?Brushes.FloralWhite:Brushes.Transparent;
+            _previewUsernamePlate.BorderBrush=_showDemoArtwork?Brushes.Purple:null;
+            _previewUsernamePlate.BorderThickness=new Thickness(_showDemoArtwork?0.6:0);
+            _previewUsernamePlate.CornerRadius=new CornerRadius(_showDemoArtwork?3:0);
+        }
         if(_appearancePreviewBorder is not null)
         {
             _appearancePreviewBorder.BorderBrush=(Brush)new BrushConverter()
