@@ -172,7 +172,19 @@ public class PrintingView : UserControl
                 caption.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
             }
             part.Children.Add(caption);
-            part.Children.Add(control);
+            var choices=title switch
+            {
+                "عرض الكرت (مم)"=>new[]{"30","35","40","45","50","55","60","65","70","75","80"},
+                "ارتفاع الكرت (مم)"=>new[]{"15","16","18","19","20","22","25","30","35","40"},
+                "الصفوف"=>new[]{"1","2","3","4","5","6","8","10","12","15","16","18","20"},
+                "الأعمدة"=>new[]{"1","2","3","4","5","6","7","8","9","10"},
+                "الفاصل الأفقي" or "الفاصل الرأسي" or "الهامش"
+                    =>new[]{"0","0.2","0.3","0.5","0.7","1","1.5","2","3","4","5"},
+                _=>null
+            };
+            if(control is TextBox value && choices is not null)
+                part.Children.Add(PageUi.CompactNumberChoice(value,choices));
+            else part.Children.Add(control);
             host.Children.Add(part);
         }
         stack.Children.Add(ReferenceHeader("إعدادات الطباعة الأساسية"));
