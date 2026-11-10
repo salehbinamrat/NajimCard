@@ -365,14 +365,14 @@ public class PrintingView : UserControl
                         };
                     }
                     void AddText(string value,CardElementPosition pos,double size,
-                        bool enabled=true,bool numeric=false,bool credential=false)
+                        bool enabled=true,bool numeric=false,bool credential=false,bool usernameCredential=false)
                     {
                         if(!enabled || string.IsNullOrWhiteSpace(value))return;
                         var line=new TextBlock
                         {
                             Text=value,FontFamily=new FontFamily(
-                                numeric?"Consolas":appearance.FontFamily),
-                            FontWeight=FontWeights.Bold,FontSize=size,
+                                numeric && !usernameCredential?"Consolas":appearance.FontFamily),
+                            FontWeight=usernameCredential?FontWeights.ExtraBold:FontWeights.Bold,FontSize=size,
                             Foreground=ink,TextAlignment=TextAlignment.Center,
                             FlowDirection=FlowDirection.LeftToRight,
                             TextTrimming=TextTrimming.CharacterEllipsis,
@@ -387,7 +387,7 @@ public class PrintingView : UserControl
                         10*appearance.TitleScale,appearance.ShowTitle);
                     AddText(card.Username,appearance.CredentialsPosition??
                         CardElementPanel.DefaultCredentials,appearance.UsernameFontSize,
-                        numeric:true,credential:true);
+                        numeric:true,credential:true,usernameCredential:true);
                     AddText(card.Password,appearance.PasswordPosition??
                         CardElementPanel.PasswordBelow(appearance.CredentialsPosition),
                         10*appearance.PasswordScale,appearance.ShowPassword,numeric:true,credential:true);
