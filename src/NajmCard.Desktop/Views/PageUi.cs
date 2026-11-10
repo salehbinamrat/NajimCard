@@ -14,21 +14,23 @@ namespace NajmCard.Desktop.Views;
 /// <summary>Shared visual system: geometric burgundy panels, colorful vector icons and readable RTL grids.</summary>
 internal static class PageUi
 {
-    internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(230, 210, 211));
+    internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(88, 37, 58));
     internal static Brush Gold => new SolidColorBrush(Color.FromRgb(243, 207, 148));
     internal static Border Surface(UIElement content, string accent = "#80593D") => new()
     {
         Child = content, CornerRadius = new CornerRadius(12), Padding = new Thickness(12),
         Margin = new Thickness(0, 0, 0, 8), BorderThickness = new Thickness(1),
-        Background = new SolidColorBrush(Color.FromRgb(54, 16, 34)),
-        BorderBrush = (Brush)new BrushConverter().ConvertFromInvariantString(accent)!
+        Background = new SolidColorBrush(Color.FromRgb(255, 243, 223)),
+        BorderBrush = new SolidColorBrush(Color.FromRgb(114, 32, 58))
     };
     internal static StackPanel Column() => new() { Orientation = Orientation.Vertical };
     internal static TextBlock Title(string text) => new() { Text = text, FontSize = 23, FontWeight = FontWeights.Bold, FontFamily=new FontFamily("Arial"),
-        Foreground = Gold, Margin = new Thickness(0, 0, 0, 6) };
+        Foreground = Brushes.White,
+        Background = new SolidColorBrush(Color.FromRgb(114, 32, 58)),
+        Padding = new Thickness(8,5,8,5),Margin = new Thickness(0, 0, 0, 6) };
     internal static TextBlock Hint(string text) => new() { Text = text, Foreground = Muted, FontSize = 14, FontWeight = FontWeights.Medium,
         TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 17) };
-    internal static TextBlock Label(string text) => new() { Text = text, Foreground = Gold, FontSize = 15, FontWeight=FontWeights.SemiBold,
+    internal static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(74, 25, 46)), FontSize = 15, FontWeight=FontWeights.SemiBold,
         Margin = new Thickness(0, 6, 0, 3) };
     internal static Button Button(string name, bool primary = true) => new()
     {
