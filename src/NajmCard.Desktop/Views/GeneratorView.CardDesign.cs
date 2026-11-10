@@ -69,6 +69,19 @@ public partial class GeneratorView
         MaxWidth=280,Background=Brushes.Transparent,
         TextTrimming=TextTrimming.CharacterEllipsis,Visibility=Visibility.Collapsed
     };
+    private readonly TextBlock _previewCapacity=OverlayText();
+    private readonly TextBlock _previewPhone=OverlayText();
+    private readonly TextBlock _previewTime=OverlayText();
+    private readonly TextBlock _previewDate=OverlayText();
+    private readonly TextBlock _previewSequence=OverlayText();
+    private readonly TextBlock _previewRoute=OverlayText();
+    private readonly Image _previewQr=new() {Stretch=Stretch.Uniform,Visibility=Visibility.Collapsed};
+    private static TextBlock OverlayText()=>new()
+    {
+        FontFamily=new FontFamily("Arial"),FontSize=12,FontWeight=FontWeights.Bold,
+        TextAlignment=TextAlignment.Center,FlowDirection=FlowDirection.LeftToRight,
+        Background=Brushes.Transparent,Visibility=Visibility.Collapsed
+    };
     private CardElementPanel? _previewElements;
 
     private Grid BuildSampleVoucherVisual()
@@ -158,6 +171,13 @@ public partial class GeneratorView
         elements.Add(_previewPassword,CardElementPanel.PasswordBelow(null));
         _previewPackageName.MaxWidth=100;
         elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
+        elements.Add(_previewCapacity,new CardElementPosition(0.75,0.13));
+        elements.Add(_previewPhone,new CardElementPosition(0.08,0.91));
+        elements.Add(_previewQr,new CardElementPosition(0.85,0.45));
+        elements.Add(_previewTime,new CardElementPosition(0.74,0.90));
+        elements.Add(_previewDate,new CardElementPosition(0.48,0.90));
+        elements.Add(_previewSequence,new CardElementPosition(0.08,0.57));
+        elements.Add(_previewRoute,new CardElementPosition(0.08,0.13));
         EnableCardEditing(elements,_previewNetworkName,
             (style,position)=>style with {TitlePosition=position},
             (style,step)=>style with {TitleScale=ResizeScale(style.TitleScale,step)});
@@ -172,6 +192,21 @@ public partial class GeneratorView
         EnableCardEditing(elements,_previewPackageName,
             (style,position)=>style with {ProfilePosition=position},
             (style,step)=>style with {ProfileScale=ResizeScale(style.ProfileScale,step)});
+        EnableCardEditing(elements,_previewCapacity,
+            (style,position)=>style with {CapacityPosition=position},(style,_)=>style);
+        EnableCardEditing(elements,_previewPhone,
+            (style,position)=>style with {PhonePosition=position},(style,_)=>style);
+        EnableCardEditing(elements,_previewQr,
+            (style,position)=>style with {QrPosition=position},
+            (style,step)=>style with {QrSize=Math.Clamp(style.QrSize+step*2,12,72)});
+        EnableCardEditing(elements,_previewTime,
+            (style,position)=>style with {TimePosition=position},(style,_)=>style);
+        EnableCardEditing(elements,_previewDate,
+            (style,position)=>style with {DatePosition=position},(style,_)=>style);
+        EnableCardEditing(elements,_previewSequence,
+            (style,position)=>style with {SequencePosition=position},(style,_)=>style);
+        EnableCardEditing(elements,_previewRoute,
+            (style,position)=>style with {RoutePosition=position},(style,_)=>style);
         card.Children.Add(elements);
         return card;
     }
@@ -197,6 +232,8 @@ public partial class GeneratorView
                 ApplyCardAppearance(after,refreshArtwork:false);
                 if(before.UsernameFontSize!=after.UsernameFontSize)
                     _designFontSize.Text=after.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
+                if(before.QrSize!=after.QrSize)
+                    _designQrSize.Text=after.QrSize.ToString(CultureInfo.InvariantCulture);
                 _designStatus.Text="تم تغيير الحجم. احفظ إعدادات الباقة من الزر العلوي للاحتفاظ به.";
             }
             catch(Exception ex) when(ex is ArgumentException or FormatException or OverflowException)
@@ -255,6 +292,23 @@ public partial class GeneratorView
         _previewElements.Place(_previewPassword,appearance.PasswordPosition??
             CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
+        _previewElements.Place(_previewCapacity,appearance.CapacityPosition??new CardElementPosition(0.75,0.13));
+        _previewElements.Place(_previewPhone,appearance.PhonePosition??new CardElementPosition(0.08,0.91));
+        _previewElements.Place(_previewQr,appearance.QrPosition??new CardElementPosition(0.85,0.45));
+        _previewElements.Place(_previewTime,appearance.TimePosition??new CardElementPosition(0.74,0.90));
+        _previewElements.Place(_previewDate,appearance.DatePosition??new CardElementPosition(0.48,0.90));
+        _previewElements.Place(_previewSequence,appearance.SequencePosition??new CardElementPosition(0.08,0.57));
+        _previewElements.Place(_previewRoute,appearance.RoutePosition??new CardElementPosition(0.08,0.13));
+    }
+
+    private void RefreshQrPreview(string username)
+    {
+        if(_currentAppearance.ShowQr && !string.IsNullOrWhiteSpace(username))
+        {
+            try{_previewQr.Source=CardQrRenderer.Render(username);}
+            catch(ArgumentException ex){_previewQr.Source=null;_designStatus.Text=ex.Message;}
+        }
+        else _previewQr.Source=null;
     }
 
     private static string TemplateImageFolder => Path.Combine(Environment.GetFolderPath(
@@ -317,6 +371,17 @@ public partial class GeneratorView
         _designBorderWidth.Text=appearance.BorderWidth.ToString(CultureInfo.InvariantCulture);
         _designShowPassword.IsChecked=appearance.ShowPassword;
         _designShowProfile.IsChecked=appearance.ShowProfile;
+        _designShowCapacity.IsChecked=appearance.ShowCapacity;
+        _designShowPhone.IsChecked=appearance.ShowPhone;
+        _designShowQr.IsChecked=appearance.ShowQr;
+        _designShowTime.IsChecked=appearance.ShowTime;
+        _designShowDate.IsChecked=appearance.ShowDate;
+        _designShowTitle.IsChecked=appearance.ShowTitle;
+        _designShowSequence.IsChecked=appearance.ShowSequence;
+        _designShowRoute.IsChecked=appearance.ShowRoute;
+        _designCapacityText.Text=appearance.CapacityText;
+        _designPhoneText.Text=appearance.PhoneText;
+        _designQrSize.Text=appearance.QrSize.ToString(CultureInfo.InvariantCulture);
         ApplyCardAppearance(appearance);
     }
 
@@ -345,6 +410,14 @@ public partial class GeneratorView
         _designShowPassword.Unchecked+=Update;
         _designShowProfile.Checked+=Update;
         _designShowProfile.Unchecked+=Update;
+        foreach(var check in new[]{_designShowCapacity,_designShowPhone,_designShowQr,
+            _designShowTime,_designShowDate,_designShowTitle,_designShowSequence,_designShowRoute})
+        {
+            check.Checked+=Update;
+            check.Unchecked+=Update;
+        }
+        foreach(var field in new[]{_designCapacityText,_designPhoneText,_designQrSize})
+            field.TextChanged+=Update;
     }
 
     private void ApplyCardAppearance(VoucherCardAppearance appearance,bool refreshArtwork=true)
@@ -355,6 +428,21 @@ public partial class GeneratorView
         if(changed)CardAppearanceChanged?.Invoke();
         PlacePreviewElements(appearance);
         _previewNetworkName.Text=appearance.NetworkTitle+" ✦";
+        _previewNetworkName.Visibility=appearance.ShowTitle?Visibility.Visible:Visibility.Collapsed;
+        _previewCapacity.Text=appearance.CapacityText;
+        _previewPhone.Text=appearance.PhoneText;
+        _previewTime.Text=DateTime.Now.ToString("HH:mm",CultureInfo.InvariantCulture);
+        _previewDate.Text=DateTime.Now.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
+        _previewSequence.Text="0001";
+        _previewRoute.Text=SelectedService;
+        _previewCapacity.Visibility=appearance.ShowCapacity && appearance.CapacityText.Length>0?Visibility.Visible:Visibility.Collapsed;
+        _previewPhone.Visibility=appearance.ShowPhone && appearance.PhoneText.Length>0?Visibility.Visible:Visibility.Collapsed;
+        _previewTime.Visibility=appearance.ShowTime?Visibility.Visible:Visibility.Collapsed;
+        _previewDate.Visibility=appearance.ShowDate?Visibility.Visible:Visibility.Collapsed;
+        _previewSequence.Visibility=appearance.ShowSequence?Visibility.Visible:Visibility.Collapsed;
+        _previewRoute.Visibility=appearance.ShowRoute?Visibility.Visible:Visibility.Collapsed;
+        _previewQr.Width=appearance.QrSize;_previewQr.Height=appearance.QrSize;
+        _previewQr.Visibility=appearance.ShowQr?Visibility.Visible:Visibility.Collapsed;
         _previewPackageName.Text=_profile.SelectedItem?.ToString()??"الباقة";
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
@@ -374,6 +462,9 @@ public partial class GeneratorView
         _cardPreview.Foreground=ink;
         _previewPassword.Foreground=ink;
         _previewPassword.Background=Brushes.Transparent;
+        foreach(var label in new[]{_previewCapacity,_previewPhone,_previewTime,
+            _previewDate,_previewSequence,_previewRoute})
+            label.Foreground=ink;
         _templateImagePath=appearance.TemplateImagePath;
         if(_previewUsernamePlate is not null)
             _previewUsernamePlate.Background=Brushes.Transparent;
