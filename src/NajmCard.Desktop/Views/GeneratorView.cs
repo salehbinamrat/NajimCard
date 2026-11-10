@@ -124,7 +124,6 @@ public partial class GeneratorView : UserControl
     };
     private bool _preparing;
     private int _profileRequestVersion;
-
     private readonly CheckBox _samePassword = new()
     {
         Content = "استخدام رقم الكرت كلمة مرور أيضاً",
@@ -139,25 +138,21 @@ public partial class GeneratorView : UserControl
     private IReadOnlyList<UserManagerV6Profile> _umProfiles = [];
     private IReadOnlyList<Voucher> _batch = [];
     private bool _sending;
-
     private string SelectedService => _service.SelectedIndex switch
     {
         1 => "userman",
         2 => "pppoe",
         _ => "hotspot"
     };
-
     public GeneratorView(RouterGateway gateway, VoucherStore store, string routerKey = "", bool embedded=false)
     {
         _gateway = gateway;
         _store = store;
         _routerKey=string.IsNullOrWhiteSpace(routerKey)?"default:8728":routerKey.Trim();
-
         _service.Items.Add("Hotspot");
         _service.Items.Add("User Manager v6");
         _service.Items.Add("PPPoE");
         _service.SelectedIndex = 0;
-
         var form = PageUi.Column();
         var servicePanel=PageUi.Column();
         // Keep Hadramout's direct per-package save action visible beside
@@ -234,7 +229,6 @@ public partial class GeneratorView : UserControl
         var routeSurface=embedded?CompactSurface(servicePanel,"#D2AA61"):
             PageUi.Surface(servicePanel,"#D2AA61");
         form.Children.Add(routeSurface);
-
         // Same five aligned generation fields as the supplied screen;
         // page count is computed from actual rows/columns, never manually faked.
         _pagesEstimate.IsReadOnly=false;
@@ -259,7 +253,6 @@ public partial class GeneratorView : UserControl
             else cell.Children.Add(input);
             row.Children.Add(cell);
         }
-
         // Hadramout's username and password alphabets are independent.
         // The user may type exact ASCII character sets, without duplicate characters.
         var formatSection=PageUi.Column();
@@ -334,7 +327,6 @@ public partial class GeneratorView : UserControl
         var formatSurface=embedded?CompactSurface(formatSection,"#D2AA61"):
             PageUi.Surface(formatSection,"#D2AA61");
         form.Children.Add(formatSurface);
-
         _customerPanel.Children.Add(PageUi.Label("حساب مدير User Manager v6"));
         _customerPanel.Children.Add(_customer);
         _customerPanel.Visibility = Visibility.Collapsed;
