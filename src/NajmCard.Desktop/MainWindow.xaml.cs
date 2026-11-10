@@ -530,13 +530,10 @@ public partial class MainWindow : Window
     private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_gateway is null || NavList.SelectedItem is not NavEntry page) return;
-        bool isDashboard=page.Key=="dashboard";
         bool isImmersive=page.Key is "dashboard" or "generator";
-        // The voucher page owns its service tabs and all six print actions:
-        // remove duplicate 88px workspace title and 26px side gutters.
+        // Both compact pages draw their own shared title frame.
         WorkspaceHeaderRow.Height=isImmersive ? new GridLength(0) : new GridLength(88);
-        PageHost.Margin=page.Key=="generator" ? new Thickness(4,4,4,4)
-                        : isDashboard ? new Thickness(12,7,12,7)
+        PageHost.Margin=isImmersive ? new Thickness(12,7,12,7)
                         : new Thickness(12,10,12,10);
         PageTitle.Text = page.Title;
         PageSubtitle.Text = page.Subtitle;

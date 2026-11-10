@@ -24,7 +24,7 @@ class CreatorCreamBurgundyTests(unittest.TestCase):
         designer=source("GeneratorView.DesignerPanel.cs")
         for label in ("تغيير القالب","استيراد قالب","تصدير قالب"):
             self.assertNotIn('PageUi.Button("'+label+'"',designer)
-        self.assertIn('PageUi.Button("تغيير الثيم",false)',designer)
+        self.assertIn('PageUi.Button("تغيير صورة القالب",false)',designer)
         self.assertIn("ChooseTemplateImage()",designer)
 
     def test_cream_panels_maroon_borders_and_real_color_strip(self):

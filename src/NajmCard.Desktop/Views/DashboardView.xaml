@@ -46,7 +46,7 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
-    <Border Grid.Row="0" Margin="0,0,0,8" Style="{StaticResource DashboardPanel}" Padding="12,5">
+    <Border Grid.Row="0" Tag="DashboardPanel" Style="{StaticResource WorkspaceTitleFrame}">
       <Grid MinHeight="42">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -62,8 +62,7 @@
                        FontWeight="ExtraBold"/>
           </Border>
         </StackPanel>
-        <TextBlock Text="الرئيسية" FontSize="21" FontWeight="ExtraBold"
-                   Foreground="#61213B" VerticalAlignment="Center" Margin="6,0"/>
+        <TextBlock Text="الرئيسية" Style="{StaticResource WorkspaceTitleText}"/>
       </Grid>
     </Border>
     <!-- Row 1: total, live connections and compact CPU/RAM, not duplicated lifecycle cards. -->

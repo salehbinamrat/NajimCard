@@ -429,9 +429,14 @@ public partial class PrintingView : UserControl
                             TextTrimming=TextTrimming.CharacterEllipsis,
                             Background=Brushes.Transparent
                         };
-                        positioned.Add(credential
-                            ?CardCredentialPlate.Build(line,opts.CardWidthMm,opts.CardHeightMm)
-                            :Layer(line),pos);
+                        if(credential)
+                        {
+                            var plate=CardCredentialPlate.Build(line,opts.CardWidthMm,opts.CardHeightMm);
+                            if(usernameCredential)
+                                CardCredentialPlate.ApplyNumberBacking(plate,appearance,hasArtwork);
+                            positioned.Add(plate,pos);
+                        }
+                        else positioned.Add(Layer(line),pos);
                     }
                     AddText(appearance.NetworkTitle,
                         appearance.TitlePosition??CardElementPanel.DefaultTitle,

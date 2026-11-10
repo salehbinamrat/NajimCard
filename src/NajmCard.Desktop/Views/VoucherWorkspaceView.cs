@@ -1,7 +1,6 @@
 using System.Windows;
 using System.IO;
 using Microsoft.Win32;
-using NajmCard.Core.Services;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -75,8 +74,7 @@ public sealed class VoucherWorkspaceView : UserControl
         var fields=new Grid{ClipToBounds=true,UseLayoutRounding=true};
         fields.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         fields.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
-        // The top-level page title comes from MainWindow, never a second heading.
-        // Tabs already identify the service without a duplicate subtitle.
+        // The shared workspace title is docked above the service tabs.
         var tabs=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
         var tabButtons=new Dictionary<string,Button>(StringComparer.Ordinal);
         foreach(var (id,title) in new[]{
@@ -284,6 +282,12 @@ public sealed class VoucherWorkspaceView : UserControl
         });
         DockPanel.SetDock(footer,Dock.Bottom);
         root.Children.Add(footer);
+        var titleLabel=new TextBlock{Text="إنشاء وطباعة الكروت"};
+        titleLabel.SetResourceReference(StyleProperty,"WorkspaceTitleText");
+        var header=new Border{Child=titleLabel};
+        header.SetResourceReference(StyleProperty,"WorkspaceTitleFrame");
+        DockPanel.SetDock(header,Dock.Top);
+        root.Children.Add(header);
         root.Children.Add(contentGrid);
         Content=root;
     }

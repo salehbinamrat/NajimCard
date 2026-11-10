@@ -14,13 +14,13 @@ class HadramoutQuickSaveUi(unittest.TestCase):
     def test_direct_package_save_uses_existing_sqlite_preset(self):
         s=self.g
         self.assertIn('PageUi.Button("حفظ إعدادات الباقة",false)',s)
-        self.assertIn('WirePackageSaveNotification(quickSaveButton,packageSaveFeedback)',s)
+        self.assertIn('WirePackageSaveNotification(quickSaveButton)',s)
         self.assertIn("saveButton.Click+=",self.toast)
         self.assertIn('var saved=SaveCurrentPackage()',self.toast)
         self.assertIn('_store.SavePackagePreset(saved)',s)
         self.assertIn('PrintOptionsProvider?.Invoke()',s)
         self.assertIn('ReadCurrentAppearance()',s)
-        self.assertIn('servicePanel.Children.Add(packageSaveFeedback)',s)
+        self.assertNotIn("packageSaveFeedback",s)
 
     def test_username_only_is_default_even_for_new_unsaved_package(self):
         s=self.g
@@ -29,9 +29,11 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn("passwordModeRow.IsEnabled=!userOnly",s)
         self.assertIn("Grid.SetColumn(passwordModeRow,1)",s)
 
-    def test_save_feedback_resets_for_service_profile_and_customer(self):
+    def test_save_feedback_appears_only_in_the_toast(self):
         s=self.g
-        self.assertGreaterEqual(s.count('packageSaveFeedback.Visibility=Visibility.Collapsed'),4)
+        self.assertNotIn("packageSaveFeedback",s)
+        self.assertIn("message.Text=_status.Text",self.toast)
+        self.assertIn('_status.Text="";',self.toast)
         self.assertIn('if(_sending||_preparing||_restoringPreset)',s)
 
     def test_pre_creation_preview_always_uses_local_draft(self):

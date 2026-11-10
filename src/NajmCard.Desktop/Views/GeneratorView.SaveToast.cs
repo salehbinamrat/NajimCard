@@ -8,7 +8,7 @@ namespace NajmCard.Desktop.Views;
 
 public partial class GeneratorView
 {
-    private void WirePackageSaveNotification(Button saveButton,TextBlock feedback)
+    private void WirePackageSaveNotification(Button saveButton)
     {
         var popup=new Popup
         {
@@ -34,12 +34,8 @@ public partial class GeneratorView
         saveButton.Click+=(_,_) =>
         {
             var saved=SaveCurrentPackage();
-            feedback.Text=_status.Text;
-            feedback.Foreground=(Brush)new BrushConverter().ConvertFrom(
-                saved?"#176B49":"#9B2140")!;
-            feedback.Visibility=Visibility.Visible;
-            message.Text=(saved?"✓ تم الحفظ بنجاح — ":"⚠ تعذر حفظ إعدادات الكرت — ")+
-                _status.Text;
+            message.Text=_status.Text;
+            _status.Text="";
             surface.Background=(Brush)new BrushConverter().ConvertFrom(
                 saved?"#176D4F":"#96243F")!;
             popup.IsOpen=true;

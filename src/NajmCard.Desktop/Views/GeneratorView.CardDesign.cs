@@ -444,7 +444,9 @@ public partial class GeneratorView
         _previewPackageName.Text=builtInSample?"200\nريال":
             (_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
-        var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
+        var hasArtwork=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath) ||
+            NajmNetCardArtwork.IsDefault(appearance.NetworkTitle,appearance.TemplateImagePath,
+                appearance.BackgroundColor);
         var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.EffectiveElementColor)!;
         var numberInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
         _previewNetworkName.Foreground=ink;
@@ -473,7 +475,7 @@ public partial class GeneratorView
             label.Foreground=ink;
         _templateImagePath=appearance.TemplateImagePath;
         if(_previewUsernamePlate is not null)
-            _previewUsernamePlate.Background=Brushes.Transparent;
+            CardCredentialPlate.ApplyNumberBacking(_previewUsernamePlate,appearance,hasArtwork);
         if(_appearancePreviewBorder is not null)
         {
             _appearancePreviewBorder.BorderBrush=(Brush)new BrushConverter()

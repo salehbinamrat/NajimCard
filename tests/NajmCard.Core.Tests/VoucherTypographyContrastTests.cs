@@ -11,10 +11,10 @@ public sealed class VoucherTypographyContrastTests
             UsernameColor:"#FFE2A3",UsernameFontSize:20).Validate());
     }
     [Fact]
-    public void Nearly_Identical_Text_And_Background_Colors_Are_Rejected()
+    public void Nearly_Identical_Number_And_Background_Colors_Request_A_Backing()
     {
-        Assert.Throws<ArgumentException>(()=>
-            new VoucherCardAppearance(BackgroundColor:"#42152F",
-                UsernameColor:"#43162E").Validate());
+        var appearance=new VoucherCardAppearance(BackgroundColor:"#42152F",
+            UsernameColor:"#43162E").Validate();
+        Assert.True(appearance.NumberNeedsBacking());
     }
 }

@@ -19,7 +19,7 @@ class CompactScreenLayoutContract(unittest.TestCase):
         self.assertIsNotNone(x.find(".//w:RowDefinition[@"+XNS+"Name='WorkspaceHeaderRow']",NS))
         code=(UI/"MainWindow.xaml.cs").read_text(encoding="utf-8")
         self.assertIn("WorkspaceHeaderRow.Height",code)
-        self.assertIn("isDashboard",code)
+        self.assertIn("isImmersive",code)
 
     def test_dashboard_has_compact_non_scrolling_grid_and_percentages(self):
         x=ET.parse(UI/"Views"/"DashboardView.xaml").getroot()

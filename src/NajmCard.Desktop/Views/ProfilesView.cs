@@ -26,10 +26,10 @@ public sealed class ProfilesView : UserControl
     public ProfilesView(RouterGateway gateway,Action<string,string>? selectPackage=null,
         VoucherStore? audit=null)
     {
-        var main=PageUi.Column();
         // The application header already labels this page; service tabs provide context.
         var tabs=new TabControl{Margin=new Thickness(0,4,0,9)};
-        main.Children.Add(tabs);
+        tabs.HorizontalContentAlignment=HorizontalAlignment.Stretch;
+        tabs.VerticalContentAlignment=VerticalAlignment.Stretch;
         var sources=new[]{
             ("hotspot","هوتسبوت","#8F5BB9"),
             ("userman","مدير المستخدمين","#168D92"),
@@ -38,11 +38,10 @@ public sealed class ProfilesView : UserControl
         foreach(var (service,title,accent) in sources)
         {
             var panel=PageUi.Column();
-            panel.Children.Add(PageUi.Title("الباقات: "+title));
+
             var search=PageUi.Input();
             search.Width=320;search.Margin=new Thickness(0,6,0,6);
-            panel.Children.Add(PageUi.Label("البحث باسم الباقة"));
-            panel.Children.Add(search);
+
             var grid=PageUi.Table(("اسم الباقة","Name"),("السرعة","Speed"),
                 ("السعة","Capacity"),("الصلاحية","Validity"),
                 ("المدة","Uptime"),("المشتركون","Shared"),("السعر","Price"));
@@ -84,7 +83,7 @@ public sealed class ProfilesView : UserControl
             create.IsEnabled=false;
             if(service=="userman")save.IsEnabled=remove.IsEnabled=false;
             if(service=="pppoe")remove.IsEnabled=false;
-            actions.Children.Add(refresh);actions.Children.Add(save);
+            actions.Children.Add(save);
             actions.Children.Add(clear);actions.Children.Add(create);
             actions.Children.Add(remove);
             panel.Children.Add(actions);
@@ -103,10 +102,42 @@ public sealed class ProfilesView : UserControl
                 panel.Children.Add(limitGrid);
             }
             var status=PageUi.Status();
-            panel.Children.Add(status);
-            var tab=new TabItem{Header=title,
-                Content=new ScrollViewer{Content=PageUi.Surface(panel,accent),
-                    VerticalScrollBarVisibility=ScrollBarVisibility.Auto}};
+            status.MaxHeight=56;
+            status.SetBinding(ToolTipProperty,new System.Windows.Data.Binding(nameof(TextBlock.Text)){Source=status});
+            var toolbar=PageUi.Column();
+            toolbar.Children.Add(PageUi.Title("الباقات: "+title));
+            var filters=new WrapPanel();
+            filters.Children.Add(PageUi.Label("البحث باسم الباقة"));
+            filters.Children.Add(search);
+            refresh.VerticalAlignment=VerticalAlignment.Center;
+            filters.Children.Add(refresh);
+            toolbar.Children.Add(filters);
+            toolbar.Children.Add(status);
+            var pinned=PageUi.Surface(toolbar,accent);
+            var body=new DockPanel{LastChildFill=true};
+            DockPanel.SetDock(pinned,Dock.Top);
+            body.Children.Add(pinned);
+            var pageScroll=new ScrollViewer
+            {
+                Content=PageUi.Surface(panel,accent),
+                VerticalScrollBarVisibility=ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled
+            };
+            body.Children.Add(pageScroll);
+            foreach(var table in new[]{grid,limitGrid})
+            {
+                table.PreviewMouseWheel+=(_,e)=>
+                {
+                    var inner=table.Template.FindName("DG_ScrollViewer",table) as ScrollViewer;
+                    bool atEdge=inner is null || (e.Delta<0
+                        ?inner.VerticalOffset>=inner.ScrollableHeight
+                        :inner.VerticalOffset<=0);
+                    if(!atEdge)return;
+                    pageScroll.ScrollToVerticalOffset(pageScroll.VerticalOffset-e.Delta/3d);
+                    e.Handled=true;
+                };
+            }
+            var tab=new TabItem{Header=title,Content=body};
             tabs.Items.Add(tab);
             string Audit(string action,string profile,string outcome)
             {
@@ -240,6 +271,7 @@ public sealed class ProfilesView : UserControl
                 status.Text="جارٍ قراءة باقات "+title+" من RouterOS...";
                 try
                 {
+                    string? limitError=null;
                     if(service=="hotspot")
                     {
                         var rows=await gateway.ReadProfilesAsync();
@@ -258,20 +290,35 @@ public sealed class ProfilesView : UserControl
                     else
                     {
                         var profiles=await gateway.ReadUserManagerV6ProfilesAsync();
-                        var limits=await gateway.ReadUserManagerV6ProfileLimitSummaryAsync();
-                        limitGrid.ItemsSource=limits;
-                        var byName=limits.ToDictionary(x=>x.ProfileName,
-                            StringComparer.OrdinalIgnoreCase);
-                        all=profiles.Select(x=>new PackageRow(x.Name,"—",
-                            byName.TryGetValue(x.Name,out var data)
-                              ?Bytes(data.EffectiveTransferLimitBytes):"غير معروف",
-                            x.Validity,"—","—",x.Price,
-                            x.Owner+" | بدء "+x.StartsAt)).ToArray();
+                        PackageRow ToRow(UserManagerV6Profile profile,string capacity)=>new(
+                            profile.Name,"—",capacity,profile.Validity,"—","—",
+                            profile.Price,profile.Owner+" | بدء "+profile.StartsAt);
+                        all=profiles.Select(x=>ToRow(x,"غير معروف")).ToArray();
+                        Filter();
+                        status.Text="الباقات: "+all.Count+" | جارٍ قراءة المحددات…";
+                        limitGrid.ItemsSource=null;
+                        if(profiles.Count>0)
+                        {
+                            try
+                            {
+                                var limits=await gateway.ReadUserManagerV6ProfileLimitSummaryAsync();
+                                limitGrid.ItemsSource=limits;
+                                var byId=limits.ToLookup(x=>x.ProfileId,StringComparer.OrdinalIgnoreCase);
+                                var names=profiles.ToLookup(x=>x.Name,StringComparer.OrdinalIgnoreCase);
+                                all=profiles.Select(x=>ToRow(x,
+                                    names[x.Name].Count()==1 && byId[x.Id].FirstOrDefault() is { } data
+                                        ?Bytes(data.EffectiveTransferLimitBytes):"غير معروف")).ToArray();
+                            }
+                            catch(Exception ex)
+                            {
+                                limitError=" | تعذرت قراءة المحددات: "+ex.Message;
+                            }
+                        }
                     }
                     loaded=true;
                     Filter();Details();
                     status.Text="عدد الباقات الحقيقية: "+all.Count+
-                        " | آخر قراءة "+DateTime.Now.ToString("HH:mm:ss");
+                        " | آخر قراءة "+DateTime.Now.ToString("HH:mm:ss")+limitError;
                 }
                 catch(Exception ex)
                 {
@@ -281,10 +328,18 @@ public sealed class ProfilesView : UserControl
                 finally{busy=false;refresh.IsEnabled=true;Details();}
             }
             refresh.Click+=async(_,_)=>await ReadAsync();
-            tab.Loaded+=async(_,_)=>await ReadAsync();
+            tabs.Loaded+=async(_,_) =>
+            {
+                if(ReferenceEquals(tabs.SelectedItem,tab) && !loaded)await ReadAsync();
+            };
+            tabs.SelectionChanged+=async(_,e)=>
+            {
+                if(ReferenceEquals(e.Source,tabs) && ReferenceEquals(tabs.SelectedItem,tab) && !loaded)
+                    await ReadAsync();
+            };
         }
         tabs.SelectedIndex=0;
-        Content=PageUi.Wrap("باقات الشبكة","إدارة الباقات الثلاث وبياناتها الفعلية.",
-            PageUi.Surface(main,"#AB8458"));
+        FlowDirection=FlowDirection.RightToLeft;
+        Content=tabs;
     }
 }

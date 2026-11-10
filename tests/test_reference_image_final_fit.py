@@ -23,7 +23,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
     def test_creator_uses_full_available_page_instead_of_hidden_title_and_side_gutters(self):
         self.assertIn('isImmersive=page.Key is "dashboard" or "generator"',self.main)
         self.assertIn("WorkspaceHeaderRow.Height=isImmersive",self.main)
-        self.assertIn("new Thickness(4,4,4,4)",self.main)
+        self.assertIn("new Thickness(12,7,12,7)",self.main)
         self.assertNotIn("fields.Width=1140",self.workspace)
         self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Hidden",self.workspace)
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.workspace)
@@ -71,7 +71,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("popup.ShowDialog()",self.design)
         self.assertIn("ApplyCardAppearance(ReadCurrentAppearance())",self.design)
         self.assertNotIn("SaveCurrentPackage()",self.design)
-        self.assertIn("WirePackageSaveNotification(quickSaveButton,packageSaveFeedback)",self.creator)
+        self.assertIn("WirePackageSaveNotification(quickSaveButton)",self.creator)
         self.assertIn("var saved=SaveCurrentPackage()",
             (VIEW/"GeneratorView.SaveToast.cs").read_text(encoding="utf-8"))
         self.assertIn("TemplateImagePath",self.card)
