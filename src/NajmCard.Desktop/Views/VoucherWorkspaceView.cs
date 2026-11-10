@@ -57,7 +57,7 @@ public sealed class VoucherWorkspaceView : UserControl
         fields.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         // The top-level page title comes from MainWindow, never a second heading.
         // Tabs already identify the service without a duplicate subtitle.
-        var tabs=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,5)};
+        var tabs=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
         var tabButtons=new Dictionary<string,Button>(StringComparer.Ordinal);
         foreach(var (id,title) in new[]{
             ("hotspot","هوتسبوت"),("userman","يوزمنجر v6"),
@@ -69,7 +69,7 @@ public sealed class VoucherWorkspaceView : UserControl
             btn.Height=38;
             btn.FontSize=14;
             btn.FontWeight=FontWeights.ExtraBold;
-            btn.Margin=new Thickness(3);
+            btn.Margin=new Thickness(1);
             btn.Click+=(_,_)=>creator.SelectService(service);
             tabs.Children.Add(btn);
             tabButtons.Add(service,btn);
@@ -113,7 +113,7 @@ public sealed class VoucherWorkspaceView : UserControl
         var footer=new StackPanel
         {
             Background=(Brush)new BrushConverter().ConvertFrom("#270E20")!,
-            Margin=new Thickness(0,6,0,0)
+            Margin=new Thickness(0,2,0,0)
         };
         var status=new TextBlock
         {
@@ -122,15 +122,15 @@ public sealed class VoucherWorkspaceView : UserControl
             TextWrapping=TextWrapping.Wrap,FontSize=11,
             FontWeight=FontWeights.SemiBold,
             TextAlignment=TextAlignment.Center,
-            Margin=new Thickness(4,4,4,4)
+            Margin=new Thickness(3,1,3,2)
         };
         footer.Children.Add(status);
-        var buttonsGrid=new UniformGrid{Columns=7,Margin=new Thickness(4,0,4,6)};
+        var buttonsGrid=new UniformGrid{Columns=7,Margin=new Thickness(2,0,2,3)};
         footer.Children.Add(buttonsGrid);
         Button MakeButton(string title,string bg,string fg)
         {
             var button=PageUi.Button(title,false);
-            button.Margin=new Thickness(3);
+            button.Margin=new Thickness(2);
             button.MinWidth=0;
             button.Height=43;
             button.Background=(Brush)new BrushConverter().ConvertFromInvariantString(bg)!;
