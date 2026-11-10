@@ -69,7 +69,7 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
         self.assertIn('TargetType="DataGridCell"',self.theme)
     def test_no_extra_workspace_title_or_scrollbar(self):
         self.assertIn('ClipToBounds=true',self.creator)
-        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Auto",self.creator)
+        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Hidden",self.creator)
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.creator)
         self.assertIn("Columns=7",self.creator)
 if __name__=="__main__":unittest.main()
