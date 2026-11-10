@@ -70,7 +70,8 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("WindowStartupLocation.CenterOwner",self.design)
         self.assertIn("popup.ShowDialog()",self.design)
         self.assertIn("ApplyCardAppearance(ReadCurrentAppearance())",self.design)
-        self.assertIn("SaveCurrentPackage()",self.design)
+        self.assertNotIn("SaveCurrentPackage()",self.design)
+        self.assertIn('var saved=SaveCurrentPackage()',self.creator)
         self.assertIn("TemplateImagePath",self.card)
     def test_both_windows_release_targets_are_tested_before_four_packages(self):
         ci=(ROOT.parents[1]/".github/workflows/windows-ci.yml").read_text(encoding="utf-8")
