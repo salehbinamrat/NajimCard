@@ -56,10 +56,10 @@ class CompactScreenLayoutContract(unittest.TestCase):
 
     def test_dropdowns_use_burgundy_background_and_cream_foreground(self):
         page=(UI/"Views"/"VoucherWorkspaceView.cs").read_text(encoding="utf-8")
-        self.assertIn("CardDropdownStyle",page)
-        self.assertIn("CardDropdownItems",page)
-        self.assertIn("#301529",page)
-        self.assertIn("#FFF4E6",page)
-        self.assertNotIn("WhiteDropdownStyle",page)
+        theme=(UI/"Themes"/"BurgundyGold.xaml").read_text(encoding="utf-8")
+        self.assertIn('FindResource("DarkComboBox")',page)
+        self.assertIn('TargetType="ComboBoxItem"',theme)
+        self.assertIn('x:Name="PART_Popup"',theme)
+        self.assertNotIn("#FFF5E7",page)
 
 if __name__=="__main__":unittest.main()

@@ -28,43 +28,14 @@ public sealed class VoucherWorkspaceView : UserControl
 
         var root=new DockPanel{LastChildFill=true,FlowDirection=FlowDirection.RightToLeft,
             Background=(Brush)new BrushConverter().ConvertFrom("#1D0B19")!};
-        // Scoped burgundy/gold controls including dropdown items retain readable contrast.
-        var CardDropdownStyle=new Style(typeof(ComboBox));
-        CardDropdownStyle.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
-        CardDropdownStyle.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
-        CardDropdownStyle.Setters.Add(new Setter(Control.BorderBrushProperty,(Brush)new BrushConverter().ConvertFrom("#D2AA61")!));
-        CardDropdownStyle.Setters.Add(new Setter(Control.FontWeightProperty,FontWeights.SemiBold));
-        CardDropdownStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
-        var CardDropdownItems=new Style(typeof(ComboBoxItem));
-        CardDropdownItems.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
-        CardDropdownItems.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
-        // The Windows theme may draw the selected ComboBox text with its own
-        // near-white foreground even when Control.Foreground is overridden.
-        // An explicit data template keeps the selected value and popup choices
-        // readable on our light field background without overriding keyboard,
-        // mouse selection, or ComboBox's native dropdown behavior.
-        var comboText=new FrameworkElementFactory(typeof(TextBlock));
-        comboText.SetValue(TextBlock.ForegroundProperty,
-            (Brush)new BrushConverter().ConvertFrom("#231023")!);
-        comboText.SetValue(TextBlock.VerticalAlignmentProperty,VerticalAlignment.Center);
-        comboText.SetValue(TextBlock.TextTrimmingProperty,TextTrimming.CharacterEllipsis);
-        comboText.SetBinding(TextBlock.TextProperty,new System.Windows.Data.Binding("."));
-        var comboItemTemplate=new DataTemplate{VisualTree=comboText};
-        CardDropdownStyle.Setters.Add(new Setter(ItemsControl.ItemTemplateProperty,comboItemTemplate));
-        root.Resources[typeof(ComboBox)]=CardDropdownStyle;
-        root.Resources[typeof(ComboBoxItem)]=CardDropdownItems;
-        var whiteInput=new Style(typeof(TextBox));
-        whiteInput.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#301529")!));
-        whiteInput.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF4E6")!));
-        whiteInput.Setters.Add(new Setter(Control.BorderBrushProperty,
-            (Brush)new BrushConverter().ConvertFrom("#D2AA61")!));
-        whiteInput.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
-        whiteInput.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(6,4,6,4)));
-        root.Resources[typeof(TextBox)]=whiteInput;
-        var darkCheck=new Style(typeof(CheckBox));
-        darkCheck.Setters.Add(new Setter(Control.ForegroundProperty,
-            (Brush)new BrushConverter().ConvertFrom("#F7DFC0")!));
-        root.Resources[typeof(CheckBox)]=darkCheck;
+        // Keep the creator's compact dimensions on the shared dark templates.
+        var dropdown=new Style(typeof(ComboBox),(Style)Application.Current.FindResource("DarkComboBox"));
+        dropdown.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
+        root.Resources[typeof(ComboBox)]=dropdown;
+        var input=new Style(typeof(TextBox),(Style)Application.Current.FindResource(typeof(TextBox)));
+        input.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
+        input.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(6,4,6,4)));
+        root.Resources[typeof(TextBox)]=input;
         var fields=new Grid{ClipToBounds=true};
         fields.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         fields.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});

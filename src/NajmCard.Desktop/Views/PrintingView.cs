@@ -460,7 +460,7 @@ public class PrintingView : UserControl
                 };
                 var previewViewer=new DocumentViewer
                 {
-                    Document=prepared,Background=Brushes.White
+                    Document=prepared,Background=(Brush)Application.Current.FindResource("SurfaceBrush")
                 };
                 previewWindow.Content=previewViewer;
                 previewWindow.ShowDialog();
