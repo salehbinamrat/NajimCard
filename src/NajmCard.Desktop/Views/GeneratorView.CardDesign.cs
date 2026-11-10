@@ -146,10 +146,10 @@ public partial class GeneratorView
         elements.Add(passwordPlate,CardElementPanel.PasswordBelow(null));
         _previewPackageName.MaxWidth=90;
         elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
-        elements.Add(_previewCapacity,new CardElementPosition(0.75,0.13));
-        elements.Add(_previewPhone,new CardElementPosition(0.08,0.91));
+        elements.Add(_previewCapacity,new CardElementPosition(0.96,0.24));
+        elements.Add(_previewPhone,new CardElementPosition(0.37,0.98));
         elements.Add(_previewQr,new CardElementPosition(0.85,0.45));
-        elements.Add(_previewTime,new CardElementPosition(0.74,0.90));
+        elements.Add(_previewTime,new CardElementPosition(0.94,0.76));
         elements.Add(_previewDate,new CardElementPosition(0.48,0.90));
         elements.Add(_previewSequence,new CardElementPosition(0.08,0.57));
         elements.Add(_previewRoute,new CardElementPosition(0.08,0.13));
@@ -267,10 +267,10 @@ public partial class GeneratorView
         _previewElements.Place(_previewPasswordPlate!,appearance.PasswordPosition??
             CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
-        _previewElements.Place(_previewCapacity,appearance.CapacityPosition??new CardElementPosition(0.75,0.13));
-        _previewElements.Place(_previewPhone,appearance.PhonePosition??new CardElementPosition(0.08,0.91));
+        _previewElements.Place(_previewCapacity,appearance.CapacityPosition??new CardElementPosition(0.96,0.24));
+        _previewElements.Place(_previewPhone,appearance.PhonePosition??new CardElementPosition(0.37,0.98));
         _previewElements.Place(_previewQr,appearance.QrPosition??new CardElementPosition(0.85,0.45));
-        _previewElements.Place(_previewTime,appearance.TimePosition??new CardElementPosition(0.74,0.90));
+        _previewElements.Place(_previewTime,appearance.TimePosition??new CardElementPosition(0.94,0.76));
         _previewElements.Place(_previewDate,appearance.DatePosition??new CardElementPosition(0.48,0.90));
         _previewElements.Place(_previewSequence,appearance.SequencePosition??new CardElementPosition(0.08,0.57));
         _previewElements.Place(_previewRoute,appearance.RoutePosition??new CardElementPosition(0.08,0.13));
@@ -411,8 +411,8 @@ public partial class GeneratorView
             appearance.NetworkTitle,appearance.TemplateImagePath,
             appearance.BackgroundColor) &&
             !appearance.ShowCapacity && !appearance.ShowPhone && !appearance.ShowTime;
-        _previewCapacity.Text=builtInSample?"200 ريال · 2 جيجا":appearance.CapacityText;
-        _previewPhone.Text=builtInSample?"780757658 · 775321455":appearance.PhoneText;
+        _previewCapacity.Text=builtInSample?"2 جيجا":appearance.CapacityText;
+        _previewPhone.Text=builtInSample?"780757658 - 775321455":appearance.PhoneText;
         _previewTime.Text=builtInSample?"30 يوم":
             DateTime.Now.ToString("HH:mm",CultureInfo.InvariantCulture);
         _previewDate.Text=DateTime.Now.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
@@ -435,7 +435,8 @@ public partial class GeneratorView
         _previewQr.Width=appearance.QrSize;_previewQr.Height=appearance.QrSize;
         _previewQr.Visibility=appearance.ShowQr?Visibility.Visible:Visibility.Collapsed;
         RefreshQrPreview(_cardPreview.Text);
-        _previewPackageName.Text=(_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
+        _previewPackageName.Text=builtInSample?"200 ريال":
+            (_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
         var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
