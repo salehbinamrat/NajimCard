@@ -1,5 +1,4 @@
 using System.Windows.Controls.Primitives;
-using System.Windows.Threading;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -175,44 +174,7 @@ public partial class GeneratorView : UserControl
         packageSaveFeedback.FontSize=11;
         packageSaveFeedback.TextWrapping=TextWrapping.Wrap;
         packageSaveFeedback.Visibility=Visibility.Collapsed;
-        // Non-blocking anchored toast: reports the precise save result without
-        // displaying an unnecessary modal or hiding the creator controls.
-        var saveToast=new Popup
-        {
-            PlacementTarget=quickSaveButton,Placement=PlacementMode.Bottom,
-            AllowsTransparency=true,StaysOpen=false
-        };
-        var toastMessage=new TextBlock
-        {
-            FontFamily=new FontFamily("Arial"),FontSize=13,
-            FontWeight=FontWeights.Bold,Foreground=Brushes.White,
-            TextWrapping=TextWrapping.Wrap,MaxWidth=430
-        };
-        var toastSurface=new Border
-        {
-            Child=toastMessage,CornerRadius=new CornerRadius(8),
-            BorderThickness=new Thickness(1),
-            BorderBrush=(Brush)new BrushConverter().ConvertFrom("#EAC48A")!,
-            Padding=new Thickness(13,9),Margin=new Thickness(0,4,0,0),
-            Background=(Brush)new BrushConverter().ConvertFrom("#176D4F")!
-        };
-        saveToast.Child=toastSurface;
-        var toastTimer=new DispatcherTimer{Interval=TimeSpan.FromSeconds(3)};
-        toastTimer.Tick+=(_,_)=>{toastTimer.Stop();saveToast.IsOpen=false;};
-        quickSaveButton.Click+=(_,_) =>
-        {
-            var saved=SaveCurrentPackage();
-            packageSaveFeedback.Text=_status.Text;
-            packageSaveFeedback.Foreground=(Brush)new BrushConverter().ConvertFrom(
-                saved?"#176B49":"#9B2140")!;
-            packageSaveFeedback.Visibility=Visibility.Visible;
-            toastMessage.Text=(saved?"✓ تم الحفظ بنجاح — ":"⚠ تعذر حفظ إعدادات الكرت — ")+
-                _status.Text;
-            toastSurface.Background=(Brush)new BrushConverter().ConvertFrom(
-                saved?"#176D4F":"#96243F")!;
-            saveToast.IsOpen=true;
-            toastTimer.Stop();toastTimer.Start();
-        };
+        WirePackageSaveNotification(quickSaveButton,packageSaveFeedback);
         routeHeader.Children.Add(quickSaveButton);
         servicePanel.Children.Add(routeHeader);
         var routeInputs=new UniformGrid{Columns=2,Margin=new Thickness(0,1,0,1)};
