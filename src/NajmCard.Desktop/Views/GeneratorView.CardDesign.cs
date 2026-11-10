@@ -342,6 +342,7 @@ public partial class GeneratorView
         _designFontSize.Text=appearance.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
         _designBackground.Text=appearance.BackgroundColor;
         _designTextColor.Text=appearance.UsernameColor;
+        _designElementColor.Text=appearance.EffectiveElementColor;
         _designBorderColor.Text=appearance.BorderColor;
         _designBorderWidth.Text=appearance.BorderWidth.ToString(CultureInfo.InvariantCulture);
         _designShowPassword.IsChecked=appearance.ShowPassword;
@@ -378,7 +379,7 @@ public partial class GeneratorView
             }
         }
 
-        foreach(var field in new[]{_designFontSize,_designTextColor,_designBorderColor,_designBorderWidth})
+        foreach(var field in new[]{_designFontSize,_designTextColor,_designElementColor,_designBorderColor,_designBorderWidth})
             field.TextChanged+=Update;
         _designFontFamily.SelectionChanged+=Update;
         _designShowPassword.Checked+=Update;
@@ -439,11 +440,11 @@ public partial class GeneratorView
             (_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
-        var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
-        var backing=new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
+        var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.EffectiveElementColor)!;
+        var numberInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
         _previewNetworkName.Foreground=ink;
         _previewNetworkName.Background=Brushes.Transparent;
-        _previewPackageName.Foreground=builtInSample?Brushes.FloralWhite:ink;
+        _previewPackageName.Foreground=ink;
         _previewPackageName.Background=Brushes.Transparent;
         if(_defaultArtworkLayer is not null)
             _defaultArtworkLayer.Visibility=NajmNetCardArtwork.IsDefault(
@@ -454,7 +455,7 @@ public partial class GeneratorView
         _previewPassword.FontSize=10*appearance.PasswordScale;
         _previewPackageName.FontSize=(builtInSample?8:9)*appearance.ProfileScale;
         _cardPreview.FontSize=appearance.UsernameFontSize;
-        _cardPreview.Foreground=ink;
+        _cardPreview.Foreground=numberInk;
         _previewPassword.Foreground=ink;
         _previewPassword.Background=Brushes.Transparent;
         foreach(var label in new[]{_previewCapacity,_previewPhone,_previewTime,

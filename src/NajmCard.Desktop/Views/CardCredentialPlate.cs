@@ -30,7 +30,9 @@ internal static class CardCredentialPlate
             Child=new Viewbox
             {
                 Stretch=Stretch.Uniform,
-                StretchDirection=StretchDirection.Both,
+                StretchDirection=StretchDirection.DownOnly,
+                HorizontalAlignment=HorizontalAlignment.Center,
+                VerticalAlignment=VerticalAlignment.Center,
                 Child=text
             }
         };

@@ -67,11 +67,22 @@ public partial class GeneratorView
         };
         button.Click+=(_,_)=>popup.IsOpen=!popup.IsOpen;
         button.ToolTip="اختر من شريط الألوان أو اكتب رمز اللون في الخانة المجاورة.";
-        target.TextChanged+=(_,_)=>
+        void Paint()
         {
-            try{button.Background=(Brush)new BrushConverter().ConvertFrom(target.Text)!;}
+            try
+            {
+                var color=(Color)ColorConverter.ConvertFromString(target.Text)!;
+                button.Background=new SolidColorBrush(color);
+                button.Content=new TextBlock
+                {
+                    Text=caption,Foreground=0.2126*color.R+0.7152*color.G+0.0722*color.B>135
+                        ?Brushes.Black:Brushes.FloralWhite
+                };
+            }
             catch(FormatException){ /* Keep previous color until a complete hex code is entered. */ }
-        };
+        }
+        target.TextChanged+=(_,_)=>Paint();
+        Paint();
         return button;
     }
 
@@ -80,7 +91,7 @@ public partial class GeneratorView
         // The card keeps its aspect ratio. Size the row to the artwork and
         // appearance controls so spare viewport height stays outside the panel.
         var designer=new Grid();
-        for(int i=0;i<9;i++)
+        for(int i=0;i<7;i++)
             designer.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         void AddPanel(UIElement element,int row)
         {
@@ -89,7 +100,7 @@ public partial class GeneratorView
         }
         AddPanel(ReferenceHeader("معاينة وتصميم الكرت"),0);
         var toolbar=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,2)};
-        var templateImage=PageUi.Button("صورة القالب",false);
+        var templateImage=PageUi.Button("تغيير الثيم",false);
         var advanced=PageUi.Button("تعديلات متقدمة",false);
         foreach(var button in new[]{templateImage,advanced})
         {
@@ -104,7 +115,25 @@ public partial class GeneratorView
         toolbar.Width=188;
         Grid.SetRow(toolbar,0);
         designer.Children.Add(toolbar);
-        templateImage.Click+=(_,_)=>ChooseTemplateImage();
+        var themeMenu=new ContextMenu{PlacementTarget=templateImage,Placement=PlacementMode.Bottom};
+        var restoreTheme=new MenuItem{Header="قالب نجم نت الافتراضي"};
+        restoreTheme.Click+=(_,_)=>
+        {
+            try
+            {
+                var style=(ReadCurrentAppearance() with
+                {
+                    NetworkTitle="نجم نت",TemplateImagePath="",BackgroundColor="#FFF6EB"
+                }).Validate();
+                LoadCardAppearanceFields(style);
+            }
+            catch(ArgumentException ex){_designStatus.Text=ex.Message;}
+        };
+        var importTheme=new MenuItem{Header="اختيار صورة القالب"};
+        importTheme.Click+=(_,_)=>ChooseTemplateImage();
+        themeMenu.Items.Add(restoreTheme);
+        themeMenu.Items.Add(importTheme);
+        templateImage.Click+=(_,_)=>themeMenu.IsOpen=true;
 
         var previewRow=_designPreviewRow;
         previewRow.FlowDirection=FlowDirection.LeftToRight;
@@ -132,13 +161,11 @@ public partial class GeneratorView
             line.Children.Add(field);
             options.Children.Add(line);
         }
-        Option("نوع الخط",_designFontFamily);
         Option("حجم الخط",PageUi.CompactNumberChoice(_designFontSize,
             "8","10","12","14","16","18","20","22","24","26","28","30","32","36","40"));
-        Option("لون الرقم",PaletteButton("تغيير",_designTextColor));
-        Option("لون الحدود",PaletteButton("تغيير",_designBorderColor));
-        Option("سمك الحدود",PageUi.CompactNumberChoice(_designBorderWidth,
-            "0","0.5","1","1.5","2","3","4","5"));
+        Option("نوع الخط",_designFontFamily);
+        Option("لون النص",PaletteButton("تغيير",_designElementColor));
+        Option("لون رقم الكرت",PaletteButton("تغيير",_designTextColor));
         Grid.SetColumn(options,1);
         previewRow.Children.Add(options);
         AddPanel(previewRow,2);
@@ -251,20 +278,7 @@ public partial class GeneratorView
         designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
         designStatus.Margin=new Thickness(1,1,1,2);designStatus.FontSize=11;
         if(embedded)designStatus.Margin=new Thickness(1,0,1,1);
-        AddPanel(ReferenceHeader("شريط الألوان (لون الكرت)"),6);
-        var swatches=new UniformGrid{Rows=1,Tag="CardPalette",Margin=new Thickness(2,1,2,1)};
-        foreach(var hex in new[]{"#571474","#AB1472","#3938BE","#147BB8","#238235",
-            "#B3CE12","#F8CD24","#E68A18","#B91C24","#7B275A","#F299BF","#FFF4DF","#171118"})
-        {
-            var color=(Brush)new BrushConverter().ConvertFrom(hex)!;
-            var swatch=new Button{Background=color,Height=19,Margin=new Thickness(2,0,2,0),
-                BorderThickness=new Thickness(1),ToolTip=hex};
-            System.Windows.Automation.AutomationProperties.SetName(swatch,"لون خلفية الكرت "+hex);
-            swatch.Click+=(_,_)=>_designBackground.Text=hex;
-            swatches.Children.Add(swatch);
-        }
-        AddPanel(swatches,7);
-        AddPanel(designStatus,8);
+        AddPanel(designStatus,6);
         var designSurface=embedded?CompactSurface(designer,"#75203E")
             :PageUi.Surface(designer,"#75203E");
 
@@ -301,6 +315,7 @@ public partial class GeneratorView
             var background=Editable("لون خلفية البطاقة (#RRGGBB)",_designBackground.Text);
             var fontSize=Editable("حجم رقم الكرت",_designFontSize.Text);
             var numberColor=Editable("لون رقم الكرت",_designTextColor.Text);
+            var elementColor=Editable("لون النص",_designElementColor.Text);
             var borderColor=Editable("لون الحدود",_designBorderColor.Text);
             var borderWidth=Editable("سمك الحدود",_designBorderWidth.Text);
             var capacity=Editable("نص السعة (اختياري)",_designCapacityText.Text);
@@ -322,6 +337,7 @@ public partial class GeneratorView
                     CultureInfo.InvariantCulture);
                 _designBackground.Text=originalAppearance.BackgroundColor;
                 _designTextColor.Text=originalAppearance.UsernameColor;
+                _designElementColor.Text=originalAppearance.EffectiveElementColor;
                 _designBorderColor.Text=originalAppearance.BorderColor;
                 _designBorderWidth.Text=originalAppearance.BorderWidth.ToString(
                     CultureInfo.InvariantCulture);
@@ -381,6 +397,7 @@ public partial class GeneratorView
                     }
                     _designTitle.Text=name.Text;_designBackground.Text=background.Text;
                     _designFontSize.Text=fontSize.Text;_designTextColor.Text=numberColor.Text;
+                    _designElementColor.Text=elementColor.Text;
                     _designBorderColor.Text=borderColor.Text;
                     _designBorderWidth.Text=borderWidth.Text;
                     _designCapacityText.Text=capacity.Text;

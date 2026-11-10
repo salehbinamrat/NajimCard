@@ -168,7 +168,7 @@ public partial class PrintingView : UserControl
             "صفوف يسار","صفوف يمين","صفوف متعرجة","أعمدة يسار","أعمدة يمين"
         },SelectedIndex=1};
         var basicPrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,1,0,2)};
-        var pagePrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,1,0,2)};
+        var pagePrintFields=new UniformGrid{Columns=embedded?3:5,Margin=new Thickness(0,1,0,2)};
         void Field(UniformGrid host,string title,FrameworkElement control)
         {
             control.MinWidth=0;
@@ -205,8 +205,11 @@ public partial class PrintingView : UserControl
         Field(basicPrintFields,"الورق",paper);
         stack.Children.Add(basicPrintFields);
 
-        Field(pagePrintFields,"عرض الكرت (مم)",width);
-        Field(pagePrintFields,"ارتفاع الكرت (مم)",height);
+        if(!embedded)
+        {
+            Field(pagePrintFields,"عرض الكرت (مم)",width);
+            Field(pagePrintFields,"ارتفاع الكرت (مم)",height);
+        }
         Field(pagePrintFields,"الهامش",margin);
         Field(pagePrintFields,"الفاصل الأفقي",gapX);
         Field(pagePrintFields,"الفاصل الرأسي",gapY);
@@ -383,7 +386,8 @@ public partial class PrintingView : UserControl
                 appearance.NetworkTitle,appearance.TemplateImagePath,
                 appearance.BackgroundColor);
             if(builtinArtwork)hasArtwork=true;
-            var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
+            var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.EffectiveElementColor)!;
+            var numberInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
             var borderInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.BorderColor)!;
             var slotsByPage=plan.Slots.ToLookup(slot=>slot.PageIndex);
             for(int pageNo=0;pageNo<plan.PdfPages;pageNo++)
@@ -406,7 +410,7 @@ public partial class PrintingView : UserControl
                         if(!hasArtwork)return text;
                         return new Border
                         {
-                            Background=new SolidColorBrush(ChooseArtworkTextBacking(appearance.UsernameColor)),
+                            Background=new SolidColorBrush(ChooseArtworkTextBacking(appearance.EffectiveElementColor)),
                             CornerRadius=new CornerRadius(3),Padding=new Thickness(1,0,1,0),
                             Child=text
                         };
@@ -420,7 +424,7 @@ public partial class PrintingView : UserControl
                             Text=value,FontFamily=new FontFamily(
                                 numeric && !usernameCredential?"Consolas":appearance.FontFamily),
                             FontWeight=usernameCredential?FontWeights.ExtraBold:FontWeights.Bold,FontSize=size,
-                            Foreground=ink,TextAlignment=TextAlignment.Center,
+                            Foreground=usernameCredential?numberInk:ink,TextAlignment=TextAlignment.Center,
                             FlowDirection=FlowDirection.LeftToRight,
                             TextTrimming=TextTrimming.CharacterEllipsis,
                             Background=Brushes.Transparent

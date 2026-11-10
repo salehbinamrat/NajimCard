@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Media.Imaging;
 
 namespace NajmCard.Desktop.Views;
 
@@ -19,7 +20,15 @@ internal static class NajmNetCardArtwork
         string.IsNullOrWhiteSpace(templateImagePath) &&
         string.Equals(paperColor,"#FFF6EB",StringComparison.OrdinalIgnoreCase);
 
-    internal static FrameworkElement Create(double width,double height)
+    private static readonly Lazy<BitmapSource> Artwork = new(RenderArtwork);
+
+    internal static Image Create(double width,double height) => new()
+    {
+        Width=width,Height=height,Source=Artwork.Value,
+        Stretch=Stretch.Fill,IsHitTestVisible=false
+    };
+
+    private static BitmapSource RenderArtwork()
     {
         var canvas=new Canvas
         {
@@ -79,13 +88,13 @@ internal static class NajmNetCardArtwork
         };
         Canvas.SetLeft(star,320);Canvas.SetTop(star,12);
         canvas.Children.Add(star);
-        return new Viewbox
-        {
-            Width=width,Height=height,
-            Stretch=Stretch.Fill,Child=canvas,
-            HorizontalAlignment=HorizontalAlignment.Stretch,
-            VerticalAlignment=VerticalAlignment.Stretch,
-            IsHitTestVisible=false
-        };
+        var size=new Size(canvas.Width,canvas.Height);
+        canvas.Measure(size);
+        canvas.Arrange(new Rect(size));
+        canvas.UpdateLayout();
+        var image=new RenderTargetBitmap(1000,380,192,192,PixelFormats.Pbgra32);
+        image.Render(canvas);
+        image.Freeze();
+        return image;
     }
 }

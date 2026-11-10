@@ -21,7 +21,7 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
         self.assertEqual(window.attrib["MaxHeight"],"730")
         host=read(V/"VoucherWorkspaceView.cs")
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",host)
-        self.assertIn('MakeButton("طباعة الدفعة"',host)
+        self.assertIn('MakeButton("طباعة دفعة"',host)
 
     def test_history_row_click_fills_router_fields_without_connecting(self):
         window=ET.parse(DESKTOP/"MainWindow.xaml").getroot()
@@ -64,7 +64,7 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
         self.assertIn("CheckBox",printer)
         self.assertIn("Excel",printer)
         self.assertIn("CSV",printer)
-        self.assertEqual(host.count('MakeButton("طباعة الدفعة"'),1)
+        self.assertEqual(host.count('MakeButton("طباعة دفعة"'),1)
         self.assertIn('actions.Visibility=embedded?Visibility.Collapsed:Visibility.Visible',printer)
 
     def test_batch_export_does_not_include_passwords(self):

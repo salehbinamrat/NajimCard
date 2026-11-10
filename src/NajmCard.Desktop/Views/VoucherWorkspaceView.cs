@@ -150,7 +150,7 @@ public sealed class VoucherWorkspaceView : UserControl
             Margin=new Thickness(3,1,3,2)
         };
         footer.Children.Add(status);
-        var buttonsGrid=new UniformGrid{Columns=7,Margin=new Thickness(2,0,2,3)};
+        var buttonsGrid=new UniformGrid{Columns=6,Margin=new Thickness(2,0,2,3)};
         footer.Children.Add(buttonsGrid);
         Button MakeButton(string title,string bg,string fg)
         {
@@ -171,13 +171,12 @@ public sealed class VoucherWorkspaceView : UserControl
             return button;
         }
         var actions=new[]{
-            MakeButton("إنشاء وإرسال وحفظ","#13653E","#FFF5E6"),
+            MakeButton("إنشاء وإرسال واحد","#13653E","#FFF5E6"),
             MakeButton("إنشاء وإرسال","#EAC477","#49142C"),
-            MakeButton("إعادة الإعدادات","#165B65","#FFFFFF"),
-            MakeButton("معاينة قبل الطباعة","#1756AE","#FFFFFF"),
-            MakeButton("حفظ PDF","#641A81","#FFF5E6"),
+            MakeButton("معاينة قبل الإنشاء","#1756AE","#FFFFFF"),
+            MakeButton("ملف PDF","#641A81","#FFF5E6"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
-            MakeButton("طباعة الدفعة","#6532A6","#FFFFFF")
+            MakeButton("طباعة دفعة","#6532A6","#FFFFFF")
         };
         async Task Execute(Func<Task> work)
         {
@@ -239,26 +238,13 @@ public sealed class VoucherWorkspaceView : UserControl
             status.Text+=" | تم تصدير "+confirmed.Length+" كرتا دون كلمات المرور "+
                 (csv&&excel?"(CSV وExcel)":csv?"(CSV)":"(Excel)")+".";
         }
-        // Hadramout behavior: choose the save path BEFORE generation or any
-        // RouterOS mutations, and stop if the dialog was cancelled.
         actions[0].Click+=async(_,_)=>await Execute(async()=>
         {
-            var destination=printer.ChoosePdfDestination();
-            if(destination is null)
-            {
-                status.Text="ألغيت عملية الحفظ قبل إنشاء أي كرت أو إرسال أي أمر.";
-                return;
-            }
-            if(!await creator.CreateAndSendAsync())
-            {
-                status.Text="لم تنجح كروت مؤكدة؛ لم ينشأ ملف PDF.";
-                return;
-            }
-            var saved=await printer.SavePdfToPathAsync(destination);
-            status.Text=saved
-                ?"أُرسلت الكروت المؤكدة وحُفظ PDF بنجاح.":
-                "حُفظت نتائج الإرسال لكن فشل إخراج PDF؛ لا تعِد الإرسال بسبب فشل الملف.";
-            await ExportAdditionalAsync();
+            var sent=await creator.CreateAndSendAsync(singleCard:true);
+            status.Text=sent
+                ?"أُرسل كرت واحد وحُفظت حالته."
+                :"لم يتأكد إرسال الكرت. راجع حالة الدفعة قبل إعادة المحاولة.";
+            if(sent)await ExportAdditionalAsync();
         });
         actions[1].Click+=async(_,_)=>await Execute(async()=>
         {
@@ -268,7 +254,6 @@ public sealed class VoucherWorkspaceView : UserControl
                 "تعذر تأكيد الإرسال. راجع حالات الدفعة قبل إعادة المحاولة.";
             if(sent)await ExportAdditionalAsync();
         });
-        actions[2].Click+=(_,_)=>creator.RestoreSavedPackageSettings();
         async Task PreviewDraftPdf()
         {
             var options=printer.GetOptions();
@@ -286,23 +271,14 @@ public sealed class VoucherWorkspaceView : UserControl
                 status.Text="حُفظ ملف المعاينة التجريبية هنا: "+path;
             }
         }
-        actions[3].Click+=async(_,_)=>await Execute(async()=>
-        {
-            if(creator.HasBatch || printer.HasSavedBatchSelection)
-            {
-                status.Text=printer.PreparePreview()
-                    ? "معاينة الكروت التي ثبت إرسالها في الدفعة المحددة."
-                    : "لم تُجهز معاينة الطباعة؛ راجع حالات إرسال الدفعة وإعدادات الورق.";
-            }
-            else await PreviewDraftPdf();
-        });
-        actions[4].Click+=async(_,_)=>await Execute(printer.SavePdfAsync);
-        actions[5].Click+=async(_,_)=>await Execute(async()=>
+        actions[2].Click+=async(_,_)=>await Execute(PreviewDraftPdf);
+        actions[3].Click+=async(_,_)=>await Execute(printer.SavePdfAsync);
+        actions[4].Click+=async(_,_)=>await Execute(async()=>
         {
             if(creator.HasBatch || printer.HasSavedBatchSelection)await printer.PreviewPdfAsync();
             else await PreviewDraftPdf();
         });
-        actions[6].Click+=(_,_)=>_ = Execute(()=>
+        actions[5].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.PrintBatch();return Task.CompletedTask;
         });

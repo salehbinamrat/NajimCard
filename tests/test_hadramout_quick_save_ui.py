@@ -26,23 +26,21 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         s=self.g
         self.assertIn('ItemsSource=new[]{"اسم مستخدم فقط","اسم مستخدم وكلمة مرور"},\n        SelectedIndex=0',s)
         self.assertIn('v?.UsernameOnly==false?1:0',s)
-        self.assertIn('sameCell.Visibility=differentCell.Visibility=',s)
-        self.assertIn("passwordModeRow.Visibility=userOnly?Visibility.Collapsed:Visibility.Visible",s)
-        self.assertIn("Grid.SetColumn(usernameGroup,1)",s)
+        self.assertIn("passwordModeRow.IsEnabled=!userOnly",s)
+        self.assertIn("Grid.SetColumn(passwordModeRow,1)",s)
 
     def test_save_feedback_resets_for_service_profile_and_customer(self):
         s=self.g
         self.assertGreaterEqual(s.count('packageSaveFeedback.Visibility=Visibility.Collapsed'),4)
         self.assertIn('if(_sending||_preparing||_restoringPreset)',s)
 
-    def test_failed_preview_does_not_claim_success(self):
-        self.assertIn('status.Text=printer.PreparePreview()',self.w)
-        self.assertIn('لم تُجهز معاينة الطباعة',self.w)
-        self.assertNotIn('printer.PreparePreview();\n                status.Text="معاينة الكروت',self.w)
+    def test_pre_creation_preview_always_uses_local_draft(self):
+        self.assertIn("Execute(PreviewDraftPdf)",self.w)
+        self.assertIn("await creator.BuildDraftPreviewAsync()",self.w)
 
     def test_draft_pdf_uses_current_options_without_changing_the_issued_batch(self):
         start=self.g.index("internal Task<Voucher[]> BuildDraftPreviewAsync()")
-        end=self.g.index("public async Task<bool> CreateAndSendAsync()",start)
+        end=self.g.index("public async Task<bool> CreateAndSendAsync(",start)
         draft=self.g[start:end]
         self.assertIn("ReadGenerationOptions(forPreview:true)",draft)
         self.assertIn("VoucherGenerator.Generate(options)",draft)
@@ -57,7 +55,7 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn('x.DeliveryStatus=="SENT"&&x.SentToRouter',printer)
         self.assertIn("await _renderPdfAsync(job.Cards,job.Style,job.Options,path)",printer)
         self.assertIn("worker.SetApartmentState(ApartmentState.STA)",printer)
-        self.assertIn("await printer.SavePdfToPathAsync(destination)",self.w)
+        self.assertIn("Execute(printer.SavePdfAsync)",self.w)
 
 if __name__=="__main__":
     unittest.main()
