@@ -38,6 +38,19 @@ public sealed class VoucherWorkspaceView : UserControl
         var CardDropdownItems=new Style(typeof(ComboBoxItem));
         CardDropdownItems.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
         CardDropdownItems.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
+        // The Windows theme may draw the selected ComboBox text with its own
+        // near-white foreground even when Control.Foreground is overridden.
+        // An explicit data template keeps the selected value and popup choices
+        // readable on our light field background without overriding keyboard,
+        // mouse selection, or ComboBox's native dropdown behavior.
+        var comboText=new FrameworkElementFactory(typeof(TextBlock));
+        comboText.SetValue(TextBlock.ForegroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#231023")!);
+        comboText.SetValue(TextBlock.VerticalAlignmentProperty,VerticalAlignment.Center);
+        comboText.SetValue(TextBlock.TextTrimmingProperty,TextTrimming.CharacterEllipsis);
+        comboText.SetBinding(TextBlock.TextProperty,new System.Windows.Data.Binding("."));
+        var comboItemTemplate=new DataTemplate{VisualTree=comboText};
+        CardDropdownStyle.Setters.Add(new Setter(ItemsControl.ItemTemplateProperty,comboItemTemplate));
         root.Resources[typeof(ComboBox)]=CardDropdownStyle;
         root.Resources[typeof(ComboBoxItem)]=CardDropdownItems;
         var whiteInput=new Style(typeof(TextBox));
