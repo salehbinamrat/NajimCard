@@ -39,7 +39,7 @@
                             <TextBlock Text="تسجيل الدخول إلى MikroTik" Foreground="#FFF0D7" FontWeight="Bold" FontSize="21"/>
                         </DockPanel>
                     </Border>
-                    <Border Style="{StaticResource CardPanel}" BorderBrush="#A38356">
+                    <Border Style="{StaticResource CardPanel}" Background="#341527" BorderBrush="#A38356">
                         <StackPanel>
                             <TextBlock Text="نوع الاتصال" Foreground="{StaticResource GoldBrightBrush}" FontWeight="SemiBold" FontSize="16"/>
                             <StackPanel Orientation="Horizontal" Margin="0,11,0,10">
