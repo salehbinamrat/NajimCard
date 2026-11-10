@@ -4,6 +4,9 @@
     <SolidColorBrush x:Key="SurfaceBrush" Color="#361021" />
     <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#45162A" />
     <SolidColorBrush x:Key="BurgundyBrush" Color="#621B37" />
+    <SolidColorBrush x:Key="CreamPanelBrush" Color="#FFF3DF" />
+    <SolidColorBrush x:Key="CreamTextBrush" Color="#4B1B32" />
+    <SolidColorBrush x:Key="MaroonLineBrush" Color="#72203A" />
     <SolidColorBrush x:Key="GoldBrush" Color="#DCB86E" />
     <SolidColorBrush x:Key="GoldBrightBrush" Color="#FFE3A2" />
     <SolidColorBrush x:Key="TextBrush" Color="#FFF5E8" />
@@ -18,7 +21,7 @@
     <Style TargetType="Window"><Setter Property="FontFamily" Value="Arial"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/><Setter Property="Background" Value="{StaticResource CanvasBrush}"/><Setter Property="FlowDirection" Value="RightToLeft"/></Style>
     <Style TargetType="TextBlock"><Setter Property="FontFamily" Value="Arial"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/></Style>
     <Style TargetType="Label"><Setter Property="FontFamily" Value="Arial"/><Setter Property="Foreground" Value="{StaticResource MutedBrush}"/><Setter Property="Margin" Value="0,2,0,6"/></Style>
-    <Style TargetType="TextBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/><Setter Property="Background" Value="#270D1D"/><Setter Property="CaretBrush" Value="{StaticResource GoldBrush}"/><Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="10,8"/><Setter Property="MinHeight" Value="42"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="FontSize" Value="14"/></Style>
+    <Style TargetType="TextBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="Foreground" Value="{StaticResource CreamTextBrush}"/><Setter Property="Background" Value="#FFFAF0"/><Setter Property="CaretBrush" Value="{StaticResource GoldBrush}"/><Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="10,8"/><Setter Property="MinHeight" Value="42"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="FontSize" Value="14"/></Style>
     <Style TargetType="PasswordBox"><Setter Property="FontFamily" Value="Arial"/><Setter Property="Foreground" Value="{StaticResource TextBrush}"/><Setter Property="Background" Value="#270D1D"/><Setter Property="CaretBrush" Value="{StaticResource GoldBrush}"/><Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/><Setter Property="Padding" Value="10,8"/><Setter Property="MinHeight" Value="42"/><Setter Property="FontSize" Value="14"/></Style>
     <Style TargetType="CheckBox">
         <Setter Property="FontFamily" Value="Arial"/>
@@ -208,7 +211,7 @@
         <Setter Property="Foreground" Value="{StaticResource GoldBrush}"/><Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
     </Style>
     <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}"><Setter Property="Background" Value="#9E4050"/><Setter Property="Foreground" Value="White"/></Style>
-    <Style x:Key="CardPanel" TargetType="Border"><Setter Property="Background" Value="{StaticResource SurfaceBrush}"/><Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="16"/><Setter Property="Padding" Value="21"/><Setter Property="Margin" Value="0,0,0,17"/></Style>
+    <Style x:Key="CardPanel" TargetType="Border"><Setter Property="Background" Value="{StaticResource CreamPanelBrush}"/><Setter Property="BorderBrush" Value="{StaticResource MaroonLineBrush}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="16"/><Setter Property="Padding" Value="21"/><Setter Property="Margin" Value="0,0,0,17"/></Style>
     <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="FontSize" Value="22"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="{StaticResource GoldBrightBrush}"/><Setter Property="Margin" Value="0,0,0,15"/></Style>
     <!-- Shared table colors for normal, alternating and selected rows. -->
     <Style TargetType="DataGrid">
