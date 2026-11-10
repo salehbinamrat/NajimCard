@@ -22,7 +22,25 @@ public sealed record VoucherCardAppearance(
     CardElementPosition? PasswordPosition = null,
     double TitleScale = 1,
     double PasswordScale = 1,
-    double ProfileScale = 1)
+    double ProfileScale = 1,
+    bool ShowTitle = true,
+    bool ShowCapacity = false,
+    bool ShowPhone = false,
+    bool ShowQr = false,
+    bool ShowTime = false,
+    bool ShowDate = false,
+    bool ShowSequence = false,
+    bool ShowRoute = false,
+    string CapacityText = "",
+    string PhoneText = "",
+    double QrSize = 24,
+    CardElementPosition? CapacityPosition = null,
+    CardElementPosition? PhonePosition = null,
+    CardElementPosition? QrPosition = null,
+    CardElementPosition? TimePosition = null,
+    CardElementPosition? DatePosition = null,
+    CardElementPosition? SequencePosition = null,
+    CardElementPosition? RoutePosition = null)
 {
     private static readonly HashSet<string> AllowedFonts = new(
         ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
@@ -47,7 +65,8 @@ public sealed record VoucherCardAppearance(
                 RegexOptions.CultureInvariant))
                 throw new ArgumentException("لون الكرت يجب أن يكون بصيغة #RRGGBB.");
         }
-        foreach(var position in new[]{TitlePosition,CredentialsPosition,ProfilePosition,PasswordPosition})
+        foreach(var position in new[]{TitlePosition,CredentialsPosition,ProfilePosition,PasswordPosition,
+            CapacityPosition,PhonePosition,QrPosition,TimePosition,DatePosition,SequencePosition,RoutePosition})
         {
             if(position is not null && (!double.IsFinite(position.X) || !double.IsFinite(position.Y)
                 || position.X is < 0 or > 1 || position.Y is < 0 or > 1))
@@ -58,6 +77,11 @@ public sealed record VoucherCardAppearance(
             if(!double.IsFinite(scale) || scale is < 0.4 or > 4)
                 throw new ArgumentException("حجم عنصر الكرت خارج النطاق المسموح.");
         }
+        if(!double.IsFinite(QrSize) || QrSize is < 12 or > 72)
+            throw new ArgumentException("حجم رمز QR يجب أن يكون بين 12 و72.");
+        if(PhoneText is null || PhoneText.Length>48 || PhoneText.Any(char.IsControl) ||
+           CapacityText is null || CapacityText.Length>48 || CapacityText.Any(char.IsControl))
+            throw new ArgumentException("بيانات الهاتف أو السعة غير صالحة.");
         // WCAG relative luminance: keep voucher numbers legible regardless
         // of a custom dark burgundy or a bright paper background.
         if(ContrastRatio(BackgroundColor,UsernameColor)<4.5)
