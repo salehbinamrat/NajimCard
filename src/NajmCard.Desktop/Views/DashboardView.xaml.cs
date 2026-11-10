@@ -75,12 +75,15 @@ public partial class DashboardView : UserControl
     {
         if(!IsLoaded || _liveTelemetryRunning || _refreshing)return;
         _liveTelemetryRunning=true;
-        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(4));
-        _telemetryToken=timeout;
+        // A 4-second cancellation previously disposed the shared RouterOS TCP
+        // session while other views still held a gateway to it. Use the command
+        // client's built-in RouterOS timeouts and reconnect logic instead.
+        using var visibility=new CancellationTokenSource();
+        _telemetryToken=visibility;
         try
         {
-            var resource=await _gateway.ReadResourceAsync(timeout.Token);
-            if(!IsLoaded || timeout.IsCancellationRequested)return;
+            var resource=await _gateway.ReadResourceAsync();
+            if(!IsLoaded || visibility.IsCancellationRequested)return;
             Cpu.Text=resource.CpuLoad+"%";
             CpuProgress.Value=double.TryParse(resource.CpuLoad,NumberStyles.Float,
                 CultureInfo.InvariantCulture,out var cpu)?Math.Clamp(cpu,0,100):0;
@@ -93,8 +96,8 @@ public partial class DashboardView : UserControl
                 MemoryProgress.Value=usage;
                 MemoryUsePercent.Text=usage.ToString("F0",CultureInfo.InvariantCulture)+"%";
             }
-            var live=await _gateway.ReadDashboardOnlineOnlyAsync(timeout.Token);
-            if(!IsLoaded || timeout.IsCancellationRequested)return;
+            var live=await _gateway.ReadDashboardOnlineOnlyAsync();
+            if(!IsLoaded || visibility.IsCancellationRequested)return;
             Online.Text=live.OnlineTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
             OnlineBreakdown.Text="Hotspot "+(live.HotspotOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
                 " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
@@ -105,7 +108,7 @@ public partial class DashboardView : UserControl
         catch(Exception ex) {if(IsLoaded)ErrorStatus.Text="تعذر تحديث الاتصال المباشر: "+ex.Message;}
         finally
         {
-            if(ReferenceEquals(_telemetryToken,timeout))_telemetryToken=null;
+            if(ReferenceEquals(_telemetryToken,visibility))_telemetryToken=null;
             _liveTelemetryRunning=false;
         }
     }
