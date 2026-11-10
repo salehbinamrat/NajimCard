@@ -33,13 +33,14 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
                      "PasswordInput.Password=item.Password","TlsInput.IsChecked=item.UseTls"):
             self.assertIn(line,code)
         self.assertIn("_savedConnections.Load()",code)
-        self.assertIn("SavePasswordInput.IsChecked=true",code)
+        self.assertIn("SavePasswordInput.IsChecked=SaveConnectionInput.IsChecked==true",code)
         store=read(DESKTOP/"Services"/"SavedRouterConnectionStore.cs")
         self.assertIn("ProtectedData.Protect(",store)
         self.assertIn("DataProtectionScope.CurrentUser",store)
 
     def test_print_settings_includes_real_controls_without_duplicate_footer(self):
         printer=read(V/"PrintingView.cs")
+        selectors=read(V/"PrintingView.PrintSelectors.cs")
         host=read(V/"VoucherWorkspaceView.cs")
         self.assertIn('ReferenceHeader("إعداد الطباعة والدفعة")',printer)
         self.assertIn('"الأعمدة"',printer)
@@ -52,8 +53,8 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
         self.assertIn('Field(',printer)
         self.assertIn("PrintDialog()",printer)
         self.assertIn("selectedPrinter",printer)
-        self.assertIn("GetPrintQueues",printer)
-        self.assertIn("batchSelector",printer)
+        self.assertIn("GetPrintQueues",selectors)
+        self.assertIn("batchSelector",selectors)
         self.assertIn("selectedBatch()",printer)
         self.assertIn("ExportAdditionalAsync(",host)
         self.assertIn("CheckBox",printer)
