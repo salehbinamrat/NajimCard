@@ -14,7 +14,8 @@ internal static class NajmNetCardArtwork
 {
     internal static bool IsDefault(string networkTitle,string templateImagePath,
         string paperColor) =>
-        string.Equals(networkTitle,"نجم نت",StringComparison.Ordinal) &&
+        (string.Equals(networkTitle,"نجم نت",StringComparison.Ordinal) ||
+         string.Equals(networkTitle,"نجم كارد",StringComparison.Ordinal)) &&
         string.IsNullOrWhiteSpace(templateImagePath) &&
         string.Equals(paperColor,"#FFF6EB",StringComparison.OrdinalIgnoreCase);
 
