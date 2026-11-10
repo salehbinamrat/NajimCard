@@ -442,13 +442,13 @@ public partial class PrintingView : UserControl
                         CardElementPanel.DefaultProfile,9*appearance.ProfileScale,
                         appearance.ShowProfile);
                     AddText(appearance.CapacityText,appearance.CapacityPosition??
-                        new CardElementPosition(0.75,0.13),9,
+                        new CardElementPosition(0.96,0.24),9,
                         appearance.ShowCapacity);
                     AddText(appearance.PhoneText,appearance.PhonePosition??
-                        new CardElementPosition(0.08,0.91),9,
+                        new CardElementPosition(0.37,0.98),9,
                         appearance.ShowPhone,numeric:true);
                     AddText(card.CreatedAt.ToString("HH:mm",CultureInfo.InvariantCulture),
-                        appearance.TimePosition??new CardElementPosition(0.74,0.90),
+                        appearance.TimePosition??new CardElementPosition(0.94,0.76),
                         9,appearance.ShowTime,numeric:true);
                     AddText(card.CreatedAt.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture),
                         appearance.DatePosition??new CardElementPosition(0.48,0.90),
