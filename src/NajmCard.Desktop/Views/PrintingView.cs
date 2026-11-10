@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Printing;
 using System.Windows.Media.Imaging;
 using System.Windows.Controls.Primitives;
 using System.Windows;
@@ -19,7 +20,7 @@ namespace NajmCard.Desktop.Views;
 /// When embedded, the selected batch is supplied by GeneratorView; only SENT
 /// cards from that batch are printable. No globally newest voucher fallback.
 /// </summary>
-public class PrintingView : UserControl
+public partial class PrintingView : UserControl
 {
     // Artwork can be light OR dark. The prior single cream backing concealed
     // white/light voucher numbers. Choose a translucent backing from real ink
@@ -45,6 +46,16 @@ public class PrintingView : UserControl
     private readonly Func<IReadOnlyList<Voucher>,VoucherCardAppearance,CardPrintOptions,string,Task> _renderPdfAsync;
     private readonly Action _invalidate;
     private readonly TextBlock _status;
+    private readonly CheckBox _additionalExport = new() {Content="تصدير إضافي مع الإرسال",IsChecked=false};
+    private readonly CheckBox _csvExport = new() {Content="CSV",IsChecked=false,IsEnabled=false};
+    private readonly CheckBox _excelExport = new() {Content="Excel",IsChecked=false,IsEnabled=false};
+    public bool ExportCsvAfterSend => _additionalExport.IsChecked==true && _csvExport.IsChecked==true;
+    public bool ExportExcelAfterSend => _additionalExport.IsChecked==true && _excelExport.IsChecked==true;
+    public bool AdditionalExportRequested => _additionalExport.IsChecked==true;
+    private ComboBox? _batchSelector;
+    public bool HasSavedBatchSelection=>_batchSelector?.SelectedItem is ComboBoxItem
+        {Tag:PrintableBatchSummary};
+
 
     private static Border ReferenceHeader(string title)=>new()
     {
@@ -156,8 +167,8 @@ public class PrintingView : UserControl
         var order=new ComboBox {ItemsSource=new[]{
             "صفوف يسار","صفوف يمين","صفوف متعرجة","أعمدة يسار","أعمدة يمين"
         },SelectedIndex=1};
-        var basicPrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,1,0,2)};
-        var pagePrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,1,0,2)};
+        var basicPrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,1,0,2)};
+        var pagePrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,1,0,2)};
         void Field(UniformGrid host,string title,FrameworkElement control)
         {
             control.MinWidth=0;
@@ -187,24 +198,56 @@ public class PrintingView : UserControl
             else part.Children.Add(control);
             host.Children.Add(part);
         }
-        stack.Children.Add(ReferenceHeader("إعدادات الطباعة الأساسية"));
-        Field(basicPrintFields,"عرض الكرت (مم)",width);
-        Field(basicPrintFields,"ارتفاع الكرت (مم)",height);
-        Field(basicPrintFields,"الصفوف",rows);
+        stack.Children.Add(ReferenceHeader("إعداد الطباعة والدفعة"));
         Field(basicPrintFields,"الأعمدة",cols);
-        Field(basicPrintFields,"الفاصل الأفقي",gapX);
+        Field(basicPrintFields,"الصفوف",rows);
+        Field(basicPrintFields,"الاتجاه",orientation);
+        Field(basicPrintFields,"الورق",paper);
         stack.Children.Add(basicPrintFields);
-        stack.Children.Add(ReferenceHeader("إعدادات الصفحة والطباعة"));
-        Field(pagePrintFields,"الفاصل الرأسي",gapY);
+
+        Field(pagePrintFields,"عرض الكرت (مم)",width);
+        Field(pagePrintFields,"ارتفاع الكرت (مم)",height);
         Field(pagePrintFields,"الهامش",margin);
-        Field(pagePrintFields,"الورق",paper);
-        Field(pagePrintFields,"الاتجاه",orientation);
+        Field(pagePrintFields,"الفاصل الأفقي",gapX);
+        Field(pagePrintFields,"الفاصل الرأسي",gapY);
         stack.Children.Add(pagePrintFields);
-        var ordering=new UniformGrid{Columns=selectedBatch is null?2:1,
+
+        var ordering=new UniformGrid{Columns=selectedBatch is null?4:3,
             Margin=new Thickness(2,1,2,3)};
+        var (batchSelector,selectedPrinter)=CreatePrintSelectors(store,selectedBatch);
+        Field(ordering,"الدفعة",batchSelector);
+        Field(ordering,"الطابعة",selectedPrinter);
         Field(ordering,"ترتيب الكروت",order);
         if(selectedBatch is null)Field(ordering,"أقصى كروت للمعاينة",qty);
         stack.Children.Add(ordering);
+
+        var exportRow=new WrapPanel{Margin=new Thickness(5,1,5,2)};
+        foreach(var check in new[]{_additionalExport,_csvExport,_excelExport})
+        {
+            // The custom global CheckBox template shows the square but not its
+            // Content. Use an explicit adjacent caption to prevent blank options.
+            var title=new TextBlock
+            {
+                Text=check.Content?.ToString()??"",
+                FontFamily=new FontFamily("Arial"),FontSize=11,
+                FontWeight=FontWeights.Bold,VerticalAlignment=VerticalAlignment.Center,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!
+            };
+            check.Content=null;
+            check.Margin=new Thickness(2,0,2,0);
+            title.MouseLeftButtonUp+=(_,args)=>
+            {
+                if(check.IsEnabled)check.IsChecked=check.IsChecked!=true;
+                args.Handled=true;
+            };
+            var pair=new StackPanel{Orientation=Orientation.Horizontal,
+                FlowDirection=FlowDirection.RightToLeft,Margin=new Thickness(5,2,5,2)};
+            pair.Children.Add(check);pair.Children.Add(title);
+            exportRow.Children.Add(pair);
+        }
+        _additionalExport.Checked+=(_,_)=>_csvExport.IsEnabled=_excelExport.IsEnabled=true;
+        _additionalExport.Unchecked+=(_,_)=>_csvExport.IsEnabled=_excelExport.IsEnabled=false;
+        stack.Children.Add(exportRow);
         rows.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
         cols.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
         width.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
@@ -296,12 +339,12 @@ public class PrintingView : UserControl
             prepared=null;designUsed=null;preparedCount=0;
             viewer.Document=null;printButton.IsEnabled=false;
         }
-        _invalidate=Clear;
+        _invalidate=()=>{Clear();if(selectedBatch is not null)batchSelector.SelectedIndex=0;};
         _getOptions=Options;
         _applyOptions=Apply;
         foreach(var input in new[]{qty,width,height,rows,cols,gapX,gapY,margin})
             input.TextChanged+=(_,_)=>Clear();
-        foreach(var choice in new[]{paper,orientation,order})
+        foreach(var choice in new[]{paper,orientation,order,batchSelector})
             choice.SelectionChanged+=(_,_)=>Clear();
 
         static FixedDocument MakeDocument(IReadOnlyList<Voucher> cards,
@@ -460,10 +503,14 @@ public class PrintingView : UserControl
 
         (Voucher[] Cards,VoucherCardAppearance Style,CardPrintOptions Options)? ConfirmPrintJob()
         {
-            var cards=(selectedBatch is null
-                ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
-                :selectedBatch())
-                .Where(x=>x.DeliveryStatus=="SENT"&&x.SentToRouter).ToArray();
+            var requested=(batchSelector.SelectedItem as ComboBoxItem)?.Tag is
+                PrintableBatchSummary previous
+                ?store.GetBatchVouchers(previous.Service,previous.BatchId)
+                :selectedBatch is null
+                    ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
+                    :selectedBatch();
+            var cards=requested.Where(x=>x.DeliveryStatus=="SENT"&&x.SentToRouter)
+                .ToArray();
             if(cards.Length==0)
             {
                 _status.Text="لا توجد كروت مؤكدة الإرسال من الدفعة المختارة؛ لا تُطبع حالات UNKNOWN/FAILED.";
@@ -503,14 +550,30 @@ public class PrintingView : UserControl
             if(prepared is null&&!Prepare())return;
             if(!PageUi.Confirm("إرسال "+preparedCount+
                 " كرتا مؤكدا إرساله إلى الطابعة؛ هل مقاس الورق والاتجاه صحيحان؟"))return;
+            LocalPrintServer? chosenServer=null;
             try
             {
                 var dlg=new PrintDialog();
+                var printerName=selectedPrinter.SelectedItem?.ToString();
+                if(!string.IsNullOrWhiteSpace(printerName) &&
+                    printerName!="الافتراضية")
+                {
+                    chosenServer=new LocalPrintServer();
+                    dlg.PrintQueue=chosenServer.GetPrintQueue(printerName);
+                }
+                var physical=Options();
+                var ticket=dlg.PrintTicket??new PrintTicket();
+                ticket.PageMediaSize=new PageMediaSize(
+                    physical.Paper=="A3"?PageMediaSizeName.ISOA3:PageMediaSizeName.ISOA4);
+                ticket.PageOrientation=physical.Orientation=="landscape"
+                    ?PageOrientation.Landscape:PageOrientation.Portrait;
+                dlg.PrintTicket=ticket;
                 if(dlg.ShowDialog()!=true)return;
                 dlg.PrintDocument(prepared!.DocumentPaginator,"NajmCard Confirmed Voucher Batch");
                 _status.Text="أُرسلت المهمة للطابعة؛ راجع محاذاة الورق على نسخة اختبار.";
             }
             catch(Exception ex){_status.Text="تعذرت الطباعة: "+ex.Message;}
+            finally{chosenServer?.Dispose();}
         }
         async Task<bool> Export(string path)
         {

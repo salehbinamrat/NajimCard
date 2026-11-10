@@ -22,7 +22,7 @@ internal static class Program
         try
         {
             var destination=Path.GetFullPath(args.Length>0
-                ? args[0] : "out/creator-1200x780.png");
+                ? args[0] : "out/creator-1200x750.png");
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var application=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -41,7 +41,7 @@ internal static class Program
             var window=new MainWindow();
             var width=(int)window.Width;
             var height=(int)window.Height;
-            if(width!=1200 || height!=780)
+            if(width!=1200 || height!=750)
                 throw new InvalidDataException("Unexpected default window size.");
 
             ((Grid)window.FindName("LoginLayer")).Visibility=Visibility.Collapsed;
@@ -57,6 +57,37 @@ internal static class Program
 
             root.Measure(new Size(width,height));
             root.Arrange(new Rect(0,0,width,height));
+            root.UpdateLayout();
+
+            // Capture the actual fixed-size login form as well as both workspaces.
+            var loginLayer=(Grid)window.FindName("LoginLayer");
+            var workspaceLayer=(Grid)window.FindName("WorkspaceLayer");
+            workspaceLayer.Visibility=Visibility.Collapsed;
+            loginLayer.Visibility=Visibility.Visible;
+            // Use a synthetic, non-secret history row to verify selecting a
+            // saved connection fills the real login form without API activity.
+            var example=new SavedRouterConnection("192.168.220.1",8728,"admin",
+                false,"local");
+            ((ComboBox)window.FindName("SavedConnectionsInput")).ItemsSource=
+                new[]{example};
+            var history=(DataGrid)window.FindName("HistoryConnectionsGrid");
+            history.ItemsSource=new[]{example};
+            ((Expander)window.FindName("SavedHistoryExpander")).IsExpanded=true;
+            history.SelectedItem=example;
+            root.UpdateLayout();
+            if(((TextBox)window.FindName("HostInput")).Text!="192.168.220.1" ||
+               ((TextBox)window.FindName("UserInput")).Text!="admin")
+                throw new InvalidDataException("Selecting a saved router did not fill the login fields.");
+            var connect=(Button)window.FindName("ConnectButton");
+            var connectBounds=connect.TransformToAncestor(root)
+                .TransformBounds(new Rect(connect.RenderSize));
+            if(connectBounds.Width<=0 || connectBounds.Height<=0 ||
+                connectBounds.Bottom>height || connectBounds.Top<0)
+                throw new InvalidDataException("The login connect button is clipped at 1200x750.");
+            Capture(root,width,height,Path.Combine(
+                Path.GetDirectoryName(destination)!,"login-1200x750.png"));
+            loginLayer.Visibility=Visibility.Collapsed;
+            workspaceLayer.Visibility=Visibility.Visible;
             root.UpdateLayout();
 
             var workspace=(DockPanel)creator.Content;
@@ -76,7 +107,7 @@ internal static class Program
             pageHost.Content=dashboard;
             root.UpdateLayout();
             VerifyDashboardPanels(dashboard);
-            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x780.png"));
+            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x750.png"));
             return 0;
         }
         catch(Exception ex)

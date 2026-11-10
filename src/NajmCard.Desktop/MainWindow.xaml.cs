@@ -102,12 +102,9 @@ public partial class MainWindow : Window
     {
         var screen=SystemParameters.WorkArea;
         if(screen.Width<=0||screen.Height<=0)return;
-        MinWidth=Math.Min(MinWidth,screen.Width);
-        MinHeight=Math.Min(MinHeight,screen.Height);
-        Width=Math.Min(Width,screen.Width);
-        Height=Math.Min(Height,screen.Height);
-        Left=screen.Left+(screen.Width-Width)/2;
-        Top=screen.Top+(screen.Height-Height)/2;
+        // Fixed owner-approved window geometry. Never shrink or maximize automatically.
+        Left=screen.Width>=Width?screen.Left+(screen.Width-Width)/2:screen.Left;
+        Top=screen.Height>=Height?screen.Top+(screen.Height-Height)/2:screen.Top;
     }
 
     private string ActiveConnectionMode => RemoteModeInput.IsChecked == true ? "remote" : "local";
@@ -120,8 +117,11 @@ public partial class MainWindow : Window
         try
         {
             _applyingSavedConnection = true;
-            SavedConnectionsInput.ItemsSource = _savedConnections.Load();
-            SavedConnectionsInput.SelectedIndex = -1;
+            var history=_savedConnections.Load();
+            SavedConnectionsInput.ItemsSource=history;
+            HistoryConnectionsGrid.ItemsSource=history;
+            SavedConnectionsInput.SelectedIndex=-1;
+            HistoryConnectionsGrid.SelectedIndex=-1;
         }
         catch(Exception ex)
         {
@@ -152,6 +152,7 @@ public partial class MainWindow : Window
         try
         {
             _activeMode=item.Mode;
+            HistoryConnectionsGrid.SelectedItem=item;
             LocalModeInput.IsChecked=item.Mode=="local";
             RemoteModeInput.IsChecked=item.Mode=="remote";
             if(item.Mode=="local")_localHostDraft=item.Host;else _remoteHostDraft=item.Host;
@@ -171,6 +172,15 @@ public partial class MainWindow : Window
             LoginStatus.Text="تم استرجاع بيانات الاتصال؛ لا يتم الاتصال تلقائيا.";
         }
         finally { _applyingSavedConnection=false; }
+    }
+
+    private void HistoryGrid_SelectionChanged(object sender,SelectionChangedEventArgs e)
+    {
+        if(_applyingSavedConnection || HistoryConnectionsGrid.SelectedItem is not
+            SavedRouterConnection item)return;
+        // Selecting a row fills every field through the same audited handler as
+        // the dropdown. It never attempts network login.
+        SavedConnectionsInput.SelectedItem=item;
     }
 
     private void NewConnection_Click(object sender,RoutedEventArgs e)
@@ -235,7 +245,10 @@ public partial class MainWindow : Window
     {
         if(SavePasswordInput is null || SaveConnectionInput is null)return;
         SavePasswordInput.IsEnabled=SaveConnectionInput.IsChecked==true;
-        if(SaveConnectionInput.IsChecked!=true)SavePasswordInput.IsChecked=false;
+        if(_applyingSavedConnection)return;
+        // Checking the explicit full-credentials opt-in saves the password via
+        // the existing DPAPI CurrentUser store; users may uncheck the secret.
+        SavePasswordInput.IsChecked=SaveConnectionInput.IsChecked==true;
     }
 
     private void About_Click(object sender,RoutedEventArgs e)

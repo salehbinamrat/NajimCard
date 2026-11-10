@@ -1,4 +1,7 @@
 using System.Windows;
+using System.IO;
+using Microsoft.Win32;
+using NajmCard.Core.Services;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -186,6 +189,51 @@ public sealed class VoucherWorkspaceView : UserControl
                 foreach(var btn in tabButtons.Values)btn.IsEnabled=true;
             }
         }
+        async Task ExportAdditionalAsync()
+        {
+            if(!printer.AdditionalExportRequested)return;
+            if(!printer.ExportCsvAfterSend && !printer.ExportExcelAfterSend)
+            {
+                status.Text+=" | التصدير الإضافي: حدد CSV أو Excel.";
+                return;
+            }
+            // Never export all local records, only the confirmed current batch.
+            var confirmed=creator.ConfirmedBatch()
+                .Where(v=>v.SentToRouter && v.DeliveryStatus=="SENT").ToArray();
+            if(confirmed.Length==0)
+            {
+                status.Text+=" | لا توجد كروت مؤكدة للتصدير الإضافي.";
+                return;
+            }
+            var picker=new OpenFolderDialog
+            {
+                Title="اختر مجلد ملفات الدفعة الإضافية",
+                Multiselect=false
+            };
+            if(picker.ShowDialog()!=true)
+            {
+                status.Text+=" | أُلغي التصدير الإضافي بعد نجاح الإرسال.";
+                return;
+            }
+            // Unique suffix prevents silently replacing older batch exports.
+            var raw=confirmed[0].BatchId;
+            var safe=new string(raw.Where(c=>!Path.GetInvalidFileNameChars().Contains(c))
+                .Take(55).ToArray());
+            if(string.IsNullOrWhiteSpace(safe))safe="Batch";
+            var filename="NajmCard-"+safe+"-"+DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            var folder=picker.FolderName;
+            var csv=printer.ExportCsvAfterSend;
+            var excel=printer.ExportExcelAfterSend;
+            await Task.Run(()=>
+            {
+                if(csv)VoucherBatchCsvExporter.Export(confirmed,
+                    Path.Combine(folder,filename+".csv"));
+                if(excel)VoucherExcelExporter.Export(confirmed,
+                    Path.Combine(folder,filename+".xlsx"),"NajmCard",includePasswords:false);
+            });
+            status.Text+=" | تم تصدير "+confirmed.Length+" كرتا دون كلمات المرور "+
+                (csv&&excel?"(CSV وExcel)":csv?"(CSV)":"(Excel)")+".";
+        }
         // Hadramout behavior: choose the save path BEFORE generation or any
         // RouterOS mutations, and stop if the dialog was cancelled.
         actions[0].Click+=async(_,_)=>await Execute(async()=>
@@ -201,15 +249,19 @@ public sealed class VoucherWorkspaceView : UserControl
                 status.Text="لم تنجح كروت مؤكدة؛ لم ينشأ ملف PDF.";
                 return;
             }
-            status.Text=await printer.SavePdfToPathAsync(destination)
+            var saved=await printer.SavePdfToPathAsync(destination);
+            status.Text=saved
                 ?"أُرسلت الكروت المؤكدة وحُفظ PDF بنجاح.":
                 "حُفظت نتائج الإرسال لكن فشل إخراج PDF؛ لا تعِد الإرسال بسبب فشل الملف.";
+            await ExportAdditionalAsync();
         });
         actions[1].Click+=async(_,_)=>await Execute(async()=>
         {
-            status.Text=await creator.CreateAndSendAsync()
+            var sent=await creator.CreateAndSendAsync();
+            status.Text=sent
                 ?"اكتمل إرسال كروت مؤكدة وحُفظت حالاتها في SQLite.":
                 "تعذر تأكيد الإرسال. راجع حالات الدفعة قبل إعادة المحاولة.";
+            if(sent)await ExportAdditionalAsync();
         });
         actions[2].Click+=(_,_)=>creator.RestoreSavedPackageSettings();
         async Task PreviewDraftPdf()
@@ -231,7 +283,7 @@ public sealed class VoucherWorkspaceView : UserControl
         }
         actions[3].Click+=async(_,_)=>await Execute(async()=>
         {
-            if(creator.HasBatch)
+            if(creator.HasBatch || printer.HasSavedBatchSelection)
             {
                 status.Text=printer.PreparePreview()
                     ? "معاينة الكروت التي ثبت إرسالها في الدفعة المحددة."
@@ -242,7 +294,7 @@ public sealed class VoucherWorkspaceView : UserControl
         actions[4].Click+=async(_,_)=>await Execute(printer.SavePdfAsync);
         actions[5].Click+=async(_,_)=>await Execute(async()=>
         {
-            if(creator.HasBatch)await printer.PreviewPdfAsync();
+            if(creator.HasBatch || printer.HasSavedBatchSelection)await printer.PreviewPdfAsync();
             else await PreviewDraftPdf();
         });
         actions[6].Click+=(_,_)=>_ = Execute(()=>

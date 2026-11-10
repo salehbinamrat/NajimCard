@@ -14,7 +14,8 @@ class CompactScreenLayoutContract(unittest.TestCase):
     def test_main_window_defaults_to_requested_dimensions(self):
         x=ET.parse(UI/"MainWindow.xaml").getroot()
         self.assertEqual(float(x.attrib["Width"]),1200)
-        self.assertEqual(float(x.attrib["Height"]),780)
+        self.assertEqual(float(x.attrib["Height"]),750)
+        self.assertEqual(x.attrib["ResizeMode"],"NoResize")
         self.assertIsNotNone(x.find(".//w:RowDefinition[@"+XNS+"Name='WorkspaceHeaderRow']",NS))
         code=(UI/"MainWindow.xaml.cs").read_text(encoding="utf-8")
         self.assertIn("WorkspaceHeaderRow.Height",code)
