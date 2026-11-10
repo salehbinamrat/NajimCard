@@ -555,7 +555,7 @@ public partial class PrintingView : UserControl
                 var dlg=new PrintDialog();
                 var printerName=selectedPrinter.SelectedItem?.ToString();
                 if(!string.IsNullOrWhiteSpace(printerName) &&
-                    printerName!="طابعة Windows الافتراضية")
+                    printerName!="الافتراضية")
                 {
                     using var server=new LocalPrintServer();
                     dlg.PrintQueue=server.GetPrintQueue(printerName);
