@@ -27,7 +27,8 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn('ItemsSource=new[]{"اسم مستخدم فقط","اسم مستخدم وكلمة مرور"},\n        SelectedIndex=0',s)
         self.assertIn('v?.UsernameOnly==false?1:0',s)
         self.assertIn('sameCell.Visibility=differentCell.Visibility=',s)
-        self.assertIn('credentialsTop.ColumnDefinitions[1].Width=new GridLength(',s)
+        self.assertIn("passwordModeRow.Visibility=userOnly?Visibility.Collapsed:Visibility.Visible",s)
+        self.assertIn("Grid.SetColumn(usernameGroup,1)",s)
 
     def test_save_feedback_resets_for_service_profile_and_customer(self):
         s=self.g
