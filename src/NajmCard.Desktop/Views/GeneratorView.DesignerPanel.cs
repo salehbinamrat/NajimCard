@@ -25,11 +25,14 @@ public partial class GeneratorView
             designer.Children.Add(element);
         }
         AddPanel(ReferenceHeader("معاينة وتصميم الكرت"),0);
-        var toolbar=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
+        var toolbar=new UniformGrid{Columns=5,Margin=new Thickness(0,0,0,2)};
         var templateImage=PageUi.Button("صورة القالب",false);
         var changeTemplate=PageUi.Button("تغيير القالب",false);
         var advanced=PageUi.Button("تعديلات متقدمة",false);
-        foreach(var button in new[]{templateImage,changeTemplate,advanced})
+        var importTemplate=PageUi.Button("استيراد قالب",false);
+        var exportTemplate=PageUi.Button("تصدير قالب",false);
+        var tools=new[]{templateImage,changeTemplate,advanced,importTemplate,exportTemplate};
+        foreach(var button in tools)
         {
             button.MinWidth=0;button.Margin=new Thickness(2);
             button.Padding=new Thickness(4,5,4,5);
@@ -40,10 +43,12 @@ public partial class GeneratorView
         templateImage.Background=(Brush)new BrushConverter().ConvertFrom("#0D766A")!;
         changeTemplate.Background=(Brush)new BrushConverter().ConvertFrom("#175F9E")!;
         advanced.Background=(Brush)new BrushConverter().ConvertFrom("#663CAA")!;
-        foreach(var button in new[]{templateImage,changeTemplate,advanced})
+        foreach(var button in tools)
             button.Foreground=Brushes.White;
         AddPanel(toolbar,1);
         templateImage.Click+=(_,_)=>ChooseTemplateImage();
+        importTemplate.Click+=(_,_)=>ImportPortableTemplate();
+        exportTemplate.Click+=(_,_)=>ExportPortableTemplate();
 
         var previewRow=_designPreviewRow;
         previewRow.FlowDirection=FlowDirection.LeftToRight;

@@ -1,11 +1,10 @@
 using System.IO;
-using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using NajmCard.Desktop.Services;
 
 namespace NajmCard.Desktop.Views;
 
@@ -97,38 +96,13 @@ public partial class GeneratorView
         if(picker.ShowDialog()!=true)return;
         try
         {
-            var info=new FileInfo(picker.FileName);
-            if(info.Length<=0 || info.Length>20*1024*1024)
-                throw new InvalidDataException("حجم الصورة يجب أن يكون بين 1 بايت و20 MB.");
-            byte[] bytes=File.ReadAllBytes(info.FullName);
-            using(var stream=new MemoryStream(bytes,false))
-            {
-                var decoded=BitmapDecoder.Create(stream,
-                    BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad);
-                if(decoded.Frames.Count==0 ||
-                   decoded.Frames[0].PixelWidth<=0 || decoded.Frames[0].PixelHeight<=0)
-                    throw new InvalidDataException("ملف صورة غير صالح.");
-            }
-            var folder=Path.Combine(Environment.GetFolderPath(
-                Environment.SpecialFolder.LocalApplicationData),"NajmCard","CardTemplates");
-            Directory.CreateDirectory(folder);
-            var ext=Path.GetExtension(info.Name).ToLowerInvariant();
-            if(ext.Length>8 || ext.Length<2 ||
-               ext.Skip(1).Any(c=>!char.IsAsciiLetter(c)))ext=".img";
-            var filename=Convert.ToHexString(SHA256.HashData(bytes))+ext;
-            var destination=Path.Combine(folder,filename);
-            if(!File.Exists(destination))
-            {
-                var temp=destination+"."+Guid.NewGuid().ToString("N")+".tmp";
-                try{File.WriteAllBytes(temp,bytes);File.Move(temp,destination,true);}
-                finally{if(File.Exists(temp))File.Delete(temp);}
-            }
-            _templateImagePath=destination;
-            ApplyCardAppearance(ReadCurrentAppearance());
+            var appearance=ReadCurrentAppearance();
+            var image=PortableCardTemplate.ImportImage(picker.FileName,TemplateImageFolder);
+            ApplyCardAppearance(appearance with {TemplateImagePath=image});
             _status.Text="تم استيراد صورة الكرت محليا. اضغط حفظ إعدادات هذه الباقة "+
                 "لتبقى الصورة محفوظة ومختارة بعد إغلاق البرنامج.";
         }
-        catch(Exception ex) when(ex is IOException or ArgumentException or
+        catch(Exception ex) when(ex is IOException or InvalidDataException or ArgumentException or
              NotSupportedException or InvalidOperationException or FormatException
              or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
         {
