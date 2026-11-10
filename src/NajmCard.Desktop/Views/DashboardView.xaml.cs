@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using NajmCard.Core.Models;
 using NajmCard.Core.Services;
 using NajmCard.Desktop.Services;
@@ -20,6 +21,11 @@ public partial class DashboardView : UserControl
     private CancellationTokenSource? _refreshToken;
     private CancellationTokenSource? _initialLifecycleToken;
     private CancellationTokenSource? _lifecycleToken;
+    private readonly DispatcherTimer _telemetryTimer=new() {Interval=TimeSpan.FromSeconds(1)};
+    private bool _initialSnapshotLoaded;
+    private bool _initialLifecycleAttempted;
+    private bool _liveTelemetryRunning;
+    private CancellationTokenSource? _telemetryToken;
 
     public DashboardView(RouterGateway gateway, VoucherStore store, Action<string> navigate, string routerAddress = "")
     {
@@ -28,15 +34,24 @@ public partial class DashboardView : UserControl
         _navigate = navigate;
         InitializeComponent();
         RouterEndpointInfo.Text = "عنوان الراوتر: " + (string.IsNullOrWhiteSpace(routerAddress) ? "غير محدد" : routerAddress);
-        // Hadramout automatically warms the detailed voucher counts once after login.
-        // Do not block the lightweight dashboard or bypass the gateway 5-minute cache.
-        Loaded += async (_, _) =>
+        // One heavy inventory per router login; retaining the view preserves the snapshot
+        // across sidebar navigation. Only online and router telemetry repeat.
+        _telemetryTimer.Tick+=async (_,_)=>await RefreshLiveTelemetryAsync();
+        Loaded += (_, _) =>
         {
-            await RefreshAsync();
-            if(IsLoaded)await ScheduleInitialLifecycleAsync();
+            _telemetryTimer.Start();
+            if(!_initialSnapshotLoaded)
+            {
+                _initialSnapshotLoaded=true;
+                _=RefreshAsync();
+            }
+            if(!_initialLifecycleAttempted)
+                _=ScheduleInitialLifecycleAsync();
         };
         Unloaded += (_, _) =>
         {
+            _telemetryTimer.Stop();
+            _telemetryToken?.Cancel();
             _refreshToken?.Cancel();
             _initialLifecycleToken?.Cancel();
             _lifecycleToken?.Cancel();
@@ -53,6 +68,47 @@ public partial class DashboardView : UserControl
     private void ManageCards_Click(object sender, RoutedEventArgs e) => _navigate("cards");
     private void Reports_Click(object sender, RoutedEventArgs e) => _navigate("reports");
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
+
+    // RouterOS count-only connected clients and resource telemetry at a 1-second
+    // display cadence. Never run overlapping requests or download UM user lists.
+    private async Task RefreshLiveTelemetryAsync()
+    {
+        if(!IsLoaded || _liveTelemetryRunning || _refreshing || _lifecycleReading)return;
+        _liveTelemetryRunning=true;
+        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(4));
+        _telemetryToken=timeout;
+        try
+        {
+            var resource=await _gateway.ReadResourceAsync(timeout.Token);
+            if(!IsLoaded || timeout.IsCancellationRequested)return;
+            Cpu.Text=resource.CpuLoad+"%";
+            CpuProgress.Value=double.TryParse(resource.CpuLoad,NumberStyles.Float,
+                CultureInfo.InvariantCulture,out var cpu)?Math.Clamp(cpu,0,100):0;
+            Uptime.Text=resource.Uptime; // RouterOS reports uptime with second resolution.
+            MemoryFree.Text=FormatBytes(resource.FreeMemory);
+            if(long.TryParse(resource.TotalMemory,out var total) &&
+               long.TryParse(resource.FreeMemory,out var free) && total>0)
+            {
+                var usage=Math.Clamp((total-free)*100d/total,0,100);
+                MemoryProgress.Value=usage;
+                MemoryUsePercent.Text=usage.ToString("F0",CultureInfo.InvariantCulture)+"%";
+            }
+            var live=await _gateway.ReadDashboardOnlineOnlyAsync(timeout.Token);
+            if(!IsLoaded || timeout.IsCancellationRequested)return;
+            Online.Text=live.OnlineTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
+            OnlineBreakdown.Text="Hotspot "+(live.HotspotOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
+                " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
+                (live.IsPartial?" | قراءة جزئية":"");
+            RefreshHistory.Text=DateTime.Now.ToString("HH:mm:ss")+" · المتصلون وأداء الراوتر (مباشر)";
+        }
+        catch(OperationCanceledException) { /* Next timer tick retries; no zero substitutes. */ }
+        catch(Exception ex) {if(IsLoaded)ErrorStatus.Text="تعذر تحديث الاتصال المباشر: "+ex.Message;}
+        finally
+        {
+            if(ReferenceEquals(_telemetryToken,timeout))_telemetryToken=null;
+            _liveTelemetryRunning=false;
+        }
+    }
 
     private async Task RefreshAsync()
     {
@@ -150,7 +206,10 @@ public partial class DashboardView : UserControl
         {
             await Task.Delay(TimeSpan.FromSeconds(5),pending.Token);
             if(IsLoaded && !pending.IsCancellationRequested)
+            {
+                _initialLifecycleAttempted=true;
                 await RefreshLifecycleAsync();
+            }
         }
         catch(OperationCanceledException) { }
         finally
@@ -471,10 +530,17 @@ public partial class DashboardView : UserControl
             ProfileBars.Children.Add(new TextBlock { Text = "لا توجد كروت على الراوتر", Foreground = Brushes.LightGray });
             return;
         }
-        var barBrush=(Brush)FindResource("GoldBrush");
+        var palette=new Brush[]
+        {
+            new SolidColorBrush(Color.FromRgb(31,126,102)),
+            new SolidColorBrush(Color.FromRgb(195,69,104)),
+            new SolidColorBrush(Color.FromRgb(57,104,185)),
+            new SolidColorBrush(Color.FromRgb(168,100,31))
+        };
         int max = groups[0].Count;
         for (int i = 0; i < groups.Count; i++)
         {
+            var barBrush=palette[i%palette.Length];
             var stack = new StackPanel { Margin = new Thickness(0, 3, 0, 11) };
             var label=new Grid{FlowDirection=FlowDirection.RightToLeft};
             label.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
@@ -482,7 +548,7 @@ public partial class DashboardView : UserControl
             label.Children.Add(new TextBlock {
                 Text=groups[i].Name,FontSize=12,FontWeight=FontWeights.Bold,
                 Margin=new Thickness(4,0,10,0),
-                Foreground=Brushes.White,TextTrimming=TextTrimming.CharacterEllipsis,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#471A30")!,TextTrimming=TextTrimming.CharacterEllipsis,
                 VerticalAlignment=VerticalAlignment.Center});
             var count=new TextBlock{
                 Text=groups[i].Count.ToString("N0",CultureInfo.InvariantCulture),
@@ -492,7 +558,7 @@ public partial class DashboardView : UserControl
             };
             Grid.SetColumn(count,1);label.Children.Add(count);
             stack.Children.Add(label);
-            var barTrack = new Grid { Background = (Brush)FindResource("SurfaceRaisedBrush"), Height = 8, Margin = new Thickness(0, 4, 0, 0) };
+            var barTrack = new Grid { Background = (Brush)new BrushConverter().ConvertFrom("#E8D4C6")!, Height = 8, Margin = new Thickness(0, 4, 0, 0) };
             var bar = new Border { Background = barBrush,
                 CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Left };
             barTrack.Children.Add(bar);
