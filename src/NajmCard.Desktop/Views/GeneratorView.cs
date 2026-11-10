@@ -251,10 +251,12 @@ public partial class GeneratorView : UserControl
         var formatSection=PageUi.Column();
         formatSection.Children.Add(ReferenceHeader("إنشاء المستخدم وطباعة الكروت"));
         var credentialsTop=new Grid{Margin=new Thickness(0,1,0,1)};
-        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(2.2,GridUnitType.Star)});
-        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
-        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
+        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{
+            Width=new GridLength(1.2,GridUnitType.Star)});
+        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{
+            Width=new GridLength(2.8,GridUnitType.Star)});
         var modeCell=PageUi.Column();
+        modeCell.Margin=new Thickness(1,0,2,0);
         modeCell.Children.Add(PageUi.Label("طريقة الدخول"));
         modeCell.Children.Add(_credentialMode);
         Grid.SetColumn(modeCell,0);
@@ -262,14 +264,12 @@ public partial class GeneratorView : UserControl
         var sameCell=PageUi.Column();
         sameCell.Children.Add(PageUi.Label("كلمة المرور"));
         sameCell.Children.Add(_credentialsSame);
-        Grid.SetColumn(sameCell,1);
-        credentialsTop.Children.Add(sameCell);
         var differentCell=PageUi.Column();
         differentCell.Children.Add(PageUi.Label("خيار آخر"));
         differentCell.Children.Add(_credentialsDifferent);
-        Grid.SetColumn(differentCell,2);
-        credentialsTop.Children.Add(differentCell);
-        formatSection.Children.Add(credentialsTop);
+        var passwordModeRow=new UniformGrid{Columns=2,Margin=new Thickness(0)};
+        passwordModeRow.Children.Add(sameCell);
+        passwordModeRow.Children.Add(differentCell);
         var basicsSection=PageUi.Column();
         basicsSection.Children.Add(ReferenceHeader("بيانات التوليد الأساسية"));
         row.Margin=new Thickness(0,1,0,2);
@@ -278,7 +278,6 @@ public partial class GeneratorView : UserControl
             PageUi.Surface(basicsSection,"#D2AA61");
         // Each service's alphabet TYPE and character SET occupy one horizontal row.
         // This removes the old stacked rows without hiding any generation option.
-        var characterKinds=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,1)};
         var usernameGroup=new UniformGrid{Columns=2,Margin=new Thickness(1,0,1,0)};
         var userKind=PageUi.Column();
         userKind.Children.Add(PageUi.Label("نوع اسم المستخدم"));
@@ -288,7 +287,10 @@ public partial class GeneratorView : UserControl
         usernameCharsCell.Children.Add(_usernameCharacters);
         usernameGroup.Children.Add(userKind);
         usernameGroup.Children.Add(usernameCharsCell);
-        characterKinds.Children.Add(usernameGroup);
+        Grid.SetColumn(usernameGroup,1);
+        credentialsTop.Children.Add(usernameGroup);
+        formatSection.Children.Add(credentialsTop);
+        formatSection.Children.Add(passwordModeRow);
         var passwordGroup=new UniformGrid{Columns=2,Margin=new Thickness(1,0,1,0)};
         var passwordKind=PageUi.Column();
         passwordKind.Children.Add(PageUi.Label("نوع كلمة المرور"));
@@ -298,8 +300,7 @@ public partial class GeneratorView : UserControl
         passwordCharsCell.Children.Add(_passwordCharacters);
         passwordGroup.Children.Add(passwordKind);
         passwordGroup.Children.Add(passwordCharsCell);
-        characterKinds.Children.Add(passwordGroup);
-        formatSection.Children.Add(characterKinds);
+        formatSection.Children.Add(passwordGroup);
         void ApplyAlphabet(ComboBox selector,TextBox target)
         {
             if(_restoringPreset)return;
@@ -334,12 +335,7 @@ public partial class GeneratorView : UserControl
             // empty gutters when the username-only format is selected.
             sameCell.Visibility=differentCell.Visibility=
                 userOnly?Visibility.Collapsed:Visibility.Visible;
-            credentialsTop.ColumnDefinitions[0].Width=new GridLength(
-                userOnly?1:2.2,GridUnitType.Star);
-            credentialsTop.ColumnDefinitions[1].Width=new GridLength(
-                userOnly?0:1,GridUnitType.Star);
-            credentialsTop.ColumnDefinitions[2].Width=new GridLength(
-                userOnly?0:1,GridUnitType.Star);
+            passwordModeRow.Visibility=userOnly?Visibility.Collapsed:Visibility.Visible;
             _credentialsSame.Visibility=_credentialsDifferent.Visibility=
                 userOnly?Visibility.Collapsed:Visibility.Visible;
             _samePassword.IsChecked=userOnly || _credentialsDifferent.IsChecked!=true;
@@ -347,7 +343,6 @@ public partial class GeneratorView : UserControl
             _passwordLength.IsEnabled=hasSeparatePassword;
             passwordKind.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
             passwordCharsCell.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
-            characterKinds.Columns=hasSeparatePassword?2:1;
             passwordGroup.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
             _designShowPassword.IsChecked=!userOnly;
         }
