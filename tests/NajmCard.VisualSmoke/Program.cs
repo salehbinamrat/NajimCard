@@ -68,15 +68,15 @@ internal static class Program
             VerifyPasswordPreview(root);
             root.UpdateLayout();
 
-            var bitmap=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);
-            bitmap.Render(root);
-            var encoder=new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(bitmap));
-            using(var stream=File.Create(destination))encoder.Save(stream);
-            if(new FileInfo(destination).Length<10_000)
-                throw new InvalidDataException("Rendered UI PNG appears empty or incomplete.");
-            Console.WriteLine("Actual WPF creator screenshot: "+destination+
-                " ("+width+"x"+height+")");
+            Capture(root,width,height,destination);
+
+            var dashboard=new DashboardView(offline,store,_=>{},"192.168.88.1");
+            ((ListBox)window.FindName("NavList")).SelectedIndex=0;
+            pageHost.Margin=new Thickness(12,7,12,7);
+            pageHost.Content=dashboard;
+            root.UpdateLayout();
+            VerifyDashboardPanels(dashboard);
+            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x780.png"));
             return 0;
         }
         catch(Exception ex)
@@ -84,6 +84,34 @@ internal static class Program
             Console.Error.WriteLine("WPF visual smoke test failed: "+ex);
             return 1;
         }
+    }
+
+    private static void Capture(Grid root,int width,int height,string destination)
+    {
+        var bitmap=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);
+        bitmap.Render(root);
+        var encoder=new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using(var stream=File.Create(destination))encoder.Save(stream);
+        if(new FileInfo(destination).Length<10_000)
+            throw new InvalidDataException("Rendered UI PNG appears empty or incomplete.");
+        Console.WriteLine("WPF screenshot: "+destination);
+    }
+
+    private static void VerifyDashboardPanels(DashboardView dashboard)
+    {
+        var panels=VisualChildren<Border>(dashboard)
+            .Where(panel=>Equals(panel.Tag,"DashboardPanel")).ToArray();
+        if(panels.Length!=10)
+            throw new InvalidDataException("Dashboard panels are missing.");
+        var cards=panels.Skip(1).ToArray();
+        var bounds=cards.Select(card=>card.TransformToAncestor(dashboard)
+            .TransformBounds(new Rect(card.RenderSize))).ToArray();
+        if(bounds.Any(card=>card.Width<=0 || card.Height<=0 || card.Left<0 ||
+            card.Right>dashboard.ActualWidth+1 || card.Bottom>dashboard.ActualHeight+1))
+            throw new InvalidDataException("A dashboard card is clipped.");
+        if(bounds.Max(card=>card.Width)-bounds.Min(card=>card.Width)>2)
+            throw new InvalidDataException("Dashboard card columns are not aligned.");
     }
 
     private static void VerifyPasswordPreview(FrameworkElement root)

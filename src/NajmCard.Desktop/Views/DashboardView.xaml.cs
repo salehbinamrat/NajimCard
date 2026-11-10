@@ -382,8 +382,7 @@ public partial class DashboardView : UserControl
     private void RenderActivity(IReadOnlyList<VoucherActivityRow> activities)
     {
         ActivityRows.Children.Clear();
-        var heading=new Grid{Background=(Brush)new BrushConverter()
-            .ConvertFrom("#21344D")!,Height=29};
+        var heading=new Grid{Background=(Brush)FindResource("SurfaceRaisedBrush"),Height=29};
         heading.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
         heading.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(0.85,GridUnitType.Star)});
         heading.Children.Add(new TextBlock{
@@ -403,13 +402,11 @@ public partial class DashboardView : UserControl
                 Margin=new Thickness(8,12,8,10)});
             return;
         }
-        int index=0;
         foreach(var item in activities.Take(6))
         {
             var line=new Grid{
-                Background=(Brush)new BrushConverter().ConvertFrom(
-                    index++%2==0?"#3B2C44":"#2D3448")!,
-                Height=35,Margin=new Thickness(0,0,0,1)
+                Background=(Brush)FindResource("CanvasBrush"),
+                Height=25,Margin=new Thickness(0,0,0,1)
             };
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(0.85,GridUnitType.Star)});
@@ -426,7 +423,7 @@ public partial class DashboardView : UserControl
             var stamp=DateTimeOffset.TryParse(item.Timestamp,out var t)
                 ?t.ToLocalTime().ToString("HH:mm",CultureInfo.InvariantCulture):"—";
             var detail=new TextBlock{
-                Text=stamp+"  "+item.Detail,Foreground=Brushes.White,FontSize=11,
+                Text=stamp+"  "+item.Detail,ToolTip=item.Detail,Foreground=Brushes.White,FontSize=11,
                 VerticalAlignment=VerticalAlignment.Center,TextTrimming=TextTrimming.CharacterEllipsis,
                 Margin=new Thickness(6,0,6,0)};
             Grid.SetColumn(detail,1);line.Children.Add(detail);
@@ -446,7 +443,7 @@ public partial class DashboardView : UserControl
             ProfileBars.Children.Add(new TextBlock { Text = "لا توجد كروت على الراوتر", Foreground = Brushes.LightGray });
             return;
         }
-        var bars = new[] { "#DDB36F", "#BCA3F1", "#7ACDBD", "#82BDDF" };
+        var barBrush=(Brush)FindResource("GoldBrush");
         int max = groups[0].Count;
         for (int i = 0; i < groups.Count; i++)
         {
@@ -462,12 +459,12 @@ public partial class DashboardView : UserControl
             var count=new TextBlock{
                 Text=groups[i].Count.ToString("N0",CultureInfo.InvariantCulture),
                 FontSize=12,FontWeight=FontWeights.ExtraBold,
-                Foreground=new SolidColorBrush((Color)ColorConverter.ConvertFromString(bars[i]))!,
+                Foreground=barBrush,
                 TextAlignment=TextAlignment.Center
             };
             Grid.SetColumn(count,1);label.Children.Add(count);
             stack.Children.Add(label);
-            var barTrack = new Grid { Background = new SolidColorBrush(Color.FromRgb(58, 33, 49)), Height = 8, Margin = new Thickness(0, 4, 0, 0) };
+            var barTrack = new Grid { Background = (Brush)FindResource("SurfaceRaisedBrush"), Height = 8, Margin = new Thickness(0, 4, 0, 0) };
             var bar = new Border { Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bars[i])!),
                 CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Left };
             barTrack.Children.Add(bar);
