@@ -69,7 +69,7 @@
                             <!-- Collapsible saved-router history: no password is ever displayed in this table. -->
                             <Expander x:Name="SavedHistoryExpander" Header="عرض سجل محفوظات الاتصال" Margin="0,6,0,0" Foreground="#FFF1E1"
                                       FontWeight="Bold" FontSize="12">
-                                <DataGrid x:Name="HistoryConnectionsGrid" AutoGenerateColumns="False"
+                                <DataGrid x:Name="HistoryConnectionsGrid" AutoGenerateColumns="False" EnableColumnVirtualization="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                           SelectionChanged="HistoryGrid_SelectionChanged"
                                           IsReadOnly="True" HeadersVisibility="Column"
                                           CanUserAddRows="False" CanUserResizeRows="False"
@@ -78,6 +78,14 @@
                                           Background="#FFF3DF" Foreground="#48192A"
                                           RowBackground="#FFF3DF" AlternatingRowBackground="#F4E2D5"
                                           BorderBrush="#75203E" BorderThickness="1">
+                                    <DataGrid.Resources>
+                                        <Style x:Key="HistoryText" TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#48192A"/>
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </Style>
+                                    </DataGrid.Resources>
                                     <DataGrid.CellStyle>
                                         <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
                                             <Setter Property="Foreground" Value="#48192A"/>
@@ -96,10 +104,10 @@
                                         </Style>
                                     </DataGrid.RowStyle>
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="الاتصال" Binding="{Binding ModeLabel}" Width="75"/>
-                                        <DataGridTextColumn Header="المنفذ" Binding="{Binding Port}" Width="60"/>
-                                        <DataGridTextColumn Header="اسم الدخول" Binding="{Binding Username}" Width="*"/>
-                                        <DataGridTextColumn Header="عنوان الراوتر" Binding="{Binding Host}" Width="1.4*"/>
+                                        <DataGridTextColumn Header="الاتصال" Binding="{Binding ModeLabel}" Width="82" ElementStyle="{StaticResource HistoryText}"/>
+                                        <DataGridTextColumn Header="المنفذ" Binding="{Binding Port}" Width="72" ElementStyle="{StaticResource HistoryText}"/>
+                                        <DataGridTextColumn Header="اسم الدخول" Binding="{Binding Username}" Width="120" ElementStyle="{StaticResource HistoryText}"/>
+                                        <DataGridTextColumn Header="عنوان الراوتر" Binding="{Binding Host}" Width="210" ElementStyle="{StaticResource HistoryText}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Expander>
