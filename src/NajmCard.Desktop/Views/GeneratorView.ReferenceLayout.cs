@@ -30,59 +30,46 @@ public partial class GeneratorView
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
         Border basicsSurface,Border designSurface)
     {
-        // Hadramout's original ui/network.py uses two INDEPENDENT columns
-        // (42% left, 58% right). A shared 2x2 grid forced the short routing
-        // panel to occupy the credentials panel's much taller first row.
-        // Separate column row-heights eliminate that genuine blank panel.
-        var split=new Grid{FlowDirection=FlowDirection.LeftToRight};
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(42,GridUnitType.Star)});
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(58,GridUnitType.Star)});
-        split.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
-
-        var leftColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        var rightColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-
-        routeSurface.FlowDirection=formatSurface.FlowDirection=
-            basicsSurface.FlowDirection=designSurface.FlowDirection=FlowDirection.RightToLeft;
-        foreach(var surface in new[]{routeSurface,formatSurface,basicsSurface,designSurface})
+        // Owner-approved reference: route and credential settings span the
+        // ENTIRE editor width; only the lower print/design surfaces are split.
+        // This prevents User Manager customer/profile selectors from vanishing
+        // in the old 58%-width upper-right column.
+        var full=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        full.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        full.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        full.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        foreach(var panel in new[]{routeSurface,formatSurface,basicsSurface,designSurface})
         {
-            surface.Margin=new Thickness(1,1,1,2);
-            surface.HorizontalAlignment=HorizontalAlignment.Stretch;
-            surface.VerticalAlignment=VerticalAlignment.Stretch;
+            panel.FlowDirection=FlowDirection.RightToLeft;
+            panel.Margin=new Thickness(1,1,1,3);
+            panel.HorizontalAlignment=HorizontalAlignment.Stretch;
+            panel.VerticalAlignment=VerticalAlignment.Top;
         }
         Grid.SetRow(routeSurface,0);
-        Grid.SetRow(formatSurface,0);
-        Grid.SetRow(designSurface,1);
+        Grid.SetRow(formatSurface,1);
+        full.Children.Add(routeSurface);
+        full.Children.Add(formatSurface);
 
-        var secondary=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        _embeddedPrintHost=new Grid{Margin=new Thickness(1,1,1,0)};
-        Grid.SetRow(_embeddedPrintHost,0);
-        secondary.Children.Add(_embeddedPrintHost);
-        _status.FontSize=12;
-        _status.Margin=new Thickness(2,0,2,1);
+        var lower=new Grid{FlowDirection=FlowDirection.LeftToRight,
+            Margin=new Thickness(0,1,0,0)};
+        lower.ColumnDefinitions.Add(new ColumnDefinition{
+            Width=new GridLength(39,GridUnitType.Star)});
+        lower.ColumnDefinitions.Add(new ColumnDefinition{
+            Width=new GridLength(61,GridUnitType.Star)});
+        var printColumn=new StackPanel{FlowDirection=FlowDirection.RightToLeft};
+        printColumn.Children.Add(basicsSurface);
+        _embeddedPrintHost=new Grid{Margin=new Thickness(1,0,1,1)};
+        printColumn.Children.Add(_embeddedPrintHost);
         _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
-        Grid.SetRow(_status,1);
-        secondary.Children.Add(_status);
-        Grid.SetRow(basicsSurface,1);
-        Grid.SetRow(secondary,2);
-
-        leftColumn.Children.Add(formatSurface);
-        leftColumn.Children.Add(basicsSurface);
-        leftColumn.Children.Add(secondary);
-        rightColumn.Children.Add(routeSurface);
-        rightColumn.Children.Add(designSurface);
-        Grid.SetColumn(leftColumn,0);
-        Grid.SetColumn(rightColumn,1);
-        split.Children.Add(leftColumn);
-        split.Children.Add(rightColumn);
-        return split;
+        _status.Margin=new Thickness(3,0,3,2);
+        _status.FontSize=11;
+        printColumn.Children.Add(_status);
+        lower.Children.Add(printColumn);
+        Grid.SetColumn(designSurface,1);
+        lower.Children.Add(designSurface);
+        Grid.SetRow(lower,2);
+        full.Children.Add(lower);
+        return full;
     }
 
     private void ChooseTemplateImage()
