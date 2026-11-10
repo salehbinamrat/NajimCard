@@ -32,7 +32,7 @@ class OwnerVisualAcceptance(unittest.TestCase):
         printing = source("PrintingView.cs")
         self.assertNotIn("#F8EFD9", workspace + designer + card_style + printing)
         self.assertNotIn("WhiteDropdownStyle", workspace)
-        self.assertIn('root.Resources[typeof(ComboBoxItem)]', workspace)
+        self.assertIn('FindResource("DarkComboBox")', workspace)
         self.assertIn('root.Resources[typeof(TextBox)]', workspace)
         self.assertIn('ReferenceHeader("معاينة وتصميم الكرت")', designer)
         self.assertIn("BuildSampleVoucherVisual()", source("GeneratorView.cs"))
@@ -98,8 +98,8 @@ class OwnerVisualAcceptance(unittest.TestCase):
         theme = (ROOT / "Themes" / "BurgundyGold.xaml").read_text(encoding="utf-8")
         ET.fromstring(theme)
         self.assertIn('TargetType="DataGridColumnHeader"', theme)
-        self.assertIn('Value="#142C47"', theme)
-        self.assertIn('Value="#FFFFFF"', theme)
+        self.assertIn('Property="Foreground" Value="{StaticResource TextBrush}"', theme)
+        self.assertIn('Property="RowBackground" Value="{StaticResource SurfaceBrush}"', theme)
         self.assertIn('TargetType="DataGridRow"', theme)
 
 if __name__ == "__main__":

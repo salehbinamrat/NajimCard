@@ -36,8 +36,8 @@ class PrintPageGeometry(unittest.TestCase):
         self.assertIn("#57213E",sections)
         self.assertIn("#F8E6C7",sections)
         self.assertIn("#D2AA61",sections)
-        self.assertIn("#301529",self.w)
-        self.assertIn("#FFF4E6",self.w)
+        self.assertIn('FindResource("DarkComboBox")',self.w)
+        self.assertNotIn("#FFF5E7",self.w)
         self.assertIn("Arial",self.style)
     def test_template_image_is_persistent_and_printed_not_fake_preview(self):
         self.assertIn("TemplateImagePath",self.ap)
@@ -70,5 +70,5 @@ class PrintPageGeometry(unittest.TestCase):
         self.assertIn('TargetType="DataGridColumnHeader"',self.style)
         self.assertIn('TargetType="DataGridCell"',self.style)
         self.assertIn('AlternatingRowBackground',self.style)
-        self.assertIn('Value="#D4E8FA"',self.style)
+        self.assertIn('Property="Background" Value="{StaticResource BurgundyBrush}"',self.style)
 if __name__=="__main__":unittest.main()
