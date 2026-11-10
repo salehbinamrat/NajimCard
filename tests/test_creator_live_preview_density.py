@@ -26,15 +26,15 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         cls.generator=(CORE/"VoucherGenerator.cs").read_text(encoding="utf-8")
 
     def test_original_hadramout_column_proportions(self):
-        self.assertIn("new GridLength(42,GridUnitType.Star)",self.layout)
-        self.assertIn("new GridLength(58,GridUnitType.Star)",self.layout)
+        self.assertIn("new GridLength(39,GridUnitType.Star)",self.layout)
+        self.assertIn("new GridLength(61,GridUnitType.Star)",self.layout)
         self.assertNotIn("new GridLength(48,GridUnitType.Star)",self.layout)
         self.assertNotIn("new GridLength(52,GridUnitType.Star)",self.layout)
-        self.assertIn("Grid.SetColumn(leftColumn,0)",self.layout)
-        self.assertIn("Grid.SetColumn(rightColumn,1)",self.layout)
+        self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
+        self.assertIn("Grid.SetColumn(designSurface,1)",self.layout)
 
     def test_content_fills_width_without_nested_gutters(self):
-        self.assertIn("surface.Margin=new Thickness(1,1,1,2)",self.layout)
+        self.assertIn("panel.Margin=new Thickness(1,1,1,3)",self.layout)
         self.assertIn("surface.Padding=new Thickness(6)",self.card)
         self.assertIn("surface.Margin=new Thickness(0)",self.card)
         self.assertIn("printPanel.Margin=new Thickness(0)",self.printer)
