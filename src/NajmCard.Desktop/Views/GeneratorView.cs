@@ -358,10 +358,10 @@ public partial class GeneratorView : UserControl
         _appearancePreviewBorder.Margin=new Thickness(0);
         var scalableCard=new Viewbox{
             Stretch=Stretch.Uniform,
-            StretchDirection=StretchDirection.DownOnly,
+            StretchDirection=StretchDirection.Both,
             HorizontalAlignment=HorizontalAlignment.Stretch,
             VerticalAlignment=VerticalAlignment.Center,
-            Margin=new Thickness(1,0,4,0),
+            Margin=new Thickness(0),
             Child=_appearancePreviewBorder
         };
         Grid.SetColumn(scalableCard,0);
