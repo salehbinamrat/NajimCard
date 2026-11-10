@@ -39,6 +39,48 @@ internal static class PageUi
     internal static TextBlock Status() => new() { TextWrapping = TextWrapping.Wrap,
         Foreground = Muted, Margin = new Thickness(0, 13, 0, 8), FontSize = 14, FontWeight=FontWeights.SemiBold };
     internal static TextBox Input(string value = "") => new() { Text = value, FlowDirection = FlowDirection.LeftToRight };
+    // Bounded numeric presets, with the original TextBox kept as the single
+    // source of truth for saved package settings and form validation.
+    internal static ComboBox CompactNumberChoice(TextBox value,params string[] choices)
+    {
+        var picker=new ComboBox
+        {
+            MinWidth=0,MinHeight=30,IsEditable=false,
+            FontFamily=new FontFamily("Arial"),FontSize=13,
+            FontWeight=FontWeights.Bold,FlowDirection=FlowDirection.LeftToRight,
+            HorizontalContentAlignment=HorizontalAlignment.Center
+        };
+        foreach(var choice in choices.Distinct(StringComparer.Ordinal))
+            picker.Items.Add(choice);
+        bool syncing=false;
+        void FromValue()
+        {
+            if(syncing)return;
+            syncing=true;
+            try
+            {
+                var current=value.Text.Trim().Replace(',','.');
+                // Old saved profiles may use a custom value. Display it without
+                // discarding the existing preset or expanding the normal list.
+                if(current.Length>0 && !picker.Items.Contains(current))
+                    picker.Items.Add(current);
+                picker.SelectedItem=current;
+                picker.IsEnabled=value.IsEnabled;
+            }
+            finally{syncing=false;}
+        }
+        picker.SelectionChanged+=(_,_) =>
+        {
+            if(syncing)return;
+            if(picker.SelectedItem is string selected && value.Text!=selected)
+                value.Text=selected;
+        };
+        value.TextChanged+=(_,_)=>FromValue();
+        value.IsEnabledChanged+=(_,_)=>picker.IsEnabled=value.IsEnabled;
+        FromValue();
+        return picker;
+    }
+
     internal static DataGrid Table(params (string Header, string Binding)[] columns)
     {
         var grid = new DataGrid { CanUserResizeColumns = true, CanUserSortColumns = true,
