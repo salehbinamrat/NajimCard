@@ -59,6 +59,18 @@ internal static class Program
             root.Arrange(new Rect(0,0,width,height));
             root.UpdateLayout();
 
+            // Capture the actual fixed-size login form as well as both workspaces.
+            var loginLayer=(Grid)window.FindName("LoginLayer");
+            var workspaceLayer=(Grid)window.FindName("WorkspaceLayer");
+            workspaceLayer.Visibility=Visibility.Collapsed;
+            loginLayer.Visibility=Visibility.Visible;
+            root.UpdateLayout();
+            Capture(root,width,height,Path.Combine(
+                Path.GetDirectoryName(destination)!,"login-1200x750.png"));
+            loginLayer.Visibility=Visibility.Collapsed;
+            workspaceLayer.Visibility=Visibility.Visible;
+            root.UpdateLayout();
+
             var workspace=(DockPanel)creator.Content;
             var footer=(StackPanel)workspace.Children[0];
             var footerBounds=footer.TransformToAncestor(root).TransformBounds(new Rect(footer.RenderSize));
