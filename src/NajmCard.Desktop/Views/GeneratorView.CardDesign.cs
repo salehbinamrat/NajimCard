@@ -147,10 +147,10 @@ public partial class GeneratorView
         _previewPackageName.MaxWidth=90;
         elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
         elements.Add(_previewCapacity,new CardElementPosition(0.96,0.24));
-        elements.Add(_previewPhone,new CardElementPosition(0.37,0.98));
+        elements.Add(_previewPhone,new CardElementPosition(0.02,0.98));
         elements.Add(_previewQr,new CardElementPosition(0.85,0.45));
         elements.Add(_previewTime,new CardElementPosition(0.94,0.76));
-        elements.Add(_previewDate,new CardElementPosition(0.48,0.90));
+        elements.Add(_previewDate,new CardElementPosition(0.98,0.98));
         elements.Add(_previewSequence,new CardElementPosition(0.08,0.57));
         elements.Add(_previewRoute,new CardElementPosition(0.08,0.13));
         EnableCardEditing(elements,_previewNetworkName,
@@ -268,10 +268,10 @@ public partial class GeneratorView
             CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
         _previewElements.Place(_previewCapacity,appearance.CapacityPosition??new CardElementPosition(0.96,0.24));
-        _previewElements.Place(_previewPhone,appearance.PhonePosition??new CardElementPosition(0.37,0.98));
+        _previewElements.Place(_previewPhone,appearance.PhonePosition??new CardElementPosition(0.02,0.98));
         _previewElements.Place(_previewQr,appearance.QrPosition??new CardElementPosition(0.85,0.45));
         _previewElements.Place(_previewTime,appearance.TimePosition??new CardElementPosition(0.94,0.76));
-        _previewElements.Place(_previewDate,appearance.DatePosition??new CardElementPosition(0.48,0.90));
+        _previewElements.Place(_previewDate,appearance.DatePosition??new CardElementPosition(0.98,0.98));
         _previewElements.Place(_previewSequence,appearance.SequencePosition??new CardElementPosition(0.08,0.57));
         _previewElements.Place(_previewRoute,appearance.RoutePosition??new CardElementPosition(0.08,0.13));
     }
