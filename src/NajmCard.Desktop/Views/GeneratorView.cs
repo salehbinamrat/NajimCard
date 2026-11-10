@@ -158,7 +158,7 @@ public partial class GeneratorView : UserControl
         quickSaveButton.FontSize=11;
         quickSaveButton.FontWeight=FontWeights.Bold;
         quickSaveButton.Foreground=Brushes.White;
-        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#165B65")!;
+        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#8B122A")!;
         quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
         var packageSaveFeedback=PageUi.Status();
         packageSaveFeedback.FontSize=11;
