@@ -138,8 +138,8 @@ public class PrintingView : UserControl
         var order=new ComboBox {ItemsSource=new[]{
             "صفوف يسار","صفوف يمين","صفوف متعرجة","أعمدة يسار","أعمدة يمين"
         },SelectedIndex=1};
-        var basicPrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,2,0,3)};
-        var pagePrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,2,0,3)};
+        var basicPrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,1,0,2)};
+        var pagePrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,1,0,2)};
         void Field(UniformGrid host,string title,FrameworkElement control)
         {
             control.MinWidth=0;
@@ -196,9 +196,9 @@ public class PrintingView : UserControl
         var printPanel=PageUi.Surface(stack,"#A97A48");
         if(embedded)
         {
-            printPanel.Padding=new Thickness(9);
+            printPanel.Padding=new Thickness(6);
             printPanel.CornerRadius=new CornerRadius(8);
-            printPanel.Margin=new Thickness(0,0,0,4);
+            printPanel.Margin=new Thickness(0);
             printPanel.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
             printPanel.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
             _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
