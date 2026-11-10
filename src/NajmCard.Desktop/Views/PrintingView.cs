@@ -353,7 +353,7 @@ public class PrintingView : UserControl
                         };
                     }
                     void AddText(string value,CardElementPosition pos,double size,
-                        bool enabled=true,bool numeric=false)
+                        bool enabled=true,bool numeric=false,bool credential=false)
                     {
                         if(!enabled || string.IsNullOrWhiteSpace(value))return;
                         var line=new TextBlock
@@ -366,17 +366,19 @@ public class PrintingView : UserControl
                             TextTrimming=TextTrimming.CharacterEllipsis,
                             Background=Brushes.Transparent
                         };
-                        positioned.Add(Layer(line),pos);
+                        positioned.Add(credential
+                            ?CardCredentialPlate.Build(line,opts.CardWidthMm,opts.CardHeightMm)
+                            :Layer(line),pos);
                     }
                     AddText(appearance.NetworkTitle,
                         appearance.TitlePosition??CardElementPanel.DefaultTitle,
                         10*appearance.TitleScale,appearance.ShowTitle);
                     AddText(card.Username,appearance.CredentialsPosition??
                         CardElementPanel.DefaultCredentials,appearance.UsernameFontSize,
-                        numeric:true);
+                        numeric:true,credential:true);
                     AddText(card.Password,appearance.PasswordPosition??
                         CardElementPanel.PasswordBelow(appearance.CredentialsPosition),
-                        10*appearance.PasswordScale,appearance.ShowPassword,numeric:true);
+                        10*appearance.PasswordScale,appearance.ShowPassword,numeric:true,credential:true);
                     AddText(card.Profile+" · "+card.Service,appearance.ProfilePosition??
                         CardElementPanel.DefaultProfile,9*appearance.ProfileScale,
                         appearance.ShowProfile);
