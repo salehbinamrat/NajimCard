@@ -15,8 +15,8 @@ public partial class GeneratorView
     {
         var surface=PageUi.Surface(content,accent);
         // Hadramout reference geometry with NajmCard burgundy/gold surfaces.
-        surface.Padding=new Thickness(10);
-        surface.Margin=new Thickness(0,0,5,5);
+        surface.Padding=new Thickness(6);
+        surface.Margin=new Thickness(0);
         surface.CornerRadius=new CornerRadius(9);
         surface.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
         surface.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
@@ -26,6 +26,9 @@ public partial class GeneratorView
 
     private static void RestyleCompactText(DependencyObject node)
     {
+        // Print-card artwork has its own contrast and font sizes. Never apply
+        // form-label cream text to the light paper preview underneath.
+        if(node is FrameworkElement element && Equals(element.Tag,"CardArtwork"))return;
         if(node is TextBlock label && !Equals(label.Tag,"SectionTitle"))
         {
             label.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
@@ -60,6 +63,7 @@ public partial class GeneratorView
         // a purple geometric print design with independently overlaid data.
         // A selected per-package PNG/JPG/... replaces the base artwork.
         var card=new Grid{
+            Tag="CardArtwork",
             Width=465,Height=178,
             HorizontalAlignment=HorizontalAlignment.Center,
             VerticalAlignment=VerticalAlignment.Center,
@@ -127,7 +131,12 @@ public partial class GeneratorView
             CornerRadius=new CornerRadius(8),
             Padding=new Thickness(4,2,4,2),
             Margin=new Thickness(1,6,1,3),
-            Child=_cardPreview
+            Child=new Viewbox
+            {
+                Stretch=Stretch.Uniform,
+                StretchDirection=StretchDirection.DownOnly,
+                Child=_cardPreview
+            }
         };
         _cardPreview.Margin=new Thickness(0);
         _cardPreview.FontWeight=FontWeights.ExtraBold;

@@ -30,14 +30,27 @@ public sealed class VoucherWorkspaceView : UserControl
             Background=(Brush)new BrushConverter().ConvertFrom("#1D0B19")!};
         // Scoped burgundy/gold controls including dropdown items retain readable contrast.
         var CardDropdownStyle=new Style(typeof(ComboBox));
-        CardDropdownStyle.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#301529")!));
-        CardDropdownStyle.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF4E6")!));
+        CardDropdownStyle.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
+        CardDropdownStyle.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
         CardDropdownStyle.Setters.Add(new Setter(Control.BorderBrushProperty,(Brush)new BrushConverter().ConvertFrom("#D2AA61")!));
         CardDropdownStyle.Setters.Add(new Setter(Control.FontWeightProperty,FontWeights.SemiBold));
-        CardDropdownStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,29d));
+        CardDropdownStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
         var CardDropdownItems=new Style(typeof(ComboBoxItem));
-        CardDropdownItems.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#301529")!));
-        CardDropdownItems.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF4E6")!));
+        CardDropdownItems.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
+        CardDropdownItems.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
+        // The Windows theme may draw the selected ComboBox text with its own
+        // near-white foreground even when Control.Foreground is overridden.
+        // An explicit data template keeps the selected value and popup choices
+        // readable on our light field background without overriding keyboard,
+        // mouse selection, or ComboBox's native dropdown behavior.
+        var comboText=new FrameworkElementFactory(typeof(TextBlock));
+        comboText.SetValue(TextBlock.ForegroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#231023")!);
+        comboText.SetValue(TextBlock.VerticalAlignmentProperty,VerticalAlignment.Center);
+        comboText.SetValue(TextBlock.TextTrimmingProperty,TextTrimming.CharacterEllipsis);
+        comboText.SetBinding(TextBlock.TextProperty,new System.Windows.Data.Binding("."));
+        var comboItemTemplate=new DataTemplate{VisualTree=comboText};
+        CardDropdownStyle.Setters.Add(new Setter(ItemsControl.ItemTemplateProperty,comboItemTemplate));
         root.Resources[typeof(ComboBox)]=CardDropdownStyle;
         root.Resources[typeof(ComboBoxItem)]=CardDropdownItems;
         var whiteInput=new Style(typeof(TextBox));
@@ -57,7 +70,7 @@ public sealed class VoucherWorkspaceView : UserControl
         fields.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         // The top-level page title comes from MainWindow, never a second heading.
         // Tabs already identify the service without a duplicate subtitle.
-        var tabs=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,5)};
+        var tabs=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
         var tabButtons=new Dictionary<string,Button>(StringComparer.Ordinal);
         foreach(var (id,title) in new[]{
             ("hotspot","هوتسبوت"),("userman","يوزمنجر v6"),
@@ -69,7 +82,7 @@ public sealed class VoucherWorkspaceView : UserControl
             btn.Height=38;
             btn.FontSize=14;
             btn.FontWeight=FontWeights.ExtraBold;
-            btn.Margin=new Thickness(3);
+            btn.Margin=new Thickness(1);
             btn.Click+=(_,_)=>creator.SelectService(service);
             tabs.Children.Add(btn);
             tabButtons.Add(service,btn);
@@ -113,7 +126,7 @@ public sealed class VoucherWorkspaceView : UserControl
         var footer=new StackPanel
         {
             Background=(Brush)new BrushConverter().ConvertFrom("#270E20")!,
-            Margin=new Thickness(0,6,0,0)
+            Margin=new Thickness(0,2,0,0)
         };
         var status=new TextBlock
         {
@@ -122,15 +135,15 @@ public sealed class VoucherWorkspaceView : UserControl
             TextWrapping=TextWrapping.Wrap,FontSize=11,
             FontWeight=FontWeights.SemiBold,
             TextAlignment=TextAlignment.Center,
-            Margin=new Thickness(4,4,4,4)
+            Margin=new Thickness(3,1,3,2)
         };
         footer.Children.Add(status);
-        var buttonsGrid=new UniformGrid{Columns=6,Margin=new Thickness(4,0,4,6)};
+        var buttonsGrid=new UniformGrid{Columns=7,Margin=new Thickness(2,0,2,3)};
         footer.Children.Add(buttonsGrid);
         Button MakeButton(string title,string bg,string fg)
         {
             var button=PageUi.Button(title,false);
-            button.Margin=new Thickness(3);
+            button.Margin=new Thickness(2);
             button.MinWidth=0;
             button.Height=43;
             button.Background=(Brush)new BrushConverter().ConvertFromInvariantString(bg)!;
@@ -147,6 +160,7 @@ public sealed class VoucherWorkspaceView : UserControl
         var actions=new[]{
             MakeButton("إنشاء وإرسال وحفظ","#720D31","#FFFFFF"),
             MakeButton("إنشاء وإرسال","#AD7419","#FFFFFF"),
+            MakeButton("إعادة الإعدادات","#165B65","#FFFFFF"),
             MakeButton("معاينة قبل الطباعة","#1756AE","#FFFFFF"),
             MakeButton("حفظ PDF","#102A47","#FFFFFF"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
@@ -192,7 +206,8 @@ public sealed class VoucherWorkspaceView : UserControl
                 ?"اكتمل إرسال كروت مؤكدة وحُفظت حالاتها في SQLite.":
                 "تعذر تأكيد الإرسال. راجع حالات الدفعة قبل إعادة المحاولة.";
         });
-        actions[2].Click+=async(_,_)=>await Execute(async()=>
+        actions[2].Click+=(_,_)=>creator.RestoreSavedPackageSettings();
+        actions[3].Click+=async(_,_)=>await Execute(async()=>
         {
             if(creator.HasBatch)
             {
@@ -206,15 +221,15 @@ public sealed class VoucherWorkspaceView : UserControl
                 status.Text="عينة توليد محلية دون حفظ أو إرسال إلى الراوتر.";
             }
         });
-        actions[3].Click+=(_,_)=>_ = Execute(()=>
+        actions[4].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.SavePdf();return Task.CompletedTask;
         });
-        actions[4].Click+=(_,_)=>_ = Execute(()=>
+        actions[5].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.PreviewPdf();return Task.CompletedTask;
         });
-        actions[5].Click+=(_,_)=>_ = Execute(()=>
+        actions[6].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.PrintBatch();return Task.CompletedTask;
         });

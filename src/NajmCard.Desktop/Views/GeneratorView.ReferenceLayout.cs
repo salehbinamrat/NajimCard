@@ -14,12 +14,12 @@ public partial class GeneratorView
     private static Border ReferenceHeader(string title)=>new()
     {
         Background=(Brush)new BrushConverter().ConvertFrom(
-            title=="الباقة ومسار الإرسال"?"#720F30":"#57213E")!,
+            title=="بيانات ومسار الإرسال"?"#720F30":"#57213E")!,
         BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!,
         BorderThickness=new Thickness(0,0,0,1),
         CornerRadius=new CornerRadius(5,5,0,0),
-        Padding=new Thickness(9,6,9,6),
-        Margin=new Thickness(0,0,0,3),
+        Padding=new Thickness(8,4,8,4),
+        Margin=new Thickness(0,0,0,2),
         Child=new TextBlock
         {
             Text=title,Tag="SectionTitle",FontFamily=new FontFamily("Arial"),FontSize=15,
@@ -29,58 +29,60 @@ public partial class GeneratorView
     };
 
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
-        Border designSurface,UIElement basicsTitle,UniformGrid basicsRow)
+        Border basicsSurface,Border designSurface)
     {
-        // Same 2x2 geometry as Hadramout screenshot, without fixed reference width.
-        // First row: credentials on the left, package/server on the right.
-        // Second row: generation/printing on the left, live designer on the right.
+        // Hadramout's original ui/network.py uses two INDEPENDENT columns
+        // (42% left, 58% right). A shared 2x2 grid forced the short routing
+        // panel to occupy the credentials panel's much taller first row.
+        // Separate column row-heights eliminate that genuine blank panel.
         var split=new Grid{FlowDirection=FlowDirection.LeftToRight};
-        // Align the reference photograph's almost equal widths. The editor
-        // leaves only a thin geometric separator; no outer fixed-width canvas.
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(48,GridUnitType.Star)});
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(52,GridUnitType.Star)});
-        split.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(42,GridUnitType.Star)});
+        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(58,GridUnitType.Star)});
         split.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+
+        var leftColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        var rightColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+
         routeSurface.FlowDirection=formatSurface.FlowDirection=
-            designSurface.FlowDirection=FlowDirection.RightToLeft;
-        foreach(var surface in new[]{routeSurface,formatSurface,designSurface})
-            surface.Margin=new Thickness(2,2,2,4);
-        routeSurface.VerticalAlignment=VerticalAlignment.Stretch;
-        formatSurface.VerticalAlignment=VerticalAlignment.Stretch;
-        designSurface.VerticalAlignment=VerticalAlignment.Stretch;
+            basicsSurface.FlowDirection=designSurface.FlowDirection=FlowDirection.RightToLeft;
+        foreach(var surface in new[]{routeSurface,formatSurface,basicsSurface,designSurface})
+        {
+            surface.Margin=new Thickness(1,1,1,2);
+            surface.HorizontalAlignment=HorizontalAlignment.Stretch;
+            surface.VerticalAlignment=VerticalAlignment.Stretch;
+        }
         Grid.SetRow(routeSurface,0);
-        Grid.SetColumn(routeSurface,1);
         Grid.SetRow(formatSurface,0);
-        Grid.SetColumn(formatSurface,0);
         Grid.SetRow(designSurface,1);
-        Grid.SetColumn(designSurface,1);
-        // The print area stretches down to the designer's bottom edge.
-        // A StackPanel here left an unpainted strip under the printing form.
+
         var secondary=new Grid{FlowDirection=FlowDirection.RightToLeft};
         secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        secondary.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        var basics=PageUi.Column();
-        basics.Children.Add(basicsTitle);
-        basics.Children.Add(basicsRow);
-        var basicsSurface=CompactSurface(basics,"#D2AA61");
-        basicsSurface.Margin=new Thickness(2,2,2,4);
-        Grid.SetRow(basicsSurface,0);
-        secondary.Children.Add(basicsSurface);
-        _embeddedPrintHost=new Grid{Margin=new Thickness(2,0,2,0)};
-        Grid.SetRow(_embeddedPrintHost,1);
+        _embeddedPrintHost=new Grid{Margin=new Thickness(1,1,1,0)};
+        Grid.SetRow(_embeddedPrintHost,0);
         secondary.Children.Add(_embeddedPrintHost);
         _status.FontSize=12;
-        _status.Margin=new Thickness(3,1,3,2);
+        _status.Margin=new Thickness(2,0,2,1);
         _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
-        Grid.SetRow(_status,2);
+        Grid.SetRow(_status,1);
         secondary.Children.Add(_status);
-        Grid.SetRow(secondary,1);
-        Grid.SetColumn(secondary,0);
-        split.Children.Add(formatSurface);
-        split.Children.Add(routeSurface);
-        split.Children.Add(designSurface);
-        split.Children.Add(secondary);
+        Grid.SetRow(basicsSurface,1);
+        Grid.SetRow(secondary,2);
+
+        leftColumn.Children.Add(formatSurface);
+        leftColumn.Children.Add(basicsSurface);
+        leftColumn.Children.Add(secondary);
+        rightColumn.Children.Add(routeSurface);
+        rightColumn.Children.Add(designSurface);
+        Grid.SetColumn(leftColumn,0);
+        Grid.SetColumn(rightColumn,1);
+        split.Children.Add(leftColumn);
+        split.Children.Add(rightColumn);
         return split;
     }
 

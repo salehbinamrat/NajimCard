@@ -45,6 +45,20 @@ public class PrintingView : UserControl
     private readonly Action _invalidate;
     private readonly TextBlock _status;
 
+    private static Border ReferenceHeader(string title)=>new()
+    {
+        Background=(Brush)new BrushConverter().ConvertFrom("#57213E")!,
+        Padding=new Thickness(9,6,9,6),
+        Margin=new Thickness(0,0,0,3),
+        CornerRadius=new CornerRadius(5,5,0,0),
+        Child=new TextBlock
+        {
+            Text=title,FontFamily=new FontFamily("Arial"),FontSize=14,
+            FontWeight=FontWeights.ExtraBold,Foreground=Brushes.White,
+            TextAlignment=TextAlignment.Right
+        }
+    };
+
     public event Action? LayoutSettingsChanged;
     public CardPrintOptions GetOptions()=>_getOptions();
     public void ApplyOptions(CardPrintOptions options)=>_applyOptions(options);
@@ -104,22 +118,13 @@ public class PrintingView : UserControl
     {
         _status=PageUi.Status();
         var stack=PageUi.Column();
-        var printTitle=PageUi.Title("إعداد الطباعة والدفعة");
-        if(embedded){printTitle.FontSize=16;printTitle.Margin=new Thickness(0,0,0,4);}
-        if(embedded)
-        {
-            printTitle.FontSize=15;
-            printTitle.Foreground=Brushes.White;
-            stack.Children.Add(new Border{
-                Background=(Brush)new BrushConverter().ConvertFrom("#57213E")!,
-                Padding=new Thickness(8,6,8,6),Margin=new Thickness(0,0,0,4),
-                Child=printTitle});
-        }
-        else stack.Children.Add(printTitle);
         if(!embedded)stack.Children.Add(PageUi.Hint(
             "أبعاد فعلية بالملليمتر، وورق A4/A3 واتجاهات مختلفة. "+
             "PDF والمعاينة والطباعة تستخدم القالب نفسه؛ الكروت المرسلة بنجاح فقط."));
-        var form=new UniformGrid {Columns=4,Margin=new Thickness(0,2,0,4)};
+
+        // Reference layout: five basic printing controls, a page settings
+        // strip and a separate ordering row in the lower-left workspace.
+        // All fields still feed the original CardPrintOptions and planner.
         var qty=PageUi.Input("60");
         var width=PageUi.Input("50");
         var height=PageUi.Input("19");
@@ -133,31 +138,45 @@ public class PrintingView : UserControl
         var order=new ComboBox {ItemsSource=new[]{
             "صفوف يسار","صفوف يمين","صفوف متعرجة","أعمدة يسار","أعمدة يمين"
         },SelectedIndex=1};
-        void Field(string title,FrameworkElement control,double size=90)
+        var basicPrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,1,0,2)};
+        var pagePrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,1,0,2)};
+        void Field(UniformGrid host,string title,FrameworkElement control)
         {
             control.MinWidth=0;
             control.Width=double.NaN;
             var part=PageUi.Column();
-            part.Margin=new Thickness(3,0,3,4);
+            part.Margin=new Thickness(2,0,2,3);
             var caption=PageUi.Label(title);
             if(embedded)
             {
-                caption.FontSize=11;caption.Margin=new Thickness(0,3,0,3);
+                caption.FontSize=11;
+                caption.Margin=new Thickness(0,2,0,2);
                 caption.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
             }
             part.Children.Add(caption);
             part.Children.Add(control);
-            form.Children.Add(part);
+            host.Children.Add(part);
         }
-        if(selectedBatch is null)Field("أقصى كروت للمعاينة",qty,140);
-        Field("عرض الكرت (مم)",width);Field("ارتفاع الكرت (مم)",height);
-        Field("الصفوف",rows);Field("الأعمدة",cols);
-        Field("الفاصل الأفقي",gapX);Field("الفاصل الرأسي",gapY);
-        Field("الهامش",margin);Field("حجم الورق",paper);
-        Field("الاتجاه",orientation);Field("ترتيب الكروت",order,120);
+        stack.Children.Add(ReferenceHeader("إعدادات الطباعة الأساسية"));
+        Field(basicPrintFields,"عرض الكرت (مم)",width);
+        Field(basicPrintFields,"ارتفاع الكرت (مم)",height);
+        Field(basicPrintFields,"الصفوف",rows);
+        Field(basicPrintFields,"الأعمدة",cols);
+        Field(basicPrintFields,"الفاصل الأفقي",gapX);
+        stack.Children.Add(basicPrintFields);
+        stack.Children.Add(ReferenceHeader("إعدادات الصفحة والطباعة"));
+        Field(pagePrintFields,"الفاصل الرأسي",gapY);
+        Field(pagePrintFields,"الهامش",margin);
+        Field(pagePrintFields,"الورق",paper);
+        Field(pagePrintFields,"الاتجاه",orientation);
+        stack.Children.Add(pagePrintFields);
+        var ordering=new UniformGrid{Columns=selectedBatch is null?2:1,
+            Margin=new Thickness(2,1,2,3)};
+        Field(ordering,"ترتيب الكروت",order);
+        if(selectedBatch is null)Field(ordering,"أقصى كروت للمعاينة",qty);
+        stack.Children.Add(ordering);
         rows.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
         cols.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
-        stack.Children.Add(form);
 
         var actions=new WrapPanel{Margin=new Thickness(0,1,0,10)};
         var previewButton=PageUi.Button("معاينة قبل الطباعة");
@@ -177,11 +196,15 @@ public class PrintingView : UserControl
         var printPanel=PageUi.Surface(stack,"#A97A48");
         if(embedded)
         {
-            printPanel.Padding=new Thickness(9);
+            printPanel.Padding=new Thickness(6);
             printPanel.CornerRadius=new CornerRadius(8);
-            printPanel.Margin=new Thickness(0,0,0,4);
+            printPanel.Margin=new Thickness(0);
+            // Size to the last working control; never fill the left column
+            // with an empty 300px bordered block.
+            printPanel.VerticalAlignment=VerticalAlignment.Top;
             printPanel.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
             printPanel.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
+            _status.Margin=new Thickness(2,0,2,1);
             _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         }
         Content=embedded?printPanel:

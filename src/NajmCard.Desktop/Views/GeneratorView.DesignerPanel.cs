@@ -14,9 +14,18 @@ public partial class GeneratorView
 
     private Border BuildDesignerPanel(bool embedded)
     {
-        var designer=PageUi.Column();
-        designer.Children.Add(ReferenceHeader("معاينة وتصميم الكرت"));
-        var toolbar=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,4)};
+        // The card keeps its aspect ratio. Size the row to the artwork and
+        // appearance controls so spare viewport height stays outside the panel.
+        var designer=new Grid();
+        for(int i=0;i<7;i++)
+            designer.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        void AddPanel(UIElement element,int row)
+        {
+            Grid.SetRow(element,row);
+            designer.Children.Add(element);
+        }
+        AddPanel(ReferenceHeader("معاينة وتصميم الكرت"),0);
+        var toolbar=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
         var templateImage=PageUi.Button("صورة القالب",false);
         var changeTemplate=PageUi.Button("تغيير القالب",false);
         var advanced=PageUi.Button("تعديلات متقدمة",false);
@@ -33,21 +42,21 @@ public partial class GeneratorView
         advanced.Background=(Brush)new BrushConverter().ConvertFrom("#663CAA")!;
         foreach(var button in new[]{templateImage,changeTemplate,advanced})
             button.Foreground=Brushes.White;
-        designer.Children.Add(toolbar);
+        AddPanel(toolbar,1);
         templateImage.Click+=(_,_)=>ChooseTemplateImage();
 
         var previewRow=_designPreviewRow;
         previewRow.FlowDirection=FlowDirection.LeftToRight;
-        previewRow.Margin=new Thickness(0,2,0,4);
+        previewRow.Margin=new Thickness(0,0,0,2);
         previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
-        previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(180)});
+        previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(168)});
         var options=PageUi.Column();
         options.FlowDirection=FlowDirection.RightToLeft;
         options.Children.Add(ReferenceHeader("خيارات مظهر الكرت"));
         void Option(string label,Control field)
         {
             field.MinWidth=0;field.Width=double.NaN;
-            var line=new Grid{Margin=new Thickness(2,0,2,3)};
+            var line=new Grid{Margin=new Thickness(1,0,1,2)};
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(83)});
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
             var caption=new TextBlock{
@@ -69,23 +78,24 @@ public partial class GeneratorView
         Option("سمك الحدود",_designBorderWidth);
         Grid.SetColumn(options,1);
         previewRow.Children.Add(options);
-        designer.Children.Add(previewRow);
+        AddPanel(previewRow,2);
 
-        designer.Children.Add(ReferenceHeader("عناصر الكرت"));
-        var designChecks=new WrapPanel{Margin=new Thickness(0,3,0,3)};
+        AddPanel(ReferenceHeader("عناصر الكرت"),3);
+        var designChecks=new WrapPanel{Margin=new Thickness(0,1,0,1)};
         _designShowPassword.Content="كلمة المرور";
         _designShowProfile.Content="الباقة";
         designChecks.Children.Add(_designShowPassword);
         designChecks.Children.Add(_designShowProfile);
-        designer.Children.Add(designChecks);
+        AddPanel(designChecks,4);
         var saveAppearanceButton=PageUi.Button("حفظ إعدادات القالب لهذه الباقة");
         saveAppearanceButton.MinWidth=0;saveAppearanceButton.Padding=new Thickness(8,6,8,6);
-        saveAppearanceButton.Margin=new Thickness(2,3,2,2);
+        saveAppearanceButton.Margin=new Thickness(1,1,1,1);
         var designStatus=_designStatus;
         designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         designStatus.Margin=new Thickness(1,2,1,3);designStatus.FontSize=12;
-        designer.Children.Add(saveAppearanceButton);
-        designer.Children.Add(designStatus);
+        AddPanel(saveAppearanceButton,5);
+        if(embedded)designStatus.Margin=new Thickness(1,0,1,1);
+        AddPanel(designStatus,6);
         var designSurface=embedded?CompactSurface(designer,"#D2AA61")
             :PageUi.Surface(designer,"#D2AA61");
         saveAppearanceButton.Click+=(_,_)=>{
