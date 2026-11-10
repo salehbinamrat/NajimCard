@@ -217,9 +217,31 @@ public partial class GeneratorView
             _designShowTime,_designShowDate,_designShowTitle,_designShowSequence,_designShowRoute,
             _designShowPassword,_designShowProfile})
         {
-            check.FontSize=11;check.FontWeight=FontWeights.Bold;
-            check.Margin=new Thickness(2,2,2,2);
-            designChecks.Children.Add(check);
+            // Explicit labels are independent of the global CheckBox control
+            // template, which rendered the indicator but clipped its content.
+            var caption=new TextBlock
+            {
+                Text=check.Content?.ToString()??"",
+                FontFamily=new FontFamily("Arial"),FontWeight=FontWeights.Bold,
+                FontSize=11,VerticalAlignment=VerticalAlignment.Center,
+                TextTrimming=TextTrimming.CharacterEllipsis,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!
+            };
+            check.Content=null;
+            check.Margin=new Thickness(2,0,2,0);
+            caption.MouseLeftButtonUp+=(_,args)=>
+            {
+                if(check.IsEnabled)check.IsChecked=check.IsChecked!=true;
+                args.Handled=true;
+            };
+            var option=new StackPanel
+            {
+                Orientation=Orientation.Horizontal,FlowDirection=FlowDirection.RightToLeft,
+                Margin=new Thickness(2,3,2,3),ToolTip=caption.Text
+            };
+            option.Children.Add(check);
+            option.Children.Add(caption);
+            designChecks.Children.Add(option);
         }
         AddPanel(designChecks,5);
         var designStatus=_designStatus;
