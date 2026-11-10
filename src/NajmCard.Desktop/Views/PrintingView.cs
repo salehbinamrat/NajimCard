@@ -224,10 +224,26 @@ public partial class PrintingView : UserControl
         var exportRow=new WrapPanel{Margin=new Thickness(5,1,5,2)};
         foreach(var check in new[]{_additionalExport,_csvExport,_excelExport})
         {
-            check.FontSize=12;check.FontWeight=FontWeights.Bold;
-            check.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
-            check.Margin=new Thickness(4,1,6,1);
-            exportRow.Children.Add(check);
+            // The custom global CheckBox template shows the square but not its
+            // Content. Use an explicit adjacent caption to prevent blank options.
+            var title=new TextBlock
+            {
+                Text=check.Content?.ToString()??"",
+                FontFamily=new FontFamily("Arial"),FontSize=11,
+                FontWeight=FontWeights.Bold,VerticalAlignment=VerticalAlignment.Center,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!
+            };
+            check.Content=null;
+            check.Margin=new Thickness(2,0,2,0);
+            title.MouseLeftButtonUp+=(_,args)=>
+            {
+                if(check.IsEnabled)check.IsChecked=check.IsChecked!=true;
+                args.Handled=true;
+            };
+            var pair=new StackPanel{Orientation=Orientation.Horizontal,
+                FlowDirection=FlowDirection.RightToLeft,Margin=new Thickness(5,2,5,2)};
+            pair.Children.Add(check);pair.Children.Add(title);
+            exportRow.Children.Add(pair);
         }
         _additionalExport.Checked+=(_,_)=>_csvExport.IsEnabled=_excelExport.IsEnabled=true;
         _additionalExport.Unchecked+=(_,_)=>_csvExport.IsEnabled=_excelExport.IsEnabled=false;
