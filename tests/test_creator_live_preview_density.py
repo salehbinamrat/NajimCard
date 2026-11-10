@@ -71,6 +71,8 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         self.assertIn('Equals(element.Tag,"CardArtwork")',self.card)
         self.assertIn('CardDropdownItems.Setters.Add',self.workspace)
         self.assertIn('"#231023"',self.workspace)
+        self.assertIn("ItemsControl.ItemTemplateProperty",self.workspace)
+        self.assertIn("new System.Windows.Data.Binding(\".\")",self.workspace)
         self.assertIn('"#FFF5E7"',self.workspace)
         self.assertIn("printPanel.VerticalAlignment=VerticalAlignment.Top",self.printer)
 
