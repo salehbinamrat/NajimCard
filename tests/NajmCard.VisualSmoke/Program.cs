@@ -22,7 +22,7 @@ internal static class Program
         try
         {
             var destination=Path.GetFullPath(args.Length>0
-                ? args[0] : "out/creator-1200x780.png");
+                ? args[0] : "out/creator-1200x750.png");
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var application=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -41,7 +41,7 @@ internal static class Program
             var window=new MainWindow();
             var width=(int)window.Width;
             var height=(int)window.Height;
-            if(width!=1200 || height!=780)
+            if(width!=1200 || height!=750)
                 throw new InvalidDataException("Unexpected default window size.");
 
             ((Grid)window.FindName("LoginLayer")).Visibility=Visibility.Collapsed;
@@ -76,7 +76,7 @@ internal static class Program
             pageHost.Content=dashboard;
             root.UpdateLayout();
             VerifyDashboardPanels(dashboard);
-            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x780.png"));
+            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x750.png"));
             return 0;
         }
         catch(Exception ex)
