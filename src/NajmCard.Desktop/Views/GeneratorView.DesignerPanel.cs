@@ -14,8 +14,18 @@ public partial class GeneratorView
 
     private Border BuildDesignerPanel(bool embedded)
     {
-        var designer=PageUi.Column();
-        designer.Children.Add(ReferenceHeader("معاينة وتصميم الكرت"));
+        // The preview consumes the available height; fixed-height StackPanel used
+        // to strand a large blank strip below the card design controls.
+        var designer=new Grid();
+        for(int i=0;i<7;i++)
+            designer.RowDefinitions.Add(new RowDefinition{Height=i==2
+                ?new GridLength(1,GridUnitType.Star):GridLength.Auto});
+        void AddPanel(UIElement element,int row)
+        {
+            Grid.SetRow(element,row);
+            designer.Children.Add(element);
+        }
+        AddPanel(ReferenceHeader("معاينة وتصميم الكرت"),0);
         var toolbar=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
         var templateImage=PageUi.Button("صورة القالب",false);
         var changeTemplate=PageUi.Button("تغيير القالب",false);
@@ -33,7 +43,7 @@ public partial class GeneratorView
         advanced.Background=(Brush)new BrushConverter().ConvertFrom("#663CAA")!;
         foreach(var button in new[]{templateImage,changeTemplate,advanced})
             button.Foreground=Brushes.White;
-        designer.Children.Add(toolbar);
+        AddPanel(toolbar,1);
         templateImage.Click+=(_,_)=>ChooseTemplateImage();
 
         var previewRow=_designPreviewRow;
@@ -69,23 +79,23 @@ public partial class GeneratorView
         Option("سمك الحدود",_designBorderWidth);
         Grid.SetColumn(options,1);
         previewRow.Children.Add(options);
-        designer.Children.Add(previewRow);
+        AddPanel(previewRow,2);
 
-        designer.Children.Add(ReferenceHeader("عناصر الكرت"));
+        AddPanel(ReferenceHeader("عناصر الكرت"),3);
         var designChecks=new WrapPanel{Margin=new Thickness(0,1,0,1)};
         _designShowPassword.Content="كلمة المرور";
         _designShowProfile.Content="الباقة";
         designChecks.Children.Add(_designShowPassword);
         designChecks.Children.Add(_designShowProfile);
-        designer.Children.Add(designChecks);
+        AddPanel(designChecks,4);
         var saveAppearanceButton=PageUi.Button("حفظ إعدادات القالب لهذه الباقة");
         saveAppearanceButton.MinWidth=0;saveAppearanceButton.Padding=new Thickness(8,6,8,6);
         saveAppearanceButton.Margin=new Thickness(1,1,1,1);
         var designStatus=_designStatus;
         designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         designStatus.Margin=new Thickness(1,2,1,3);designStatus.FontSize=12;
-        designer.Children.Add(saveAppearanceButton);
-        designer.Children.Add(designStatus);
+        AddPanel(saveAppearanceButton,5);
+        AddPanel(designStatus,6);
         var designSurface=embedded?CompactSurface(designer,"#D2AA61")
             :PageUi.Surface(designer,"#D2AA61");
         saveAppearanceButton.Click+=(_,_)=>{
