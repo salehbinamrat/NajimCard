@@ -23,8 +23,12 @@ public partial class GeneratorView
         {
             var options=PrintOptionsProvider();
             _syncingInlineSize=true;
-            _inlineWidth.Text=options.CardWidthMm.ToString(CultureInfo.InvariantCulture);
-            _inlineHeight.Text=options.CardHeightMm.ToString(CultureInfo.InvariantCulture);
+            var cardWidth=options.CardWidthMm.ToString(CultureInfo.InvariantCulture);
+            var cardHeight=options.CardHeightMm.ToString(CultureInfo.InvariantCulture);
+            if(!_inlineWidth.Items.Contains(cardWidth))_inlineWidth.Items.Add(cardWidth);
+            if(!_inlineHeight.Items.Contains(cardHeight))_inlineHeight.Items.Add(cardHeight);
+            _inlineWidth.SelectedItem=cardWidth;
+            _inlineHeight.SelectedItem=cardHeight;
         }
         catch(ArgumentException) { /* Do not replace valid input with a partially edited size. */ }
         catch(FormatException) { /* The left print fields may still be in progress. */ }
@@ -126,22 +130,8 @@ public partial class GeneratorView
         }
         Option("نوع الخط",_designFontFamily);
         Option("حجم الخط",_designFontSize);
-        var numberColorRow=new Grid();
-        numberColorRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
-        numberColorRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(31)});
-        Grid.SetColumn(_designTextColor,0);
-        var pickNumber=PaletteButton("▾",_designTextColor);
-        Grid.SetColumn(pickNumber,1);
-        numberColorRow.Children.Add(_designTextColor);numberColorRow.Children.Add(pickNumber);
-        Option("لون الرقم",numberColorRow);
-        var borderColorRow=new Grid();
-        borderColorRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
-        borderColorRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(31)});
-        Grid.SetColumn(_designBorderColor,0);
-        var pickBorder=PaletteButton("▾",_designBorderColor);
-        Grid.SetColumn(pickBorder,1);
-        borderColorRow.Children.Add(_designBorderColor);borderColorRow.Children.Add(pickBorder);
-        Option("لون الحدود",borderColorRow);
+        Option("لون الرقم",PaletteButton("تغيير",_designTextColor));
+        Option("لون الحدود",PaletteButton("تغيير",_designBorderColor));
         Option("سمك الحدود",_designBorderWidth);
         Grid.SetColumn(options,1);
         previewRow.Children.Add(options);
@@ -163,18 +153,22 @@ public partial class GeneratorView
             holder.Children.Add(field);
             return holder;
         }
-        _inlineWidth=new ComboBox{IsEditable=true,IsTextSearchEnabled=false,
-            ItemsSource=new[]{"35","40","45","50","55","60"},Text="50"};
-        _inlineHeight=new ComboBox{IsEditable=true,IsTextSearchEnabled=false,
-            ItemsSource=new[]{"15","19","20","25","30"},Text="19"};
+        _inlineWidth=new ComboBox{IsEditable=false};
+        _inlineHeight=new ComboBox{IsEditable=false};
+        foreach(var option in new[]{"35","40","45","50","55","60"})
+            _inlineWidth.Items.Add(option);
+        foreach(var option in new[]{"15","19","20","25","30"})
+            _inlineHeight.Items.Add(option);
+        _inlineWidth.SelectedItem="50";
+        _inlineHeight.SelectedItem="19";
         void ApplyInlineSize()
         {
             if(_syncingInlineSize || PrintOptionsProvider is null || ApplyPrintOptions is null)return;
             try
             {
-                var width=double.Parse(_inlineWidth.Text.Trim().Replace(',','.'),
+                var width=double.Parse((_inlineWidth.SelectedItem?.ToString()??_inlineWidth.Text).Trim().Replace(',','.'),
                     CultureInfo.InvariantCulture);
-                var height=double.Parse(_inlineHeight.Text.Trim().Replace(',','.'),
+                var height=double.Parse((_inlineHeight.SelectedItem?.ToString()??_inlineHeight.Text).Trim().Replace(',','.'),
                     CultureInfo.InvariantCulture);
                 var options=PrintOptionsProvider() with {CardWidthMm=width,CardHeightMm=height};
                 CardPrintLayoutPlanner.Calculate(options,1);
@@ -213,7 +207,7 @@ public partial class GeneratorView
         AddPanel(shapeOptions,3);
 
         AddPanel(ReferenceHeader("عناصر الكرت"),4);
-        var designChecks=new WrapPanel{Margin=new Thickness(0,1,0,1)};
+        var designChecks=new UniformGrid{Columns=5,Rows=2,Margin=new Thickness(0,1,0,1)};
         _designShowPassword.Content="كلمة المرور";
         _designShowProfile.Content="الباقة";
         foreach(var check in new[]{_designShowCapacity,_designShowPhone,_designShowQr,
@@ -221,7 +215,7 @@ public partial class GeneratorView
             _designShowPassword,_designShowProfile})
         {
             check.FontSize=11;check.FontWeight=FontWeights.Bold;
-            check.Margin=new Thickness(4,2,4,2);
+            check.Margin=new Thickness(2,2,2,2);
             designChecks.Children.Add(check);
         }
         AddPanel(designChecks,5);
