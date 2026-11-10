@@ -113,7 +113,6 @@ public partial class GeneratorView : UserControl
     private readonly TextBox _designCapacityText = PageUi.Input("");
     private readonly TextBox _designPhoneText = PageUi.Input("");
     private readonly TextBox _designQrSize = PageUi.Input("24");
-
     private readonly Button _generateButton = PageUi.Button("إنشاء وحفظ الدفعة");
     private readonly Button _previewButton = PageUi.Button("معاينة قبل الإنشاء", false);
     private readonly CheckBox _lengthWithPrefix = new()
@@ -366,8 +365,6 @@ public partial class GeneratorView : UserControl
         _credentialsSame.Checked+=(_,_)=>{_samePassword.IsChecked=true;UpdatePasswordMode();};
         _credentialsDifferent.Checked+=(_,_)=>{_samePassword.IsChecked=false;UpdatePasswordMode();};
         UpdatePasswordMode();
-
-
         // Exact reference arrangement: wide graphic preview, narrow appearance
         // settings, compact header tools; editing is a separate window.
         var designSurface=BuildDesignerPanel(embedded);
@@ -451,7 +448,6 @@ public partial class GeneratorView : UserControl
         {
             _designStatus.Text="تعذر قراءة المظهر المحفوظ؛ لم تُعدل البيانات: "+ex.Message;
         }
-
         _service.SelectionChanged += async (_, _) =>
         {
             packageSaveFeedback.Text="";
@@ -499,7 +495,6 @@ public partial class GeneratorView : UserControl
         Loaded += async (_, _) => await LoadProfilesAsync();
         Unloaded += (_,_)=>_profileRequestVersion++;
     }
-
     private VoucherCardAppearance ReadCurrentAppearance()
     {
         static double Number(string v)=>double.Parse(v.Trim().Replace(',','.'),
@@ -529,7 +524,6 @@ public partial class GeneratorView : UserControl
             TemplateImagePath=_templateImagePath
         }).Validate();
     }
-
     public bool SaveCurrentPackage()
     {
         try
@@ -559,10 +553,8 @@ public partial class GeneratorView : UserControl
         }
         catch(Exception ex){_status.Text="تعذر حفظ إعدادات الباقة: "+ex.Message;return false;}
     }
-
     // Restore current package preferences without changing navigation or router data.
     public void RestoreSavedPackageSettings() => RestorePackagePreset();
-
     private void RestorePackagePreset()
     {
         if(_restoringPreset)return;
@@ -606,7 +598,6 @@ public partial class GeneratorView : UserControl
         }
         catch(Exception ex){_status.Text="تعذر استعادة الباقة؛ لم يتغير السجل: "+ex.Message;}
     }
-
     internal Task<Voucher[]> BuildDraftPreviewAsync()
     {
         var options=ReadGenerationOptions(forPreview:true);
