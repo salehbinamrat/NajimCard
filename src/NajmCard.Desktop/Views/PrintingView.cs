@@ -199,6 +199,9 @@ public class PrintingView : UserControl
             printPanel.Padding=new Thickness(6);
             printPanel.CornerRadius=new CornerRadius(8);
             printPanel.Margin=new Thickness(0);
+            // Size to the last working control; never fill the left column
+            // with an empty 300px bordered block.
+            printPanel.VerticalAlignment=VerticalAlignment.Top;
             printPanel.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
             printPanel.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
             _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
