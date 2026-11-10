@@ -443,6 +443,7 @@ public partial class GeneratorView
         _previewRoute.Visibility=appearance.ShowRoute?Visibility.Visible:Visibility.Collapsed;
         _previewQr.Width=appearance.QrSize;_previewQr.Height=appearance.QrSize;
         _previewQr.Visibility=appearance.ShowQr?Visibility.Visible:Visibility.Collapsed;
+        RefreshQrPreview(_cardPreview.Text);
         _previewPackageName.Text=_profile.SelectedItem?.ToString()??"الباقة";
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
