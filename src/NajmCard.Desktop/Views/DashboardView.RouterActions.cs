@@ -73,7 +73,7 @@ public partial class DashboardView
             if(!PageUi.Confirm(label+" سيرفر "+selected.Name+" على الواجهة "+
                 selected.Interface+"؟ قد يتأثر المستخدمون المتصلون."))return;
             var result=await _gateway.ChangeHotspotServerStateAsync(selected,disabled);
-            var report=result.Message+
+            var report=result.Diagnostic+
                 (result.UncertainOutcome?" لا تكرر العملية قبل فحص الراوتر.":"");
             MessageBox.Show(report,"نجم كارد | "+label,
                 MessageBoxButton.OK,result.Success?MessageBoxImage.Information:
