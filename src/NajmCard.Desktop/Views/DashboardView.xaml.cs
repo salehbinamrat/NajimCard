@@ -73,7 +73,7 @@ public partial class DashboardView : UserControl
     // display cadence. Never run overlapping requests or download UM user lists.
     private async Task RefreshLiveTelemetryAsync()
     {
-        if(!IsLoaded || _liveTelemetryRunning || _refreshing || _lifecycleReading)return;
+        if(!IsLoaded || _liveTelemetryRunning || _refreshing)return;
         _liveTelemetryRunning=true;
         using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(4));
         _telemetryToken=timeout;
