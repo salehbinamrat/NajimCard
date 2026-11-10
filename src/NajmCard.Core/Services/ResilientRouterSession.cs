@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net.Sockets;
 using NajmCard.Core.Models;
 
 namespace NajmCard.Core.Services;
@@ -21,7 +22,9 @@ public sealed class ResilientRouterSession : IRouterCommandClient, IRouterReceip
     private readonly Lane _fast;
     private readonly Lane _inventory=new();
     private readonly Func<CancellationToken,Task<IRouterCommandClient>> _connect;
-    private bool _closed;
+    private readonly CancellationTokenSource _lifetime=new();
+    private readonly CancellationToken _sessionToken;
+    private int _closed;
 
     public ResilientRouterSession(IRouterCommandClient authenticated,
         Func<CancellationToken,Task<IRouterCommandClient>> connect)
@@ -29,6 +32,7 @@ public sealed class ResilientRouterSession : IRouterCommandClient, IRouterReceip
         ArgumentNullException.ThrowIfNull(authenticated);
         _connect=connect??throw new ArgumentNullException(nameof(connect));
         _fast=new Lane(authenticated);
+        _sessionToken=_lifetime.Token;
     }
 
     private static bool IsReadOnly(string command)=>
@@ -37,9 +41,10 @@ public sealed class ResilientRouterSession : IRouterCommandClient, IRouterReceip
     private Lane For(string command)=>
         command=="/tool/user-manager/user/print"?_inventory:_fast;
 
-    private static bool Disconnected(Exception e)=>e is ObjectDisposedException
-        or OperationCanceledException
-        || e is IOException and not RouterOsTrapException;
+    private static bool Disconnected(IRouterCommandClient current,Exception error)=>
+        current is RouterOsClient { IsUsable:false } ||
+        error is ObjectDisposedException or OperationCanceledException or SocketException or InvalidDataException ||
+        error is IOException and not RouterOsTrapException;
 
     private static async Task ReleaseAsync(IRouterCommandClient? old)
     {
@@ -55,30 +60,31 @@ public sealed class ResilientRouterSession : IRouterCommandClient, IRouterReceip
         Func<IRouterCommandClient,CancellationToken,Task<T>> operation,
         bool retryRead,CancellationToken ct)
     {
-        await lane.Gate.WaitAsync(ct);
+        if(Volatile.Read(ref _closed)!=0)
+            throw new ObjectDisposedException(nameof(ResilientRouterSession),
+                "انتهت جلسة الراوتر، سجل الدخول مجددا.");
+        using var request=CancellationTokenSource.CreateLinkedTokenSource(ct,_sessionToken);
+        var token=request.Token;
+        await lane.Gate.WaitAsync(token);
         try
         {
-            if(_closed)throw new ObjectDisposedException(nameof(ResilientRouterSession),
-                "انتهت جلسة الراوتر؛ سجل الدخول مجددا.");
-            lane.Current ??= await _connect(ct);
-            try{return await operation(lane.Current,ct);}
-            catch(Exception ex) when(Disconnected(ex))
+            var current=lane.Current ??= await _connect(token);
+            token.ThrowIfCancellationRequested();
+            try{return await operation(current,token);}
+            catch(Exception ex) when(Disconnected(current,ex))
             {
-                var dead=lane.Current;
                 lane.Current=null;
-                await ReleaseAsync(dead);
-                // Reads are idempotent; do not retry a write because a router
-                // may have applied it before the TCP connection broke.
-                if(!retryRead || ct.IsCancellationRequested || _closed ||
-                    ex is OperationCanceledException)
+                await ReleaseAsync(current);
+                // A write may already have reached the router before the reply was lost.
+                if(!retryRead || token.IsCancellationRequested)
                     throw;
-                lane.Current=await _connect(ct);
-                try{return await operation(lane.Current,ct);}
-                catch(Exception repeat) when(Disconnected(repeat))
+                var replacement=lane.Current=await _connect(token);
+                token.ThrowIfCancellationRequested();
+                try{return await operation(replacement,token);}
+                catch(Exception repeat) when(Disconnected(replacement,repeat))
                 {
-                    var second=lane.Current;
                     lane.Current=null;
-                    await ReleaseAsync(second);
+                    await ReleaseAsync(replacement);
                     throw;
                 }
             }
@@ -121,13 +127,22 @@ public sealed class ResilientRouterSession : IRouterCommandClient, IRouterReceip
 
     public async ValueTask DisposeAsync()
     {
-        if(_closed)return;
-        _closed=true;
-        // Closing the transport aborts in-flight requests; after logout the UI
-        // has detached all pages, and no subsequent operation may reconnect.
-        var fast=_fast.Current;_fast.Current=null;
-        var inventory=_inventory.Current;_inventory.Current=null;
-        await ReleaseAsync(fast);
-        if(!ReferenceEquals(fast,inventory))await ReleaseAsync(inventory);
+        if(Interlocked.Exchange(ref _closed,1)!=0)return;
+        _lifetime.Cancel();
+        try { await Task.WhenAll(CloseLaneAsync(_fast),CloseLaneAsync(_inventory)); }
+        finally { _lifetime.Dispose(); }
+    }
+
+    private static async Task CloseLaneAsync(Lane lane)
+    {
+        // Wait for commands to release the transport before disposing its lock.
+        await lane.Gate.WaitAsync();
+        try
+        {
+            var client=lane.Current;
+            lane.Current=null;
+            await ReleaseAsync(client);
+        }
+        finally { lane.Gate.Release(); }
     }
 }

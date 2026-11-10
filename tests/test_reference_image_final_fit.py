@@ -41,8 +41,8 @@ class ReferenceImageFinalFit(unittest.TestCase):
     def test_full_width_routing_and_user_inputs_above_two_column_print_design(self):
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(formatSurface,1)",self.layout)
-        self.assertIn("Width=new GridLength(39,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(61,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(36,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(64,GridUnitType.Star)",self.layout)
         self.assertIn("printColumn.Children.Add(basicsSurface)",self.layout)
         self.assertIn("printColumn.Children.Add(_embeddedPrintHost)",self.layout)
         self.assertIn("Grid.SetColumn(designSurface,1)",self.layout)

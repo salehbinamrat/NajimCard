@@ -413,7 +413,7 @@ public partial class GeneratorView
             !appearance.ShowCapacity && !appearance.ShowPhone && !appearance.ShowTime;
         _previewCapacity.Text=builtInSample?"2 جيجا":appearance.CapacityText;
         _previewPhone.Text=builtInSample?"780757658 - 775321455":appearance.PhoneText;
-        _previewTime.Text=builtInSample?"30 يوم":
+        _previewTime.Text=builtInSample?"1 يوم":
             DateTime.Now.ToString("HH:mm",CultureInfo.InvariantCulture);
         _previewDate.Text=DateTime.Now.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
         _previewSequence.Text="0001";

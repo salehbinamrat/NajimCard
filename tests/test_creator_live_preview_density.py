@@ -26,8 +26,8 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         cls.generator=(CORE/"VoucherGenerator.cs").read_text(encoding="utf-8")
 
     def test_original_hadramout_column_proportions(self):
-        self.assertIn("new GridLength(39,GridUnitType.Star)",self.layout)
-        self.assertIn("new GridLength(61,GridUnitType.Star)",self.layout)
+        self.assertIn("new GridLength(36,GridUnitType.Star)",self.layout)
+        self.assertIn("new GridLength(64,GridUnitType.Star)",self.layout)
         self.assertNotIn("new GridLength(48,GridUnitType.Star)",self.layout)
         self.assertNotIn("new GridLength(52,GridUnitType.Star)",self.layout)
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
