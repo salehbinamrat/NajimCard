@@ -379,6 +379,10 @@ public partial class PrintingView : UserControl
                     throw new InvalidDataException("تعذر فك صورة القالب المحفوظة؛ لن تُطبع دفعة بتصميم خاطئ.",ex);
                 }
             }
+            bool builtinArtwork=NajmNetCardArtwork.IsDefault(
+                appearance.NetworkTitle,appearance.TemplateImagePath,
+                appearance.BackgroundColor);
+            if(builtinArtwork)hasArtwork=true;
             var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
             var borderInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.BorderColor)!;
             var slotsByPage=plan.Slots.ToLookup(slot=>slot.PageIndex);
@@ -466,6 +470,18 @@ public partial class PrintingView : UserControl
                             new CardElementPosition(0.85,0.45));
                     }
                     FrameworkElement cardContent=positioned;
+                    if(builtinArtwork)
+                    {
+                        var withArtwork=new Grid
+                        {
+                            Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
+                            ClipToBounds=true
+                        };
+                        withArtwork.Children.Add(NajmNetCardArtwork.Create(
+                            Dip(opts.CardWidthMm),Dip(opts.CardHeightMm)));
+                        withArtwork.Children.Add(positioned);
+                        cardContent=withArtwork;
+                    }
                     var cardBorder=new Border
                     {
                         Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
