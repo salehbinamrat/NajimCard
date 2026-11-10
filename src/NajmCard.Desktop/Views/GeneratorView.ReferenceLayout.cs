@@ -31,34 +31,35 @@ public partial class GeneratorView
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
         Border designSurface)
     {
-        // Same 2x2 geometry as Hadramout screenshot, without fixed reference width.
-        // First row: credentials on the left, package/server on the right.
-        // Second row: generation/printing on the left, live designer on the right.
+        // Hadramout's original ui/network.py uses two INDEPENDENT columns
+        // (42% left, 58% right). A shared 2x2 grid forced the short routing
+        // panel to occupy the credentials panel's much taller first row.
+        // Separate column row-heights eliminate that genuine blank panel.
         var split=new Grid{FlowDirection=FlowDirection.LeftToRight};
-        // Align the reference photograph's almost equal widths. The editor
-        // leaves only a thin geometric separator; no outer fixed-width canvas.
         split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(42,GridUnitType.Star)});
         split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(58,GridUnitType.Star)});
-        split.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         split.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+
+        var leftColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+        var rightColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        rightColumn.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+
         routeSurface.FlowDirection=formatSurface.FlowDirection=
             designSurface.FlowDirection=FlowDirection.RightToLeft;
         foreach(var surface in new[]{routeSurface,formatSurface,designSurface})
+        {
             surface.Margin=new Thickness(1,1,1,2);
-        routeSurface.VerticalAlignment=VerticalAlignment.Stretch;
-        formatSurface.VerticalAlignment=VerticalAlignment.Stretch;
-        designSurface.VerticalAlignment=VerticalAlignment.Stretch;
+            surface.HorizontalAlignment=HorizontalAlignment.Stretch;
+            surface.VerticalAlignment=VerticalAlignment.Stretch;
+        }
         Grid.SetRow(routeSurface,0);
-        Grid.SetColumn(routeSurface,1);
         Grid.SetRow(formatSurface,0);
-        Grid.SetColumn(formatSurface,0);
         Grid.SetRow(designSurface,1);
-        Grid.SetColumn(designSurface,1);
-        // The print area stretches down to the designer's bottom edge.
-        // A StackPanel here left an unpainted strip under the printing form.
+
         var secondary=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        // The lower-left quadrant is exclusively for the printing form.
-        // Generation controls are placed inside the upper-left credentials area.
         secondary.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         _embeddedPrintHost=new Grid{Margin=new Thickness(1,1,1,0)};
@@ -70,11 +71,15 @@ public partial class GeneratorView
         Grid.SetRow(_status,1);
         secondary.Children.Add(_status);
         Grid.SetRow(secondary,1);
-        Grid.SetColumn(secondary,0);
-        split.Children.Add(formatSurface);
-        split.Children.Add(routeSurface);
-        split.Children.Add(designSurface);
-        split.Children.Add(secondary);
+
+        leftColumn.Children.Add(formatSurface);
+        leftColumn.Children.Add(secondary);
+        rightColumn.Children.Add(routeSurface);
+        rightColumn.Children.Add(designSurface);
+        Grid.SetColumn(leftColumn,0);
+        Grid.SetColumn(rightColumn,1);
+        split.Children.Add(leftColumn);
+        split.Children.Add(rightColumn);
         return split;
     }
 
