@@ -148,7 +148,7 @@ public partial class GeneratorView : UserControl
         // Keep Hadramout's direct per-package save action visible beside
         // the routing header. It persists locally without sending RouterOS commands.
         var routeHeader=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        routeHeader.Children.Add(ReferenceHeader("الباقة ومسار الإرسال"));
+        routeHeader.Children.Add(ReferenceHeader("بيانات ومسار الإرسال"));
         var quickSaveButton=PageUi.Button("حفظ إعدادات الباقة",false);
         quickSaveButton.HorizontalAlignment=HorizontalAlignment.Left;
         quickSaveButton.VerticalAlignment=VerticalAlignment.Center;
@@ -218,7 +218,7 @@ public partial class GeneratorView : UserControl
         // Hadramout's username and password alphabets are independent.
         // The user may type exact ASCII character sets, without duplicate characters.
         var formatSection=PageUi.Column();
-        formatSection.Children.Add(ReferenceHeader("اسم المستخدم وكلمة المرور"));
+        formatSection.Children.Add(ReferenceHeader("إنشاء المستخدم وطباعة الكروت"));
         var credentialsTop=new Grid{Margin=new Thickness(0,4,0,2)};
         credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(2.2,GridUnitType.Star)});
         credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
@@ -239,6 +239,9 @@ public partial class GeneratorView : UserControl
         Grid.SetColumn(differentCell,2);
         credentialsTop.Children.Add(differentCell);
         formatSection.Children.Add(credentialsTop);
+        // Quantity and numbering inputs share the creation panel as in the reference.
+        row.Margin=new Thickness(0,3,0,4);
+        formatSection.Children.Add(row);
         var characterKinds=new UniformGrid{Columns=2,Margin=new Thickness(0,1,0,1)};
         var userKind=PageUi.Column();
         userKind.Children.Add(PageUi.Label("نوع اسم المستخدم"));
@@ -322,9 +325,6 @@ public partial class GeneratorView : UserControl
         // settings, compact header tools; editing is a separate window.
         var designSurface=BuildDesignerPanel(embedded);
         form.Children.Add(designSurface);
-        var basicsTitle=ReferenceHeader("بيانات التوليد الأساسية");
-        form.Children.Add(basicsTitle);
-        form.Children.Add(row);
         var actions = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -372,7 +372,7 @@ public partial class GeneratorView : UserControl
             // Viewbox, stray side gutters, or overflow-hidden StackPanel.
             form.Children.Clear();
             Content=CreateReferenceLayout(
-                routeSurface,formatSurface,designSurface,basicsTitle,row);
+                routeSurface,formatSurface,designSurface);
         }
         else
         {
@@ -490,6 +490,9 @@ public partial class GeneratorView : UserControl
         }
         catch(Exception ex){_status.Text="تعذر حفظ إعدادات الباقة: "+ex.Message;return false;}
     }
+
+    // Restore current package preferences without changing navigation or router data.
+    public void RestoreSavedPackageSettings() => RestorePackagePreset();
 
     private void RestorePackagePreset()
     {
