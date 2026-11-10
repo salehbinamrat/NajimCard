@@ -65,6 +65,12 @@ internal static class Program
             workspaceLayer.Visibility=Visibility.Collapsed;
             loginLayer.Visibility=Visibility.Visible;
             root.UpdateLayout();
+            var connect=(Button)window.FindName("ConnectButton");
+            var connectBounds=connect.TransformToAncestor(root)
+                .TransformBounds(new Rect(connect.RenderSize));
+            if(connectBounds.Width<=0 || connectBounds.Height<=0 ||
+                connectBounds.Bottom>height || connectBounds.Top<0)
+                throw new InvalidDataException("The login connect button is clipped at 1200x750.");
             Capture(root,width,height,Path.Combine(
                 Path.GetDirectoryName(destination)!,"login-1200x750.png"));
             loginLayer.Visibility=Visibility.Collapsed;
