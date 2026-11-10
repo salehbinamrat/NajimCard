@@ -177,7 +177,6 @@ public class PrintingView : UserControl
         stack.Children.Add(ordering);
         rows.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
         cols.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
-        stack.Children.Add(form);
 
         var actions=new WrapPanel{Margin=new Thickness(0,1,0,10)};
         var previewButton=PageUi.Button("معاينة قبل الطباعة");
