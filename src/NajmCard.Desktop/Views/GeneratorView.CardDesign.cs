@@ -155,12 +155,40 @@ public partial class GeneratorView
         return card;
     }
 
-    private void ApplyCardAppearance(VoucherCardAppearance appearance)
+    private void SubscribeLiveCardAppearance()
+    {
+        void Update(object sender,RoutedEventArgs args)
+        {
+            if(_restoringPreset)return;
+            try
+            {
+                ApplyCardAppearance(ReadCurrentAppearance(),refreshArtwork:false);
+                _appearancePreviewBorder?.ClearValue(ToolTipProperty);
+            }
+            catch(Exception ex) when(ex is ArgumentException or FormatException or OverflowException)
+            {
+                // Keep the last valid preview while the user is typing.
+                if(_appearancePreviewBorder is not null)
+                    _appearancePreviewBorder.ToolTip=ex.Message;
+            }
+        }
+
+        foreach(var field in new[]{_designFontSize,_designTextColor,_designBorderColor,_designBorderWidth})
+            field.TextChanged+=Update;
+        _designFontFamily.SelectionChanged+=Update;
+        _designShowPassword.Checked+=Update;
+        _designShowPassword.Unchecked+=Update;
+        _designShowProfile.Checked+=Update;
+        _designShowProfile.Unchecked+=Update;
+    }
+
+    private void ApplyCardAppearance(VoucherCardAppearance appearance,bool refreshArtwork=true)
     {
         appearance.Validate();
         _currentAppearance=appearance;
         _previewNetworkName.Text=appearance.NetworkTitle+" ✦";
         _previewPackageName.Text=_profile.SelectedItem?.ToString()??"الباقة";
+        _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
         foreach(var shape in _sampleArtwork)
             shape.Visibility=hasPicture?Visibility.Collapsed:Visibility.Visible;
@@ -174,6 +202,10 @@ public partial class GeneratorView
                 PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
         if(_appearancePreviewBorder is not null)
         {
+            _appearancePreviewBorder.BorderBrush=(Brush)new BrushConverter()
+                .ConvertFromInvariantString(appearance.BorderColor)!;
+            _appearancePreviewBorder.BorderThickness=new Thickness(appearance.BorderWidth);
+            if(!refreshArtwork)return;
             Brush background=(Brush)new BrushConverter()
                 .ConvertFromInvariantString(appearance.BackgroundColor)!;
             if(!string.IsNullOrWhiteSpace(appearance.TemplateImagePath) &&
@@ -200,9 +232,6 @@ public partial class GeneratorView
                 }
             }
             _appearancePreviewBorder.Background=background;
-            _appearancePreviewBorder.BorderBrush=(Brush)new BrushConverter()
-                .ConvertFromInvariantString(appearance.BorderColor)!;
-            _appearancePreviewBorder.BorderThickness=new Thickness(appearance.BorderWidth);
         }
     }
 }

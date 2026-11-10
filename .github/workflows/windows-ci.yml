@@ -30,15 +30,15 @@ jobs:
         run: dotnet test tests/NajmCard.Core.Tests/NajmCard.Core.Tests.csproj --configuration Release --no-restore
       - name: Test real SQLite/DPAPI desktop persistence
         run: dotnet test tests/NajmCard.Desktop.Tests/NajmCard.Desktop.Tests.csproj --configuration Release --no-restore
-      # A real offscreen WPF render at the owner's 1648x928 desktop dimensions.
+      # A real offscreen WPF render at the owner's 1200x780 desktop dimensions.
       # Core must pass this visual-smoke capture before Release artifacts are trusted.
-      - name: Capture actual creator UI at 1648x928
-        run: dotnet run --project tests/NajmCard.VisualSmoke/NajmCard.VisualSmoke.csproj --configuration Release -- out/creator-1648x928.png
+      - name: Capture actual creator UI at 1200x780
+        run: dotnet run --project tests/NajmCard.VisualSmoke/NajmCard.VisualSmoke.csproj --configuration Release -- out/creator-1200x780.png
       - name: Upload creator screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: NajmCard-creator-1648x928
-          path: out/creator-1648x928.png
+          name: NajmCard-creator-1200x780
+          path: out/creator-1200x780.png
           if-no-files-found: error
   windows-release:
     name: Windows Release tests (${{ matrix.arch }})

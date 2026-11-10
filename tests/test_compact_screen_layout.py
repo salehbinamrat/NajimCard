@@ -11,10 +11,10 @@ NS={"w":"http://schemas.microsoft.com/winfx/2006/xaml/presentation"}
 XNS="{http://schemas.microsoft.com/winfx/2006/xaml}"
 
 class CompactScreenLayoutContract(unittest.TestCase):
-    def test_main_window_grows_without_forcing_login_or_other_pages_to_change(self):
+    def test_main_window_defaults_to_requested_dimensions(self):
         x=ET.parse(UI/"MainWindow.xaml").getroot()
-        self.assertGreaterEqual(float(x.attrib["Width"]),1450)
-        self.assertGreaterEqual(float(x.attrib["Height"]),900)
+        self.assertEqual(float(x.attrib["Width"]),1200)
+        self.assertEqual(float(x.attrib["Height"]),780)
         self.assertIsNotNone(x.find(".//w:RowDefinition[@"+XNS+"Name='WorkspaceHeaderRow']",NS))
         code=(UI/"MainWindow.xaml.cs").read_text(encoding="utf-8")
         self.assertIn("WorkspaceHeaderRow.Height",code)
