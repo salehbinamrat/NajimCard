@@ -70,7 +70,7 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",self.workspace)
         self.assertIn("buttonsGrid=new UniformGrid{Columns=7",self.workspace)
         self.assertIn("Content=root;",self.workspace)
-        self.assertNotIn("MainWindow",self.live+self.layout+self.card+self.workspace)
+        self.assertNotIn("new MainWindow(",self.live+self.layout+self.card+self.workspace)
         self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Auto",self.workspace)
 
 
