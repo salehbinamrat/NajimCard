@@ -60,7 +60,7 @@ public partial class GeneratorView
 
     private readonly TextBlock _previewNetworkName=new();
     private readonly TextBlock _previewPackageName=new();
-    private readonly List<UIElement> _sampleArtwork=[];
+    private FrameworkElement? _defaultArtworkLayer;
     private Border? _previewUsernamePlate;
     private Border? _previewPasswordPlate;
     private Grid? _previewCardCanvas;
@@ -118,53 +118,14 @@ public partial class GeneratorView
             FlowDirection=FlowDirection.LeftToRight,ClipToBounds=true
         };
         _previewCardCanvas=card;
-        var artwork=new Grid{Width=465,Height=178};
-        var rounded=new Border{
-            Background=new LinearGradientBrush(
-                (Color)ColorConverter.ConvertFromString("#FFF8FF")!,
-                (Color)ColorConverter.ConvertFromString("#E3CAF9")!,0),
-            CornerRadius=new CornerRadius(12),
-            BorderThickness=new Thickness(1),
-            BorderBrush=(Brush)new BrushConverter().ConvertFrom("#8749D5")!
-        };
-        artwork.Children.Add(rounded);_sampleArtwork.Add(rounded);
-
-        var leftDisc=new Border{
-            Width=98,Height=173,CornerRadius=new CornerRadius(0,78,78,0),
-            HorizontalAlignment=HorizontalAlignment.Left,
-            VerticalAlignment=VerticalAlignment.Center,
-            Background=new LinearGradientBrush(
-                (Color)ColorConverter.ConvertFromString("#320A78")!,
-                (Color)ColorConverter.ConvertFromString("#A349F6")!,30)
-        };
-        var discContent=new StackPanel{VerticalAlignment=VerticalAlignment.Center};
-        discContent.Children.Add(new TextBlock{
-            Text="نجم",FontFamily=new FontFamily("Arial"),
-            Foreground=Brushes.White,FontSize=25,FontWeight=FontWeights.ExtraBold,
-            TextAlignment=TextAlignment.Center});
-        _previewPackageName.FontFamily=new FontFamily("Arial");
-        _previewPackageName.FontSize=16;
-        _previewPackageName.Foreground=Brushes.White;
-        _previewPackageName.FontWeight=FontWeights.ExtraBold;
-        _previewPackageName.TextAlignment=TextAlignment.Center;
-        _previewPackageName.TextWrapping=TextWrapping.Wrap;
-        leftDisc.Child=discContent;
-        artwork.Children.Add(leftDisc);_sampleArtwork.Add(leftDisc);
-
-        var rightAccent=new Border{
-            Width=82,Height=170,CornerRadius=new CornerRadius(74,0,0,74),
-            HorizontalAlignment=HorizontalAlignment.Right,
-            VerticalAlignment=VerticalAlignment.Center,
-            Background=new LinearGradientBrush(
-                (Color)ColorConverter.ConvertFromString("#D4A8FF")!,
-                (Color)ColorConverter.ConvertFromString("#8B40E2")!,70)
-        };
-        artwork.Children.Add(rightAccent);_sampleArtwork.Add(rightAccent);
-        card.Children.Add(new Viewbox {Child=artwork,Stretch=Stretch.Fill});
+        // Shared vector drawing exactly matches the print output when the
+        // built-in Najm Net appearance is selected; no external picture needed.
+        _defaultArtworkLayer=NajmNetCardArtwork.Create(MmToDip(50),MmToDip(19));
+        card.Children.Add(_defaultArtworkLayer);
 
         var elements=new CardElementPanel{ClipToBounds=true};
         _previewElements=elements;
-        _previewNetworkName.Text="نجم كارد";
+        _previewNetworkName.Text="نجم نت";
         _previewNetworkName.FontFamily=new FontFamily("Arial");
         _previewNetworkName.Foreground=(Brush)new BrushConverter().ConvertFrom("#210B47")!;
         _previewNetworkName.FontSize=20;
@@ -467,10 +428,10 @@ public partial class GeneratorView
         _previewNetworkName.Background=Brushes.Transparent;
         _previewPackageName.Foreground=ink;
         _previewPackageName.Background=Brushes.Transparent;
-        // Default print output is a plain background; never display decorative
-        // shapes that are missing from the actual PDF.
-        foreach(var shape in _sampleArtwork)
-            shape.Visibility=Visibility.Collapsed;
+        if(_defaultArtworkLayer is not null)
+            _defaultArtworkLayer.Visibility=NajmNetCardArtwork.IsDefault(
+                appearance.NetworkTitle,appearance.TemplateImagePath,
+                appearance.BackgroundColor)?Visibility.Visible:Visibility.Collapsed;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
         _previewNetworkName.FontSize=10*appearance.TitleScale;
         _previewPassword.FontSize=10*appearance.PasswordScale;
