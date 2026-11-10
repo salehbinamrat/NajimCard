@@ -29,10 +29,10 @@ class CreatorReferenceScreenTests(unittest.TestCase):
         self.assertIn('Grid.SetColumn(rightColumn,1)', self.layout)
 
     def test_lower_left_is_two_printing_settings_groups(self):
-        self.assertIn('ReferenceHeader("إعدادات الطباعة الأساسية")', self.printer)
-        self.assertIn('ReferenceHeader("إعدادات الصفحة والطباعة")', self.printer)
-        self.assertIn('var basicPrintFields=new UniformGrid{Columns=5', self.printer)
-        self.assertIn('var pagePrintFields=new UniformGrid{Columns=4', self.printer)
+        self.assertIn('ReferenceHeader("إعداد الطباعة والدفعة")', self.printer)
+        self.assertIn('Field(ordering,"الطابعة",selectedPrinter)', self.printer)
+        self.assertIn('var basicPrintFields=new UniformGrid{Columns=4', self.printer)
+        self.assertIn('var pagePrintFields=new UniformGrid{Columns=5', self.printer)
         self.assertIn('_embeddedPrintHost', self.layout)
 
     def test_lower_right_live_designer_and_footer_actions(self):
