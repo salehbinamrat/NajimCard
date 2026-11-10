@@ -15,8 +15,8 @@ public partial class GeneratorView
     {
         var surface=PageUi.Surface(content,accent);
         // Hadramout reference geometry with NajmCard burgundy/gold surfaces.
-        surface.Padding=new Thickness(10);
-        surface.Margin=new Thickness(0,0,5,5);
+        surface.Padding=new Thickness(6);
+        surface.Margin=new Thickness(0);
         surface.CornerRadius=new CornerRadius(9);
         surface.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
         surface.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
