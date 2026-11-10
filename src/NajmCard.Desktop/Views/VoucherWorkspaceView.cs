@@ -121,7 +121,7 @@ public sealed class VoucherWorkspaceView : UserControl
         // full width; the bottom six print actions stay docked and visible.
         var contentGrid=new Grid{ClipToBounds=true};
         var formScroll=new ScrollViewer{
-            VerticalScrollBarVisibility=ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility=ScrollBarVisibility.Hidden,
             HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
             CanContentScroll=false,
             Focusable=false,
