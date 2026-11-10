@@ -66,6 +66,14 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         self.assertNotIn("UploadAsync(",self.live)
         self.assertNotIn("new Voucher(",self.live)
 
+    def test_artwork_contrast_and_dropdown_selection_are_readable(self):
+        self.assertIn('Tag="CardArtwork"',self.card)
+        self.assertIn('Equals(element.Tag,"CardArtwork")',self.card)
+        self.assertIn('CardDropdownItems.Setters.Add',self.workspace)
+        self.assertIn('"#231023"',self.workspace)
+        self.assertIn('"#FFF5E7"',self.workspace)
+        self.assertIn("printPanel.VerticalAlignment=VerticalAlignment.Top",self.printer)
+
     def test_footer_docked_and_sidebar_not_touched(self):
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",self.workspace)
         self.assertIn("buttonsGrid=new UniformGrid{Columns=7",self.workspace)
