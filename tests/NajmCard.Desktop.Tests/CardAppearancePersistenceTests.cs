@@ -15,7 +15,7 @@ public sealed class CardAppearancePersistenceTests : IDisposable
     {
         using(var store=new VoucherStore(folder))
         {
-            Assert.Equal("نجم كارد",store.LoadCardAppearance().NetworkTitle);
+            Assert.Equal("نجم نت",store.LoadCardAppearance().NetworkTitle);
             store.SaveCardAppearance(new VoucherCardAppearance(
                 NetworkTitle:"نجمة الشبكة",FontFamily:"Tahoma",UsernameFontSize:21,
                 BackgroundColor:"#2E0F23",UsernameColor:"#FAD88C",
