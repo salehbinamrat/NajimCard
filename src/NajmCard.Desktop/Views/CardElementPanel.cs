@@ -9,7 +9,7 @@ internal sealed class CardElementPanel : Panel
 {
     internal static readonly CardElementPosition DefaultTitle = new(0.5, 0.34);
     internal static readonly CardElementPosition DefaultCredentials = new(0.55, 0.52);
-    internal static readonly CardElementPosition DefaultProfile = new(0.05, 0.58);
+    internal static readonly CardElementPosition DefaultProfile = new(0.08, 0.72);
     private readonly Dictionary<UIElement, CardElementPosition> _positions = new();
 
     internal void Add(UIElement element, CardElementPosition position)
