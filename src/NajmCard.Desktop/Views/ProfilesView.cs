@@ -31,11 +31,11 @@ public sealed class ProfilesView : UserControl
         var tabs=new TabControl{Margin=new Thickness(0,4,0,9)};
         main.Children.Add(tabs);
         var sources=new[]{
-            ("hotspot","هوتسبوت","#8F5BB9"),
-            ("userman","مدير المستخدمين","#168D92"),
-            ("pppoe","برودباند PPPoE","#B38B57")
+            ("hotspot","هوتسبوت"),
+            ("userman","مدير المستخدمين"),
+            ("pppoe","برودباند PPPoE")
         };
-        foreach(var (service,title,accent) in sources)
+        foreach(var (service,title) in sources)
         {
             var panel=PageUi.Column();
             panel.Children.Add(PageUi.Title("الباقات: "+title));
@@ -72,7 +72,7 @@ public sealed class ProfilesView : UserControl
                 detailsGrid.Children.Add(cell);
             }
             details.Children.Add(detailsGrid);
-            panel.Children.Add(PageUi.Surface(details,"#9B6D55"));
+            panel.Children.Add(PageUi.Surface(details));
             panel.Children.Add(PageUi.Title("إجراءات الباقة"));
             var actions=new WrapPanel{Margin=new Thickness(0,2,0,10)};
             var refresh=PageUi.Button("تحديث من الراوتر");
@@ -105,7 +105,7 @@ public sealed class ProfilesView : UserControl
             var status=PageUi.Status();
             panel.Children.Add(status);
             var tab=new TabItem{Header=title,
-                Content=new ScrollViewer{Content=PageUi.Surface(panel,accent),
+                Content=new ScrollViewer{Content=PageUi.Surface(panel),
                     VerticalScrollBarVisibility=ScrollBarVisibility.Auto}};
             tabs.Items.Add(tab);
             string Audit(string action,string profile,string outcome)
@@ -285,6 +285,6 @@ public sealed class ProfilesView : UserControl
         }
         tabs.SelectedIndex=0;
         Content=PageUi.Wrap("باقات الشبكة","إدارة الباقات الثلاث وبياناتها الفعلية.",
-            PageUi.Surface(main,"#AB8458"));
+            PageUi.Surface(main));
     }
 }

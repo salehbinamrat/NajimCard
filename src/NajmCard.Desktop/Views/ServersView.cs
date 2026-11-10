@@ -33,7 +33,7 @@ public class ServersView : UserControl
         stack.Children.Add(status);
         Content=PageUi.Wrap("سيرفرات Hotspot",
             "الحالة الفعلية: السيرفر، الواجهة، البروفايل، التشغيل والتعطيل.",
-            PageUi.Surface(stack,"#A67A49"));
+            PageUi.Surface(stack));
 
         bool busy=false;
         async Task Load()

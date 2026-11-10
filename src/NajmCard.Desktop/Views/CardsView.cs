@@ -511,11 +511,11 @@ public class CardsView : UserControl
         var sections=PageUi.Column();
         var tabs=new TabControl{Margin=new Thickness(0,3,0,8)};
         tabs.Items.Add(new TabItem{Header="هوتسبوت",
-            Content=PageUi.Surface(stack,"#866BAF")});
+            Content=PageUi.Surface(stack)});
         tabs.Items.Add(new TabItem{Header="مدير المستخدمين",
-            Content=PageUi.Surface(umSection,"#B0874F")});
+            Content=PageUi.Surface(umSection)});
         tabs.Items.Add(new TabItem{Header="برودباند PPPoE",
-            Content=PageUi.Surface(pppSection,"#3D91A4")});
+            Content=PageUi.Surface(pppSection)});
         tabs.SelectedIndex=0;
         sections.Children.Add(tabs);
         Content = PageUi.Wrap("إدارة كروت الشبكة",

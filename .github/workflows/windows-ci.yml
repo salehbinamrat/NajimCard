@@ -46,6 +46,12 @@ jobs:
           name: NajmCard-dashboard-1200x780
           path: out/dashboard-1200x780.png
           if-no-files-found: error
+      - name: Upload activity table screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: NajmCard-activity-1200x780
+          path: out/activity-1200x780.png
+          if-no-files-found: error
   windows-release:
     name: Windows Release tests (${{ matrix.arch }})
     runs-on: windows-2022
