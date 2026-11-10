@@ -49,7 +49,7 @@
                   Style="{StaticResource QuickButton}"
                   Padding="12,6" Margin="3,0"
                   Click="Lifecycle_Click"/>
-          <Button Content="⟳ تحديث مباشر" Style="{StaticResource QuickButton}" Foreground="White"
+          <Button x:Name="RefreshButton" Content="⟳ تحديث مباشر" Style="{StaticResource QuickButton}" Foreground="White"
                   Padding="12,6" Margin="3,0" Click="Refresh_Click"/>
           <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                   CornerRadius="7" Padding="11,6" Margin="7,0">

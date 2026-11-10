@@ -49,17 +49,26 @@ public partial class GeneratorView
         _previewPassword.Visibility=showPassword?Visibility.Visible:Visibility.Collapsed;
     }
 
+    private VoucherGenerationOptions? _sampleOptions;
+    private (string Username,string Password) _previewSample;
+
     private void UpdateLiveCardPreview()
     {
         if(_restoringPreset || _preparing || _sending)return;
         try
         {
-            var sample=VoucherGenerator.PreviewSample(ReadGenerationOptions(forPreview:true));
-            SetPreviewCredentials(sample.Username,sample.Password);
+            var options=ReadGenerationOptions(forPreview:true);
+            if(_sampleOptions!=options)
+            {
+                _previewSample=VoucherGenerator.PreviewSample(options);
+                _sampleOptions=options;
+            }
+            SetPreviewCredentials(_previewSample.Username,_previewSample.Password);
             _cardPreview.ToolTip="معاينة متغيرة حسب الإعدادات؛ غير محفوظة وغير مرسلة.";
         }
         catch(ArgumentException ex)
         {
+            _sampleOptions=null;
             SetPreviewCredentials("راجع إعدادات رقم الكرت");
             _cardPreview.ToolTip="المعاينة: "+ex.Message;
         }
