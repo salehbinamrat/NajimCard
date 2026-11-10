@@ -26,6 +26,9 @@ public partial class GeneratorView
 
     private static void RestyleCompactText(DependencyObject node)
     {
+        // Print-card artwork has its own contrast and font sizes. Never apply
+        // form-label cream text to the light paper preview underneath.
+        if(node is FrameworkElement element && Equals(element.Tag,"CardArtwork"))return;
         if(node is TextBlock label && !Equals(label.Tag,"SectionTitle"))
         {
             label.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
@@ -60,6 +63,7 @@ public partial class GeneratorView
         // a purple geometric print design with independently overlaid data.
         // A selected per-package PNG/JPG/... replaces the base artwork.
         var card=new Grid{
+            Tag="CardArtwork",
             Width=465,Height=178,
             HorizontalAlignment=HorizontalAlignment.Center,
             VerticalAlignment=VerticalAlignment.Center,
