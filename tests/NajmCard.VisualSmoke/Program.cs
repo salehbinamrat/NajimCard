@@ -4,27 +4,24 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NajmCard.Core.Services;
+using NajmCard.Desktop;
 using NajmCard.Desktop.Services;
 using NajmCard.Desktop.Views;
 
 namespace NajmCard.VisualSmoke;
 
 /// <summary>
-/// Renders the actual WPF card creator at its owner-approved desktop size.
-/// Only offline, read-only RouterOS queries are stubbed. Does not issue cards,
-/// create a fake static screenshot, use a real router, or edit MainWindow.
+/// Renders the production WPF shell and card creator without a router.
 /// </summary>
 internal static class Program
 {
     [STAThread]
     private static int Main(string[] args)
     {
-        const int width=1648;
-        const int height=928;
         try
         {
             var destination=Path.GetFullPath(args.Length>0
-                ? args[0] : "out/creator-1648x928.png");
+                ? args[0] : "out/creator-1200x780.png");
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var application=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -40,18 +37,31 @@ internal static class Program
             using var store=new VoucherStore(testData);
             var offline=new RouterGateway(new OfflineRouterClient());
             var creator=new VoucherWorkspaceView(offline,store,"offline-preview:8728");
-            // The actual creator UI is rendered as an off-screen visual. This
-            // excludes sidebar/login and contains no mock card graphics.
-            var root=new Border
-            {
-                Width=width,Height=height,
-                Background=(Brush)new BrushConverter().ConvertFrom("#1D0B19")!,
-                Padding=new Thickness(4),
-                Child=creator
-            };
+            var window=new MainWindow();
+            var width=(int)window.Width;
+            var height=(int)window.Height;
+            if(width!=1200 || height!=780)
+                throw new InvalidDataException("Unexpected default window size.");
+
+            ((Grid)window.FindName("LoginLayer")).Visibility=Visibility.Collapsed;
+            ((Grid)window.FindName("WorkspaceLayer")).Visibility=Visibility.Visible;
+            ((ListBox)window.FindName("NavList")).SelectedIndex=1;
+            ((RowDefinition)window.FindName("WorkspaceHeaderRow")).Height=new GridLength(0);
+            var pageHost=(ContentControl)window.FindName("PageHost");
+            pageHost.Margin=new Thickness(4);
+            pageHost.Content=creator;
+            var root=(Grid)window.Content;
+            window.Content=null;
+
             root.Measure(new Size(width,height));
             root.Arrange(new Rect(0,0,width,height));
             root.UpdateLayout();
+
+            var workspace=(DockPanel)creator.Content;
+            var footer=(StackPanel)workspace.Children[0];
+            var footerBounds=footer.TransformToAncestor(root).TransformBounds(new Rect(footer.RenderSize));
+            if(footer.ActualHeight<=0 || footerBounds.Bottom>height)
+                throw new InvalidDataException("The creator action bar is outside the window.");
 
             var bitmap=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);
             bitmap.Render(root);

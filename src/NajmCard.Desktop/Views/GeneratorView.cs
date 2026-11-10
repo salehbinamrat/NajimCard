@@ -451,6 +451,7 @@ public partial class GeneratorView : UserControl
             RestorePackagePreset();
         };
         SubscribeLiveCardPreview();
+        SubscribeLiveCardAppearance();
         Loaded += async (_, _) => await LoadProfilesAsync();
     }
 

@@ -1,7 +1,7 @@
 <Window x:Class="NajmCard.Desktop.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="نجم كارد | إدارة الشبكات وطباعة الكروت" Width="1480" Height="930" MinWidth="980" MinHeight="600"
+    Title="نجم كارد | إدارة الشبكات وطباعة الكروت" Width="1200" Height="780" MinWidth="980" MinHeight="600"
     WindowStartupLocation="CenterScreen" Background="{StaticResource CanvasBrush}" FlowDirection="RightToLeft">
     <Grid>
         <Grid x:Name="LoginLayer" Background="{StaticResource CanvasBrush}">
