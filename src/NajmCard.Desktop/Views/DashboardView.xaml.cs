@@ -527,7 +527,7 @@ public partial class DashboardView : UserControl
         var groups = profiles.Take(4).ToList();
         if (groups.Count == 0)
         {
-            ProfileBars.Children.Add(new TextBlock { Text = "لا توجد كروت على الراوتر", Foreground = Brushes.LightGray });
+            ProfileBars.Children.Add(new TextBlock { Text = "لا توجد كروت على الراوتر", Foreground = new SolidColorBrush(Color.FromRgb(75,27,50)) });
             return;
         }
         var palette=new Brush[]
