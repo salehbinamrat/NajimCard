@@ -185,7 +185,8 @@ public partial class GeneratorView : UserControl
         profileBox.Children.Add(_profile);
         routeInputs.Children.Add(serverBox);
         routeInputs.Children.Add(profileBox);
-        routeInputs.Children.Add(_customerPanel);
+        // The User Manager account gets a real fourth column only in that
+        // mode; a collapsed child must never create a blank wrapping row.
         var saveCell=PageUi.Column();
         saveCell.Margin=new Thickness(3,0,3,0);
         saveCell.Children.Add(PageUi.Label("إعدادات الباقة"));
@@ -465,9 +466,13 @@ public partial class GeneratorView : UserControl
             _customer.ItemsSource = null;
             _server.ItemsSource = new[]{"all"};
             _server.SelectedIndex=0;
-            _customerPanel.Visibility = SelectedService == "userman"
-                ? Visibility.Visible : Visibility.Collapsed;
-            routeInputs.Columns=SelectedService=="userman"?4:3;
+            var userManagerMode=SelectedService=="userman";
+            _customerPanel.Visibility=userManagerMode?Visibility.Visible:Visibility.Collapsed;
+            if(userManagerMode && !routeInputs.Children.Contains(_customerPanel))
+                routeInputs.Children.Insert(2,_customerPanel);
+            else if(!userManagerMode && routeInputs.Children.Contains(_customerPanel))
+                routeInputs.Children.Remove(_customerPanel);
+            routeInputs.Columns=userManagerMode?4:3;
             if(IsLoaded)await LoadProfilesAsync();
         };
         _profile.SelectionChanged += (_, _) =>
