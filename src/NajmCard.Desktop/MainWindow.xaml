@@ -155,12 +155,14 @@
                     </StackPanel>
                     <StackPanel DockPanel.Dock="Bottom" Margin="17">
                         <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,5,0,14"/>
-                        <TextBlock x:Name="SidebarLicense" Foreground="#A8E8C3"
-                                   FontFamily="Arial" FontWeight="SemiBold" FontSize="12"
-                                   TextWrapping="Wrap" Margin="3,0,3,10"
-                                   Text="حالة الترخيص"/>
-                        <TextBlock x:Name="SidebarRouter" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" FontSize="12" Margin="3,0,3,10"/>
-                        <Button Content="تسجيل الخروج" Style="{StaticResource OutlineButton}" Click="Logout_Click"/>
+                        <Border Background="#4B1730" BorderBrush="#BA6679" BorderThickness="1"
+                                CornerRadius="9" Padding="10,9" Margin="2,0,2,9">
+                            <TextBlock x:Name="SidebarLicense" Text="حالة الترخيص"
+                                       Foreground="#FFF5E5" FontFamily="Arial" FontWeight="ExtraBold"
+                                       FontSize="13" TextAlignment="Center" TextWrapping="Wrap"/>
+                        </Border>
+                        <Button Content="تسجيل الخروج" Background="#790D20" Foreground="White"
+                                Height="46" Style="{StaticResource OutlineButton}" Click="Logout_Click"/>
                     </StackPanel>
                     <ListBox x:Name="NavList" SelectionChanged="NavList_SelectionChanged" Background="Transparent" BorderThickness="0" Padding="7" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemContainerStyle>
