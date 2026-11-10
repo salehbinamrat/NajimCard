@@ -1,4 +1,5 @@
 using System.Windows.Controls.Primitives;
+using System.Windows.Threading;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -79,8 +80,8 @@ public partial class GeneratorView : UserControl
     private readonly TextBox _passwordLength = PageUi.Input("6");
     private readonly TextBlock _cardPreview = PageUi.Status();
     private Border? _appearancePreviewBorder;
-    private VoucherCardAppearance _currentAppearance = new();
-    private readonly TextBox _designTitle = PageUi.Input("نجم كارد");
+    private VoucherCardAppearance _currentAppearance = new(NetworkTitle:"نجم نت");
+    private readonly TextBox _designTitle = PageUi.Input("نجم نت");
     private readonly TextBox _designFontSize = PageUi.Input("18");
     private readonly TextBox _designBackground = PageUi.Input("#FFF6EB");
     private readonly TextBox _designTextColor = PageUi.Input("#4C1730");
@@ -167,20 +168,50 @@ public partial class GeneratorView : UserControl
         quickSaveButton.MinHeight=34;
         quickSaveButton.FontSize=13;
         quickSaveButton.FontWeight=FontWeights.Bold;
-        quickSaveButton.Foreground=Brushes.White;
-        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#AD2450")!;
+        quickSaveButton.Foreground=(Brush)new BrushConverter().ConvertFrom("#56172F")!;
+        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#F0C96E")!;
         quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
         var packageSaveFeedback=PageUi.Status();
         packageSaveFeedback.FontSize=11;
         packageSaveFeedback.TextWrapping=TextWrapping.Wrap;
         packageSaveFeedback.Visibility=Visibility.Collapsed;
-        quickSaveButton.Click+=(_,_)=>
+        // Non-blocking anchored toast: reports the precise save result without
+        // displaying an unnecessary modal or hiding the creator controls.
+        var saveToast=new Popup
+        {
+            PlacementTarget=quickSaveButton,Placement=PlacementMode.Bottom,
+            AllowsTransparency=true,StaysOpen=false
+        };
+        var toastMessage=new TextBlock
+        {
+            FontFamily=new FontFamily("Arial"),FontSize=13,
+            FontWeight=FontWeights.Bold,Foreground=Brushes.White,
+            TextWrapping=TextWrapping.Wrap,MaxWidth=430
+        };
+        var toastSurface=new Border
+        {
+            Child=toastMessage,CornerRadius=new CornerRadius(8),
+            BorderThickness=new Thickness(1),
+            BorderBrush=(Brush)new BrushConverter().ConvertFrom("#EAC48A")!,
+            Padding=new Thickness(13,9),Margin=new Thickness(0,4,0,0),
+            Background=(Brush)new BrushConverter().ConvertFrom("#176D4F")!
+        };
+        saveToast.Child=toastSurface;
+        var toastTimer=new DispatcherTimer{Interval=TimeSpan.FromSeconds(3)};
+        toastTimer.Tick+=(_,_)=>{toastTimer.Stop();saveToast.IsOpen=false;};
+        quickSaveButton.Click+=(_,_) =>
         {
             var saved=SaveCurrentPackage();
             packageSaveFeedback.Text=_status.Text;
             packageSaveFeedback.Foreground=(Brush)new BrushConverter().ConvertFrom(
                 saved?"#176B49":"#9B2140")!;
             packageSaveFeedback.Visibility=Visibility.Visible;
+            toastMessage.Text=(saved?"✓ تم الحفظ بنجاح — ":"⚠ تعذر حفظ إعدادات الكرت — ")+
+                _status.Text;
+            toastSurface.Background=(Brush)new BrushConverter().ConvertFrom(
+                saved?"#176D4F":"#96243F")!;
+            saveToast.IsOpen=true;
+            toastTimer.Stop();toastTimer.Start();
         };
         routeHeader.Children.Add(quickSaveButton);
         servicePanel.Children.Add(routeHeader);
@@ -588,7 +619,7 @@ public partial class GeneratorView : UserControl
                 // A never-saved package follows Hadramout's username-only default.
                 _credentialMode.SelectedIndex=v?.UsernameOnly==false?1:0;
                 _lengthWithPrefix.IsChecked=v?.LengthIncludesPrefix??true;
-                var d=v?.Appearance??new VoucherCardAppearance();
+                var d=v?.Appearance??new VoucherCardAppearance(NetworkTitle:"نجم نت");
                 LoadCardAppearanceFields(d);
                 PackagePrintSettingsRestored?.Invoke(v?.Print??new CardPrintOptions());
                 _status.Text=v is null?"لا يوجد قالب محفوظ لهذه الباقة.":
