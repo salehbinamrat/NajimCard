@@ -53,14 +53,14 @@ public partial class GeneratorView : UserControl
         SelectedIndex=0
     };
     private readonly RadioButton _credentialsSame = new()
-    {Content="متطابقتين",GroupName="NajmPasswordRule",IsChecked=true};
+    {Content=new TextBlock{Text="متطابقين",Foreground=PageUi.Muted},GroupName="NajmPasswordRule",IsChecked=true};
     private readonly RadioButton _credentialsDifferent = new()
-    {Content="مختلفتين",GroupName="NajmPasswordRule"};
+    {Content=new TextBlock{Text="مختلفين",Foreground=PageUi.Muted},GroupName="NajmPasswordRule"};
     private string _templateImagePath = "";
     private readonly ComboBox _profile = new() { MinWidth = 160 };
     private readonly ComboBox _customer = new() { MinWidth = 165 };
     private readonly StackPanel _customerPanel = PageUi.Column();
-    private readonly TextBox _count = PageUi.Input("20");
+    private readonly TextBox _count = PageUi.Input("60");
     private readonly TextBox _pagesEstimate = PageUi.Input("1");
     private readonly TextBox _prefix = PageUi.Input("");
     private readonly TextBox _length = PageUi.Input("8");
@@ -337,8 +337,6 @@ public partial class GeneratorView : UserControl
         void UpdatePasswordMode()
         {
             bool userOnly=_credentialMode.SelectedIndex==0;
-            // Collapse option captions as well as controls, to avoid
-            // empty gutters when the username-only format is selected.
             passwordModeRow.IsEnabled=!userOnly;
             _samePassword.IsChecked=userOnly || _credentialsDifferent.IsChecked!=true;
             bool hasSeparatePassword=!userOnly && _samePassword.IsChecked!=true;

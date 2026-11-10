@@ -33,7 +33,7 @@ public partial class GeneratorView
         // Print-card artwork has its own contrast and font sizes. Never apply
         // form-label cream text to the light paper preview underneath.
         if(node is FrameworkElement element && Equals(element.Tag,"CardArtwork"))return;
-        if(node is TextBlock label && !Equals(label.Tag,"SectionTitle"))
+        if(node is TextBlock label && label.Tag is not ("SectionTitle" or "ColorButtonLabel"))
         {
             label.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
             label.FontWeight=FontWeights.SemiBold;
@@ -75,6 +75,11 @@ public partial class GeneratorView
             var options=PrintOptionsProvider();
             _previewCardCanvas.Width=MmToDip(options.CardWidthMm);
             _previewCardCanvas.Height=MmToDip(options.CardHeightMm);
+            if(_defaultArtworkLayer is not null)
+            {
+                _defaultArtworkLayer.Width=_previewCardCanvas.Width;
+                _defaultArtworkLayer.Height=_previewCardCanvas.Height;
+            }
             CardCredentialPlate.Resize(_previewUsernamePlate,
                 options.CardWidthMm,options.CardHeightMm);
             CardCredentialPlate.Resize(_previewPasswordPlate,
@@ -436,7 +441,7 @@ public partial class GeneratorView
         _previewQr.Width=appearance.QrSize;_previewQr.Height=appearance.QrSize;
         _previewQr.Visibility=appearance.ShowQr?Visibility.Visible:Visibility.Collapsed;
         RefreshQrPreview(_cardPreview.Text);
-        _previewPackageName.Text=builtInSample?"200 ريال":
+        _previewPackageName.Text=builtInSample?"200\nريال":
             (_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
@@ -445,15 +450,20 @@ public partial class GeneratorView
         _previewNetworkName.Foreground=ink;
         _previewNetworkName.Background=Brushes.Transparent;
         _previewPackageName.Foreground=ink;
-        _previewPackageName.Background=Brushes.Transparent;
+        _previewPackageName.Background=builtInSample
+            ?new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.EffectiveElementColor))
+            :Brushes.Transparent;
         if(_defaultArtworkLayer is not null)
             _defaultArtworkLayer.Visibility=NajmNetCardArtwork.IsDefault(
                 appearance.NetworkTitle,appearance.TemplateImagePath,
                 appearance.BackgroundColor)?Visibility.Visible:Visibility.Collapsed;
-        _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
+        var family=new FontFamily(appearance.FontFamily);
+        foreach(var element in new[]{_cardPreview,_previewNetworkName,_previewPassword,_previewPackageName,
+            _previewCapacity,_previewPhone,_previewTime,_previewDate,_previewSequence,_previewRoute})
+            element.FontFamily=family;
         _previewNetworkName.FontSize=10*appearance.TitleScale;
         _previewPassword.FontSize=10*appearance.PasswordScale;
-        _previewPackageName.FontSize=(builtInSample?8:9)*appearance.ProfileScale;
+        _previewPackageName.FontSize=(builtInSample?10:9)*appearance.ProfileScale;
         _cardPreview.FontSize=appearance.UsernameFontSize;
         _cardPreview.Foreground=numberInk;
         _previewPassword.Foreground=ink;

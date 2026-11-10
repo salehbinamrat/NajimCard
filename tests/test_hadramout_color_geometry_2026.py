@@ -48,8 +48,8 @@ class PrintPageGeometry(unittest.TestCase):
     def test_credentials_options_and_server_selection(self):
         self.assertIn("اسم مستخدم فقط",self.g)
         self.assertIn("اسم مستخدم وكلمة مرور",self.g)
-        self.assertIn("متطابقتين",self.g)
-        self.assertIn("مختلفتين",self.g)
+        self.assertIn("متطابقين",self.g)
+        self.assertIn("مختلفين",self.g)
         discovery=(V/"GeneratorView.ProfileLoading.cs").read_text(encoding="utf-8")
         self.assertIn("ReadServersAsync(",discovery)
         self.assertIn("مدير المستخدمين (السيرفر 6)",self.g)

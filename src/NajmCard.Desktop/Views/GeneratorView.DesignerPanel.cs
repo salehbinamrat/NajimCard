@@ -75,7 +75,7 @@ public partial class GeneratorView
                 button.Background=new SolidColorBrush(color);
                 button.Content=new TextBlock
                 {
-                    Text=caption,Foreground=0.2126*color.R+0.7152*color.G+0.0722*color.B>135
+                    Text=caption,Tag="ColorButtonLabel",Foreground=0.2126*color.R+0.7152*color.G+0.0722*color.B>135
                         ?Brushes.Black:Brushes.FloralWhite
                 };
             }
@@ -111,10 +111,6 @@ public partial class GeneratorView
             button.Background=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
             toolbar.Children.Add(button);
         }
-        toolbar.HorizontalAlignment=HorizontalAlignment.Right;
-        toolbar.Width=188;
-        Grid.SetRow(toolbar,0);
-        designer.Children.Add(toolbar);
         var themeMenu=new ContextMenu{PlacementTarget=templateImage,Placement=PlacementMode.Bottom};
         var restoreTheme=new MenuItem{Header="قالب نجم نت الافتراضي"};
         restoreTheme.Click+=(_,_)=>
@@ -142,6 +138,7 @@ public partial class GeneratorView
         previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(168)});
         var options=PageUi.Column();
         options.FlowDirection=FlowDirection.RightToLeft;
+        options.Children.Add(toolbar);
         options.Children.Add(ReferenceHeader("خيارات مظهر الكرت"));
         void Option(string label,FrameworkElement field)
         {
