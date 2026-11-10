@@ -41,8 +41,8 @@ class ReferenceImageFinalFit(unittest.TestCase):
     def test_top_grid_balances_credential_and_profile_without_blank_side_columns(self):
         self.assertIn("Width=new GridLength(42,GridUnitType.Star)",self.layout)
         self.assertIn("Width=new GridLength(58,GridUnitType.Star)",self.layout)
-        self.assertIn("routeSurface.VerticalAlignment=VerticalAlignment.Stretch",self.layout)
-        self.assertIn("formatSurface.VerticalAlignment=VerticalAlignment.Stretch",self.layout)
+        self.assertIn("surface.VerticalAlignment=VerticalAlignment.Stretch",self.layout)
+        self.assertIn("leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto})",self.layout)
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
