@@ -465,7 +465,7 @@ public partial class DashboardView : UserControl
             Grid.SetColumn(count,1);label.Children.Add(count);
             stack.Children.Add(label);
             var barTrack = new Grid { Background = (Brush)FindResource("SurfaceRaisedBrush"), Height = 8, Margin = new Thickness(0, 4, 0, 0) };
-            var bar = new Border { Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(bars[i])!),
+            var bar = new Border { Background = barBrush,
                 CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Left };
             barTrack.Children.Add(bar);
             int value = groups[i].Count;
