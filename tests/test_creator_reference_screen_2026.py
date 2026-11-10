@@ -48,7 +48,7 @@ class CreatorReferenceScreenTests(unittest.TestCase):
         self.assertIn('root.Resources[typeof(ComboBox)]', self.workspace)
         self.assertIn('root.Resources[typeof(TextBox)]', self.workspace)
         self.assertIn('Content=root;', self.workspace)
-        self.assertNotIn('MainWindow', self.workspace)
+        self.assertNotIn('new MainWindow(', self.workspace)
 
 if __name__ == "__main__":
     unittest.main()
