@@ -197,7 +197,7 @@ public partial class GeneratorView : UserControl
         refreshCatalog.Margin=new Thickness(0,0,5,0);
         refreshCatalog.Click+=async (_,_) =>
         {
-            if(!_profile.IsEnabled || _sending || _preparing)return;
+            if(_sending || _preparing)return; // Even failed/disabled dropdowns must allow retry.
             await LoadProfilesAsync();
         };
         DockPanel.SetDock(refreshCatalog,Dock.Right);
