@@ -77,6 +77,23 @@ internal static class Program
             root.UpdateLayout();
             VerifyDashboardPanels(dashboard);
             Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x780.png"));
+            var activity=new ActivityView(store);
+            ((ListBox)window.FindName("NavList")).SelectedIndex=7;
+            ((RowDefinition)window.FindName("WorkspaceHeaderRow")).Height=new GridLength(88);
+            ((TextBlock)window.FindName("PageTitle")).Text="النشاط";
+            ((TextBlock)window.FindName("PageSubtitle")).Text="سجل العمليات المحلية";
+            pageHost.Margin=new Thickness(12,10,12,10);
+            pageHost.Content=activity;
+            root.UpdateLayout();
+            var activityGrid=VisualChildren<DataGrid>(activity).Single();
+            activityGrid.ItemsSource=Enumerable.Range(1,20).Select(i=>new VoucherActivityRow(
+                "2026-11-10 10:00","CARDS","إنشاء دفعة","SUCCESS","دفعة اختبار "+i)).ToArray();
+            activityGrid.SelectedIndex=1;
+            root.UpdateLayout();
+            if(!VisualChildren<System.Windows.Controls.Primitives.ScrollBar>(activityGrid)
+                .Any(bar=>bar.IsVisible && bar.Template.FindName("PART_Track",bar) is System.Windows.Controls.Primitives.Track))
+                throw new InvalidDataException("The activity table did not render a scrolling track.");
+            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"activity-1200x780.png"));
             return 0;
         }
         catch(Exception ex)

@@ -40,7 +40,7 @@ public sealed class NetworkMaintenanceView : UserControl
         var sessionStatus=PageUi.Status();
         sessionPanel.Children.Add(sessionButtons);
         sessionPanel.Children.Add(sessions);sessionPanel.Children.Add(sessionStatus);
-        Add("الجلسات",PageUi.Surface(sessionPanel,"#568EA8"));
+        Add("الجلسات",PageUi.Surface(sessionPanel));
         bool readingSessions=false;
         async Task LoadSessions()
         {
@@ -92,7 +92,7 @@ public sealed class NetworkMaintenanceView : UserControl
         devicePanel.Children.Add(deviceSearch);
         devicePanel.Children.Add(deviceGrid);
         var deviceStatus=PageUi.Status();devicePanel.Children.Add(deviceStatus);
-        Add("الأجهزة المتصلة",PageUi.Surface(devicePanel,"#5D8E82"));
+        Add("الأجهزة المتصلة",PageUi.Surface(devicePanel));
         IReadOnlyList<RouterNeighborDetail> neighbors=[];
         void FilterDevices()
         {
@@ -129,7 +129,7 @@ public sealed class NetworkMaintenanceView : UserControl
         var readDb=PageUi.Button("قراءة حالة قاعدة البيانات");
         var dbStatus=PageUi.Status();
         dbPanel.Children.Add(readDb);dbPanel.Children.Add(dbStatus);
-        Add("قاعدة البيانات والراوتر",PageUi.Surface(dbPanel,"#B58B5B"));
+        Add("قاعدة البيانات والراوتر",PageUi.Surface(dbPanel));
         readDb.Click+=async(_,_)=>
         {
             readDb.IsEnabled=false;
@@ -159,7 +159,7 @@ public sealed class NetworkMaintenanceView : UserControl
         serversPanel.Children.Add(serverButtons);
         serversPanel.Children.Add(serverGrid);
         serversPanel.Children.Add(serverStatus);
-        Add("سيرفرات الهوتسبوت",PageUi.Surface(serversPanel,"#9D5F70"));
+        Add("سيرفرات الهوتسبوت",PageUi.Surface(serversPanel));
         bool serverBusy=false;
         async Task LoadServers()
         {
@@ -203,6 +203,6 @@ public sealed class NetworkMaintenanceView : UserControl
         tabs.SelectedIndex=0;
         Content=PageUi.Wrap("التحكم بالشبكة والصيانة",
             "تبويبات مطابقة للمراجع مع الحفاظ على أدوات نجم كارد الموجودة.",
-            PageUi.Surface(root,"#9C7859"));
+            PageUi.Surface(root));
     }
 }

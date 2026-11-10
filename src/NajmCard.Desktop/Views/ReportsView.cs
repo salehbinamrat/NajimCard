@@ -44,7 +44,7 @@ public class ReportsView : UserControl
             "لـ RouterOS 6، مع فحص التكرار. كلا الملفين نص مكشوف ولا يُرفع أو يُنفذ تلقائيا."));
         stack.Children.Add(status);
         Content = PageUi.Wrap("التقارير والتصدير",
-            "تصدير CSV وExcel إلى ملفات محلية دون تعديل بيانات الشبكة.", PageUi.Surface(stack, "#377E98"));
+            "تصدير CSV وExcel إلى ملفات محلية دون تعديل بيانات الشبكة.", PageUi.Surface(stack));
 
         void ExportCsv(bool withPasswords)
         {

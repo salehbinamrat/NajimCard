@@ -51,7 +51,7 @@ public class ToolsView : UserControl
         neighborGrid.IsReadOnly=true;
         networkPanel.Children.Add(PageUi.Label("الأجهزة المجاورة"));
         networkPanel.Children.Add(neighborGrid);
-        stack.Children.Add(PageUi.Surface(networkPanel,"#477F91"));
+        stack.Children.Add(PageUi.Surface(networkPanel));
 
         // Hadramout maintenance parity: count-only preflight before listing
         // discovered neighbors. No active network scan, no RouterOS mutations.
@@ -82,7 +82,7 @@ public class ToolsView : UserControl
         neighborPanel.Children.Add(detailedNeighbors);
         var neighborStatus=PageUi.Status();
         neighborPanel.Children.Add(neighborStatus);
-        stack.Children.Add(PageUi.Surface(neighborPanel,"#597E99"));
+        stack.Children.Add(PageUi.Surface(neighborPanel));
 
         IReadOnlyList<RouterNeighborDetail> lastNeighbors=[];
         void FilterNeighbors()
@@ -211,7 +211,7 @@ public class ToolsView : UserControl
         };
         template.Children.Add(editor);
         template.Children.Add(status);
-        stack.Children.Add(PageUi.Surface(template,"#A47A46"));
+        stack.Children.Add(PageUi.Surface(template));
         var ftpPanel=PageUi.Column();
         ftpPanel.Children.Add(PageUi.Title("رفع وتنزيل صفحات Hotspot من MikroTik"));
         ftpPanel.Children.Add(PageUi.Hint(
@@ -267,7 +267,7 @@ public class ToolsView : UserControl
         var ftpStatus=PageUi.Status();
         ftpStatus.Text="لم يبدأ اتصال FTP. لا تُحفظ كلمة المرور محلياً.";
         ftpPanel.Children.Add(ftpStatus);
-        stack.Children.Add(PageUi.Surface(ftpPanel,"#567A91"));
+        stack.Children.Add(PageUi.Surface(ftpPanel));
 
         // RouterOS 6 UM database status: one on-demand read-only API request.
         // Unlike the v7 feature in Hadramout, there is intentionally no
@@ -282,7 +282,7 @@ public class ToolsView : UserControl
         umDatabaseStatus.Text="لم تُقرأ معلومات قاعدة User Manager بعد.";
         umDatabasePanel.Children.Add(readUmDatabase);
         umDatabasePanel.Children.Add(umDatabaseStatus);
-        stack.Children.Add(PageUi.Surface(umDatabasePanel,"#8A728A"));
+        stack.Children.Add(PageUi.Surface(umDatabasePanel));
         readUmDatabase.Click+=async(_,_) =>
         {
             readUmDatabase.IsEnabled=false;
@@ -309,7 +309,7 @@ public class ToolsView : UserControl
         future.Children.Add(PageUi.Hint(
             "إدارة Winbox المتقدمة وVPN والتشخيص عن بعد لم تكتمل بعد، " +
             "ولا تظهر لها خيارات تنفيذ غير مرتبطة بخدمات حقيقية."));
-        stack.Children.Add(PageUi.Surface(future,"#6A588C"));
+        stack.Children.Add(PageUi.Surface(future));
         Content=PageUi.Wrap("الأدوات الاحترافية",
             "تحرير صفحات Hotspot محلياً ونقلها إلى الراوتر مع النسخ الاحتياطي أولاً.",
             stack);

@@ -15,7 +15,13 @@ namespace NajmCard.Desktop.Views;
 internal static class PageUi
 {
     internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(230, 210, 211));
-    internal static Brush Gold => new SolidColorBrush(Color.FromRgb(243, 207, 148));
+    internal static readonly Brush Gold = FrozenBrush(243,207,148);
+    private static Brush FrozenBrush(byte red,byte green,byte blue)
+    {
+        var brush=new SolidColorBrush(Color.FromRgb(red,green,blue));
+        brush.Freeze();
+        return brush;
+    }
     internal static Border Surface(UIElement content, string accent = "#80593D") => new()
     {
         Child = content, CornerRadius = new CornerRadius(12), Padding = new Thickness(12),
@@ -43,6 +49,7 @@ internal static class PageUi
     {
         var grid = new DataGrid { CanUserResizeColumns = true, CanUserSortColumns = true,
             MinHeight = 235, MaxHeight = 495, AutoGenerateColumns = false,
+            UseLayoutRounding=true,SnapsToDevicePixels=true,
             FontFamily=new FontFamily("Arial"),FontWeight=FontWeights.Medium,
             AlternationCount=2,EnableRowVirtualization=true,EnableColumnVirtualization=true,
             ColumnWidth = new DataGridLength(1, DataGridLengthUnitType.Star) };
@@ -50,6 +57,10 @@ internal static class PageUi
         textStyle.Setters.Add(new Setter(TextBlock.TextTrimmingProperty,TextTrimming.CharacterEllipsis));
         textStyle.Setters.Add(new Setter(TextBlock.VerticalAlignmentProperty,VerticalAlignment.Center));
         textStyle.Setters.Add(new Setter(TextBlock.TextAlignmentProperty,TextAlignment.Center));
+        textStyle.Setters.Add(new Setter(FrameworkElement.ToolTipProperty,new System.Windows.Data.Binding(nameof(TextBlock.Text))
+        {
+            RelativeSource=System.Windows.Data.RelativeSource.Self
+        }));
         foreach(var (header,binding) in columns)
             grid.Columns.Add(new DataGridTextColumn {
                 Header=header,Binding=new System.Windows.Data.Binding(binding)
@@ -68,9 +79,13 @@ internal static class PageUi
         var stack=Column();
         stack.ToolTip=subtitle;
         stack.Children.Add(body);
-        return new ScrollViewer { FlowDirection = FlowDirection.RightToLeft,
+        var page=new ScrollViewer { FlowDirection = FlowDirection.RightToLeft,
+            Background=(Brush)Application.Current.FindResource("CanvasBrush"),
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = stack };
+        page.Resources[typeof(ScrollBar)]=new Style(typeof(ScrollBar),
+            (Style)Application.Current.FindResource("DarkPageScrollBar"));
+        return page;
     }
     internal static bool Confirm(string text) => MessageBox.Show(text, "نجم كارد | تأكيد عملية", MessageBoxButton.YesNo,
         MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes;
