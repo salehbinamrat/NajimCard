@@ -97,6 +97,15 @@ public sealed class PppInventoryTests
         Assert.DoesNotContain("private password", account.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task Creator_Profile_Read_Does_Not_Fetch_Accounts_Or_Sessions()
+    {
+        var spy=new FakePpp();
+        var profile=Assert.Single(await new RouterGateway(spy).ReadPppProfilesAsync());
+        Assert.Equal("gold",profile.Name);
+        Assert.Equal(["/ppp/profile/print"],spy.Commands);
+    }
+
     [Theory]
     [InlineData("/ppp/secret/print")]
     [InlineData("/ppp/profile/print")]
