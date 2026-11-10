@@ -125,7 +125,7 @@ public sealed class VoucherWorkspaceView : UserControl
             Margin=new Thickness(4,4,4,4)
         };
         footer.Children.Add(status);
-        var buttonsGrid=new UniformGrid{Columns=6,Margin=new Thickness(4,0,4,6)};
+        var buttonsGrid=new UniformGrid{Columns=7,Margin=new Thickness(4,0,4,6)};
         footer.Children.Add(buttonsGrid);
         Button MakeButton(string title,string bg,string fg)
         {
@@ -147,6 +147,7 @@ public sealed class VoucherWorkspaceView : UserControl
         var actions=new[]{
             MakeButton("إنشاء وإرسال وحفظ","#720D31","#FFFFFF"),
             MakeButton("إنشاء وإرسال","#AD7419","#FFFFFF"),
+            MakeButton("إعادة الإعدادات","#165B65","#FFFFFF"),
             MakeButton("معاينة قبل الطباعة","#1756AE","#FFFFFF"),
             MakeButton("حفظ PDF","#102A47","#FFFFFF"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
@@ -192,7 +193,8 @@ public sealed class VoucherWorkspaceView : UserControl
                 ?"اكتمل إرسال كروت مؤكدة وحُفظت حالاتها في SQLite.":
                 "تعذر تأكيد الإرسال. راجع حالات الدفعة قبل إعادة المحاولة.";
         });
-        actions[2].Click+=async(_,_)=>await Execute(async()=>
+        actions[2].Click+=(_,_)=>creator.RestoreSavedPackageSettings();
+        actions[3].Click+=async(_,_)=>await Execute(async()=>
         {
             if(creator.HasBatch)
             {
@@ -206,15 +208,15 @@ public sealed class VoucherWorkspaceView : UserControl
                 status.Text="عينة توليد محلية دون حفظ أو إرسال إلى الراوتر.";
             }
         });
-        actions[3].Click+=(_,_)=>_ = Execute(()=>
+        actions[4].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.SavePdf();return Task.CompletedTask;
         });
-        actions[4].Click+=(_,_)=>_ = Execute(()=>
+        actions[5].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.PreviewPdf();return Task.CompletedTask;
         });
-        actions[5].Click+=(_,_)=>_ = Execute(()=>
+        actions[6].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.PrintBatch();return Task.CompletedTask;
         });
