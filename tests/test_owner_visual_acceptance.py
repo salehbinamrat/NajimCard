@@ -42,7 +42,13 @@ class OwnerVisualAcceptance(unittest.TestCase):
         raw = source("DashboardView.xaml")
         tree = ET.fromstring(raw)
         self.assertIsNotNone(tree)
-        self.assertIn('<ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/><ColumnDefinition Width="1*"/>', raw)
+        ns = {"w": "http://schemas.microsoft.com/winfx/2006/xaml/presentation"}
+        layout = tree.find("w:Grid", ns)
+        tiers = layout.findall("w:Grid", ns)
+        self.assertEqual(3, len(tiers))
+        for tier in tiers:
+            columns = tier.findall("w:Grid.ColumnDefinitions/w:ColumnDefinition", ns)
+            self.assertEqual(["*", "8", "*", "8", "*"], [c.attrib["Width"] for c in columns])
         self.assertNotIn("StatusRing", raw)
         self.assertNotIn('Text="● نشطة"', raw)
         self.assertNotIn('Text="● منتهية"', raw)
