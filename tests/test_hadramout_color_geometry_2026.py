@@ -33,9 +33,9 @@ class PrintPageGeometry(unittest.TestCase):
     def test_reference_colors_and_no_overflow_areas(self):
         sections=self.g+(V/"GeneratorView.DesignerPanel.cs").read_text(encoding="utf-8")+(V/"GeneratorView.ReferenceLayout.cs").read_text(encoding="utf-8")
         self.assertNotIn("#F8EFD9",sections)
-        self.assertIn("#57213E",sections)
-        self.assertIn("#F8E6C7",sections)
-        self.assertIn("#D2AA61",sections)
+        self.assertIn("#63223C",sections)
+        self.assertIn("#48192A",sections)
+        self.assertIn("#9C4C60",sections)
         self.assertIn('FindResource("DarkComboBox")',self.w)
         self.assertNotIn("#FFF5E7",self.w)
         self.assertIn("Arial",self.style)

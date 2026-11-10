@@ -11,6 +11,68 @@ public partial class GeneratorView
 {
     private readonly Grid _designPreviewRow=new();
     private readonly TextBlock _designStatus=PageUi.Status();
+    private ComboBox? _inlineWidth;
+    private ComboBox? _inlineHeight;
+    private bool _syncingInlineSize;
+
+    public void RefreshInlineCardDimensions()
+    {
+        if(_syncingInlineSize || _inlineWidth is null || _inlineHeight is null ||
+           PrintOptionsProvider is null)return;
+        try
+        {
+            var options=PrintOptionsProvider();
+            _syncingInlineSize=true;
+            var cardWidth=options.CardWidthMm.ToString(CultureInfo.InvariantCulture);
+            var cardHeight=options.CardHeightMm.ToString(CultureInfo.InvariantCulture);
+            if(!_inlineWidth.Items.Contains(cardWidth))_inlineWidth.Items.Add(cardWidth);
+            if(!_inlineHeight.Items.Contains(cardHeight))_inlineHeight.Items.Add(cardHeight);
+            _inlineWidth.SelectedItem=cardWidth;
+            _inlineHeight.SelectedItem=cardHeight;
+        }
+        catch(ArgumentException) { /* Do not replace valid input with a partially edited size. */ }
+        catch(FormatException) { /* The left print fields may still be in progress. */ }
+        finally {_syncingInlineSize=false;}
+    }
+
+    private Button PaletteButton(string caption,TextBox target)
+    {
+        var button=PageUi.Button(caption,false);
+        button.MinWidth=0;button.MinHeight=28;
+        button.Padding=new Thickness(4,2,4,2);
+        button.Margin=new Thickness(1);
+        var popup=new Popup
+        {
+            PlacementTarget=button,Placement=PlacementMode.Bottom,
+            StaysOpen=false,AllowsTransparency=true
+        };
+        var palette=new UniformGrid{Columns=6,Background=Brushes.White};
+        var colors=new[]{"#4C1730","#74203D","#A33150","#D6263C","#F04438","#F29D38",
+            "#F2C94C","#197C59","#2169A0","#543399","#111111","#FFFFFF"};
+        foreach(var hex in colors)
+        {
+            var sample=new Button{Width=25,Height=25,Margin=new Thickness(2),
+                Background=(Brush)new BrushConverter().ConvertFrom(hex)!,
+                BorderBrush=(Brush)new BrushConverter().ConvertFrom("#74203D")!,
+                BorderThickness=new Thickness(1),ToolTip=hex};
+            sample.Click+=(_,_)=>{target.Text=hex;popup.IsOpen=false;};
+            palette.Children.Add(sample);
+        }
+        popup.Child=new Border
+        {
+            Background=Brushes.White,BorderBrush=(Brush)new BrushConverter().ConvertFrom("#74203D")!,
+            BorderThickness=new Thickness(2),Padding=new Thickness(5),
+            Child=palette
+        };
+        button.Click+=(_,_)=>popup.IsOpen=!popup.IsOpen;
+        button.ToolTip="اختر من شريط الألوان أو اكتب رمز اللون في الخانة المجاورة.";
+        target.TextChanged+=(_,_)=>
+        {
+            try{button.Background=(Brush)new BrushConverter().ConvertFrom(target.Text)!;}
+            catch(FormatException){ /* Keep previous color until a complete hex code is entered. */ }
+        };
+        return button;
+    }
 
     private Border BuildDesignerPanel(bool embedded)
     {
@@ -25,30 +87,20 @@ public partial class GeneratorView
             designer.Children.Add(element);
         }
         AddPanel(ReferenceHeader("معاينة وتصميم الكرت"),0);
-        var toolbar=new UniformGrid{Columns=5,Margin=new Thickness(0,0,0,2)};
+        var toolbar=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,2)};
         var templateImage=PageUi.Button("صورة القالب",false);
-        var changeTemplate=PageUi.Button("تغيير القالب",false);
         var advanced=PageUi.Button("تعديلات متقدمة",false);
-        var importTemplate=PageUi.Button("استيراد قالب",false);
-        var exportTemplate=PageUi.Button("تصدير قالب",false);
-        var tools=new[]{templateImage,changeTemplate,advanced,importTemplate,exportTemplate};
-        foreach(var button in tools)
+        foreach(var button in new[]{templateImage,advanced})
         {
             button.MinWidth=0;button.Margin=new Thickness(2);
             button.Padding=new Thickness(4,5,4,5);
             button.FontSize=12;button.FontWeight=FontWeights.Bold;
-            button.MinHeight=32;
+            button.MinHeight=30;button.Foreground=Brushes.White;
+            button.Background=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
             toolbar.Children.Add(button);
         }
-        templateImage.Background=(Brush)new BrushConverter().ConvertFrom("#0D766A")!;
-        changeTemplate.Background=(Brush)new BrushConverter().ConvertFrom("#175F9E")!;
-        advanced.Background=(Brush)new BrushConverter().ConvertFrom("#663CAA")!;
-        foreach(var button in tools)
-            button.Foreground=Brushes.White;
         AddPanel(toolbar,1);
         templateImage.Click+=(_,_)=>ChooseTemplateImage();
-        importTemplate.Click+=(_,_)=>ImportPortableTemplate();
-        exportTemplate.Click+=(_,_)=>ExportPortableTemplate();
 
         var previewRow=_designPreviewRow;
         previewRow.FlowDirection=FlowDirection.LeftToRight;
@@ -58,7 +110,7 @@ public partial class GeneratorView
         var options=PageUi.Column();
         options.FlowDirection=FlowDirection.RightToLeft;
         options.Children.Add(ReferenceHeader("خيارات مظهر الكرت"));
-        void Option(string label,Control field)
+        void Option(string label,FrameworkElement field)
         {
             field.MinWidth=0;field.Width=double.NaN;
             var line=new Grid{Margin=new Thickness(1,0,1,2)};
@@ -67,7 +119,7 @@ public partial class GeneratorView
             var caption=new TextBlock{
                 Text=label,FontFamily=new FontFamily("Arial"),FontSize=11,
                 FontWeight=FontWeights.Bold,Foreground=
-                    (Brush)new BrushConverter().ConvertFrom("#F8E6C7")!,
+                    (Brush)new BrushConverter().ConvertFrom("#48192A")!,
                 VerticalAlignment=VerticalAlignment.Center,
                 TextAlignment=TextAlignment.Right,Margin=new Thickness(2)};
             Grid.SetColumn(caption,0);
@@ -76,54 +128,104 @@ public partial class GeneratorView
             line.Children.Add(field);
             options.Children.Add(line);
         }
-        Option("الخط",_designFontFamily);
+        Option("نوع الخط",_designFontFamily);
         Option("حجم الخط",_designFontSize);
-        Option("لون الرقم",_designTextColor);
-        Option("لون الحدود",_designBorderColor);
+        Option("لون الرقم",PaletteButton("تغيير",_designTextColor));
+        Option("لون الحدود",PaletteButton("تغيير",_designBorderColor));
         Option("سمك الحدود",_designBorderWidth);
         Grid.SetColumn(options,1);
         previewRow.Children.Add(options);
         AddPanel(previewRow,2);
 
-        AddPanel(ReferenceHeader("عناصر الكرت"),3);
-        var designChecks=new WrapPanel{Margin=new Thickness(0,1,0,1)};
+        // Card size and styling are always visible directly beneath the preview.
+        var shapeOptions=new UniformGrid{Columns=5,Margin=new Thickness(0,2,0,3)};
+        FrameworkElement ShapeOption(string label,FrameworkElement field)
+        {
+            var holder=PageUi.Column();
+            holder.Margin=new Thickness(2,0,2,0);
+            holder.Children.Add(new TextBlock
+            {
+                Text=label,FontFamily=new FontFamily("Arial"),FontWeight=FontWeights.Bold,
+                FontSize=11,TextAlignment=TextAlignment.Center,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!
+            });
+            field.MinWidth=0;
+            holder.Children.Add(field);
+            return holder;
+        }
+        _inlineWidth=new ComboBox{IsEditable=false};
+        _inlineHeight=new ComboBox{IsEditable=false};
+        foreach(var option in new[]{"35","40","45","50","55","60"})
+            _inlineWidth.Items.Add(option);
+        foreach(var option in new[]{"15","19","20","25","30"})
+            _inlineHeight.Items.Add(option);
+        _inlineWidth.SelectedItem="50";
+        _inlineHeight.SelectedItem="19";
+        void ApplyInlineSize()
+        {
+            if(_syncingInlineSize || PrintOptionsProvider is null || ApplyPrintOptions is null)return;
+            try
+            {
+                var width=double.Parse((_inlineWidth.SelectedItem?.ToString()??_inlineWidth.Text).Trim().Replace(',','.'),
+                    CultureInfo.InvariantCulture);
+                var height=double.Parse((_inlineHeight.SelectedItem?.ToString()??_inlineHeight.Text).Trim().Replace(',','.'),
+                    CultureInfo.InvariantCulture);
+                var options=PrintOptionsProvider() with {CardWidthMm=width,CardHeightMm=height};
+                CardPrintLayoutPlanner.Calculate(options,1);
+                ApplyPrintOptions(options);
+                _designStatus.Text="تم تحديث أبعاد الكرت؛ اضغط حفظ إعدادات الباقة من الأعلى.";
+            }
+            catch(Exception ex) when(ex is ArgumentException or FormatException or OverflowException)
+            {
+                _designStatus.Text="أبعاد الكرت غير صالحة: "+ex.Message;
+            }
+        }
+        _inlineWidth.SelectionChanged+=(_,_)=>ApplyInlineSize();
+        _inlineHeight.SelectionChanged+=(_,_)=>ApplyInlineSize();
+        _inlineWidth.LostKeyboardFocus+=(_,_)=>ApplyInlineSize();
+        _inlineHeight.LostKeyboardFocus+=(_,_)=>ApplyInlineSize();
+        Loaded+=(_,_)=>RefreshInlineCardDimensions();
+        shapeOptions.Children.Add(ShapeOption("العرض (مم)",_inlineWidth));
+        shapeOptions.Children.Add(ShapeOption("الطول (مم)",_inlineHeight));
+        var qrSizes=new ComboBox{ItemsSource=new[]{"16","20","24","28","32","40","48","60"},
+            SelectedItem="24"};
+        qrSizes.SelectionChanged+=(_,_)=>
+        {
+            if(qrSizes.SelectedItem is string size)_designQrSize.Text=size;
+        };
+        _designQrSize.TextChanged+=(_,_)=>qrSizes.SelectedItem=_designQrSize.Text;
+        shapeOptions.Children.Add(ShapeOption("حجم QR",qrSizes));
+        var borderSizes=new ComboBox{ItemsSource=new[]{"0","0.5","1","1.5","2","3","4","5"},
+            SelectedItem="1"};
+        borderSizes.SelectionChanged+=(_,_)=>
+        {
+            if(borderSizes.SelectedItem is string size)_designBorderWidth.Text=size;
+        };
+        _designBorderWidth.TextChanged+=(_,_)=>borderSizes.SelectedItem=_designBorderWidth.Text;
+        shapeOptions.Children.Add(ShapeOption("سمك الحدود",borderSizes));
+        shapeOptions.Children.Add(ShapeOption("لون الحدود",PaletteButton("تغيير",_designBorderColor)));
+        AddPanel(shapeOptions,3);
+
+        AddPanel(ReferenceHeader("عناصر الكرت"),4);
+        var designChecks=new UniformGrid{Columns=5,Rows=2,Margin=new Thickness(0,1,0,1)};
         _designShowPassword.Content="كلمة المرور";
         _designShowProfile.Content="الباقة";
-        designChecks.Children.Add(_designShowPassword);
-        designChecks.Children.Add(_designShowProfile);
-        AddPanel(designChecks,4);
-        var saveAppearanceButton=PageUi.Button("حفظ إعدادات القالب لهذه الباقة");
-        saveAppearanceButton.MinWidth=0;saveAppearanceButton.Padding=new Thickness(8,6,8,6);
-        saveAppearanceButton.Margin=new Thickness(1,1,1,1);
+        foreach(var check in new[]{_designShowCapacity,_designShowPhone,_designShowQr,
+            _designShowTime,_designShowDate,_designShowTitle,_designShowSequence,_designShowRoute,
+            _designShowPassword,_designShowProfile})
+        {
+            check.FontSize=11;check.FontWeight=FontWeights.Bold;
+            check.Margin=new Thickness(2,2,2,2);
+            designChecks.Children.Add(check);
+        }
+        AddPanel(designChecks,5);
         var designStatus=_designStatus;
-        designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
-        designStatus.Margin=new Thickness(1,2,1,3);designStatus.FontSize=12;
-        AddPanel(saveAppearanceButton,5);
+        designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
+        designStatus.Margin=new Thickness(1,1,1,2);designStatus.FontSize=11;
         if(embedded)designStatus.Margin=new Thickness(1,0,1,1);
         AddPanel(designStatus,6);
-        var designSurface=embedded?CompactSurface(designer,"#D2AA61")
-            :PageUi.Surface(designer,"#D2AA61");
-        saveAppearanceButton.Click+=(_,_)=>{
-            designStatus.Text=SaveCurrentPackage()
-                ?"تم حفظ تصميم هذه الباقة بما فيه صورة القالب."
-                :"تحقق من خصائص الباقة والتصميم والطباعة.";
-        };
-
-        int paletteIndex=0;
-        changeTemplate.Click+=(_,_)=>{
-            paletteIndex=(paletteIndex+1)%3;
-            var colors=new[]{
-                ("#FFF6EB","#4C1730","#B89159"),
-                ("#FFFFFF","#31105E","#9435B6"),
-                ("#102A47","#FFFFFF","#D2AA61")
-            }[paletteIndex];
-            _templateImagePath="";
-            _designBackground.Text=colors.Item1;
-            _designTextColor.Text=colors.Item2;
-            _designBorderColor.Text=colors.Item3;
-            try{ApplyCardAppearance(ReadCurrentAppearance());}
-            catch(Exception ex){designStatus.Text=ex.Message;}
-        };
+        var designSurface=embedded?CompactSurface(designer,"#75203E")
+            :PageUi.Surface(designer,"#75203E");
 
         advanced.Click+=(_,_)=>{
             var originalAppearance=_currentAppearance;
@@ -136,7 +238,7 @@ public partial class GeneratorView
                 Background=(Brush)new BrushConverter().ConvertFrom("#200E1E")!
             };
             var pane=new DockPanel{Margin=new Thickness(16)};
-            var save=PageUi.Button("تطبيق وحفظ التصميم",true);
+            var save=PageUi.Button("تطبيق التعديلات",true);
             save.MinWidth=0;save.Margin=new Thickness(2,8,2,1);
             var fields=new UniformGrid{Columns=2};
             TextBox Editable(string label,string value)
@@ -160,6 +262,9 @@ public partial class GeneratorView
             var numberColor=Editable("لون رقم الكرت",_designTextColor.Text);
             var borderColor=Editable("لون الحدود",_designBorderColor.Text);
             var borderWidth=Editable("سمك الحدود",_designBorderWidth.Text);
+            var capacity=Editable("نص السعة (اختياري)",_designCapacityText.Text);
+            var phone=Editable("رقم الهاتف على الكرت (اختياري)",_designPhoneText.Text);
+            var qrSize=Editable("حجم QR",_designQrSize.Text);
 
             // Advanced layout controls use the same live print model as the
             // inline editor; no shadow printer state or pretend dimensions.
@@ -181,6 +286,9 @@ public partial class GeneratorView
                     CultureInfo.InvariantCulture);
                 _designShowPassword.IsChecked=originalAppearance.ShowPassword;
                 _designShowProfile.IsChecked=originalAppearance.ShowProfile;
+                _designCapacityText.Text=originalAppearance.CapacityText;
+                _designPhoneText.Text=originalAppearance.PhoneText;
+                _designQrSize.Text=originalAppearance.QrSize.ToString(CultureInfo.InvariantCulture);
                 ApplyCardAppearance(originalAppearance);
                 if(livePrint is not null)ApplyPrintOptions?.Invoke(livePrint);
             };
@@ -234,19 +342,17 @@ public partial class GeneratorView
                     _designFontSize.Text=fontSize.Text;_designTextColor.Text=numberColor.Text;
                     _designBorderColor.Text=borderColor.Text;
                     _designBorderWidth.Text=borderWidth.Text;
+                    _designCapacityText.Text=capacity.Text;
+                    _designPhoneText.Text=phone.Text;
+                    _designQrSize.Text=qrSize.Text;
                     _designFontFamily.SelectedItem=font.SelectedItem?.ToString()??"Arial";
                     _designShowPassword.IsChecked=showPassword.IsChecked;
                     _designShowProfile.IsChecked=showProfile.IsChecked;
                     ApplyCardAppearance(ReadCurrentAppearance());
                     if(newPrint is not null)ApplyPrintOptions?.Invoke(newPrint);
-                    if(SaveCurrentPackage())
-                    {
-                        savedSuccessfully=true;
-                        popup.DialogResult=true;
-                    }
-                    else
-                        MessageBox.Show(_status.Text,"تعذر حفظ تصميم الباقة",
-                            MessageBoxButton.OK,MessageBoxImage.Warning);
+                    savedSuccessfully=true;
+                    _designStatus.Text="تم تطبيق التعديلات. احفظ إعدادات الباقة من الزر العلوي.";
+                    popup.DialogResult=true;
                 }catch(Exception ex){
                     MessageBox.Show(ex.Message,"التحقق من التصميم",
                         MessageBoxButton.OK,MessageBoxImage.Warning);

@@ -22,6 +22,7 @@ public sealed class VoucherWorkspaceView : UserControl
         creator.ApplyPrintOptions=printer.ApplyOptions;
         creator.PackagePrintSettingsRestored+=printer.ApplyOptions;
         printer.LayoutSettingsChanged+=creator.RefreshPageCount;
+        printer.LayoutSettingsChanged+=creator.RefreshInlineCardDimensions;
         creator.BatchChanged+=printer.Invalidate;
         creator.CardAppearanceChanged+=printer.Invalidate;
         creator.AttachPrintingSection(printer);
@@ -32,10 +33,41 @@ public sealed class VoucherWorkspaceView : UserControl
         // Keep the creator's compact dimensions on the shared dark templates.
         var dropdown=new Style(typeof(ComboBox),(Style)Application.Current.FindResource("DarkComboBox"));
         dropdown.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
+        dropdown.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#FFFAF0")!));
+        dropdown.Setters.Add(new Setter(Control.ForegroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#471A30")!));
+        dropdown.Setters.Add(new Setter(Control.BorderBrushProperty,
+            (Brush)new BrushConverter().ConvertFrom("#75203E")!));
+        // The global dark ComboBox template creates white TextBlocks inside
+        // SelectionBoxItem. Explicit local item text fixes contrast on cream
+        // WITHOUT changing the dark sidebar or the application's theme.
+        var cream=(Brush)new BrushConverter().ConvertFrom("#FFFAF0")!;
+        var maroon=(Brush)new BrushConverter().ConvertFrom("#471A30")!;
+        var optionTemplate=new DataTemplate();
+        var optionBacking=new FrameworkElementFactory(typeof(Border));
+        optionBacking.SetValue(Border.BackgroundProperty,cream);
+        optionBacking.SetValue(Border.PaddingProperty,new Thickness(3,1,3,1));
+        var optionText=new FrameworkElementFactory(typeof(TextBlock));
+        optionText.SetBinding(TextBlock.TextProperty,
+            new System.Windows.Data.Binding("."));
+        optionText.SetValue(TextBlock.ForegroundProperty,maroon);
+        optionText.SetValue(TextBlock.FontWeightProperty,FontWeights.Bold);
+        optionText.SetValue(TextBlock.FontSizeProperty,13d);
+        optionText.SetValue(TextBlock.TextTrimmingProperty,TextTrimming.CharacterEllipsis);
+        optionBacking.AppendChild(optionText);
+        optionTemplate.VisualTree=optionBacking;
+        dropdown.Setters.Add(new Setter(ItemsControl.ItemTemplateProperty,optionTemplate));
         root.Resources[typeof(ComboBox)]=dropdown;
         var input=new Style(typeof(TextBox),(Style)Application.Current.FindResource(typeof(TextBox)));
         input.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
         input.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(6,4,6,4)));
+        input.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#FFFAF0")!));
+        input.Setters.Add(new Setter(Control.ForegroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#471A30")!));
+        input.Setters.Add(new Setter(Control.BorderBrushProperty,
+            (Brush)new BrushConverter().ConvertFrom("#75203E")!));
         root.Resources[typeof(TextBox)]=input;
         var fields=new Grid{ClipToBounds=true,UseLayoutRounding=true};
         fields.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});

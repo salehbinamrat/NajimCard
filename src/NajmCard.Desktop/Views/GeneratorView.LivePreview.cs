@@ -47,6 +47,7 @@ public partial class GeneratorView
             ?username+"\n"+password:username;
         _previewPassword.Text=showPassword?password:"";
         _previewPassword.Visibility=showPassword?Visibility.Visible:Visibility.Collapsed;
+        RefreshQrPreview(username);
     }
 
     private VoucherGenerationOptions? _sampleOptions;

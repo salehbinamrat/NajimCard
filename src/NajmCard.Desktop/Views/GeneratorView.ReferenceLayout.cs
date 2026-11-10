@@ -13,8 +13,8 @@ public partial class GeneratorView
     private static Border ReferenceHeader(string title)=>new()
     {
         Background=(Brush)new BrushConverter().ConvertFrom(
-            title=="بيانات ومسار الإرسال"?"#720F30":"#57213E")!,
-        BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!,
+            title=="بيانات ومسار الإرسال"?"#791B37":"#63223C")!,
+        BorderBrush=(Brush)new BrushConverter().ConvertFrom("#9C4C60")!,
         BorderThickness=new Thickness(0,0,0,1),
         CornerRadius=new CornerRadius(5,5,0,0),
         Padding=new Thickness(8,4,8,4),
@@ -67,7 +67,7 @@ public partial class GeneratorView
         secondary.Children.Add(_embeddedPrintHost);
         _status.FontSize=12;
         _status.Margin=new Thickness(2,0,2,1);
-        _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
+        _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
         Grid.SetRow(_status,1);
         secondary.Children.Add(_status);
         Grid.SetRow(basicsSurface,1);
@@ -99,7 +99,7 @@ public partial class GeneratorView
             var appearance=ReadCurrentAppearance();
             var image=PortableCardTemplate.ImportImage(picker.FileName,TemplateImageFolder);
             ApplyCardAppearance(appearance with {TemplateImagePath=image});
-            _status.Text="تم استيراد صورة الكرت محليا. اضغط حفظ إعدادات هذه الباقة "+
+            _status.Text="تم استيراد صورة الكرت محليا. اضغط حفظ إعدادات الباقة من الأعلى "+
                 "لتبقى الصورة محفوظة ومختارة بعد إغلاق البرنامج.";
         }
         catch(Exception ex) when(ex is IOException or InvalidDataException or ArgumentException or
