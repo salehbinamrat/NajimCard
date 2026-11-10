@@ -53,14 +53,14 @@ public partial class GeneratorView : UserControl
         SelectedIndex=0
     };
     private readonly RadioButton _credentialsSame = new()
-    {Content="متطابقتين",GroupName="NajmPasswordRule",IsChecked=true};
+    {Content=new TextBlock{Text="متطابقين",Foreground=PageUi.Muted},GroupName="NajmPasswordRule",IsChecked=true};
     private readonly RadioButton _credentialsDifferent = new()
-    {Content="مختلفتين",GroupName="NajmPasswordRule"};
+    {Content=new TextBlock{Text="مختلفين",Foreground=PageUi.Muted},GroupName="NajmPasswordRule"};
     private string _templateImagePath = "";
     private readonly ComboBox _profile = new() { MinWidth = 160 };
     private readonly ComboBox _customer = new() { MinWidth = 165 };
     private readonly StackPanel _customerPanel = PageUi.Column();
-    private readonly TextBox _count = PageUi.Input("20");
+    private readonly TextBox _count = PageUi.Input("60");
     private readonly TextBox _pagesEstimate = PageUi.Input("1");
     private readonly TextBox _prefix = PageUi.Input("");
     private readonly TextBox _length = PageUi.Input("8");
@@ -83,6 +83,7 @@ public partial class GeneratorView : UserControl
     private readonly TextBox _designTitle = PageUi.Input("نجم نت");
     private readonly TextBox _designFontSize = PageUi.Input("18");
     private readonly TextBox _designBackground = PageUi.Input("#FFF6EB");
+    private readonly TextBox _designElementColor = PageUi.Input("#4C1730");
     private readonly TextBox _designTextColor = PageUi.Input("#4C1730");
     private readonly TextBox _designBorderColor = PageUi.Input("#B89159");
     private readonly TextBox _designBorderWidth = PageUi.Input("1");
@@ -157,9 +158,9 @@ public partial class GeneratorView : UserControl
         // Keep Hadramout's direct per-package save action visible beside
         // the routing header. It persists locally without sending RouterOS commands.
         var routeHeader=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        routeHeader.Children.Add(ReferenceHeader("بيانات ومسار الإرسال"));
+        routeHeader.Children.Add(ReferenceHeader("باقة وسيرفر الإرسال"));
         var quickSaveButton=PageUi.Button("حفظ إعدادات الباقة",false);
-        quickSaveButton.HorizontalAlignment=HorizontalAlignment.Left;
+        quickSaveButton.HorizontalAlignment=HorizontalAlignment.Right;
         quickSaveButton.VerticalAlignment=VerticalAlignment.Center;
         quickSaveButton.Margin=new Thickness(5,1,5,4);
         quickSaveButton.Padding=new Thickness(14,6,14,6);
@@ -175,7 +176,7 @@ public partial class GeneratorView : UserControl
         packageSaveFeedback.Visibility=Visibility.Collapsed;
         WirePackageSaveNotification(quickSaveButton,packageSaveFeedback);
         servicePanel.Children.Add(routeHeader);
-        var routeInputs=new UniformGrid{Columns=3,Margin=new Thickness(0,1,0,1)};
+        var routeInputs=new UniformGrid{Columns=2,Margin=new Thickness(0,1,0,1)};
         var serverBox=PageUi.Column();
         serverBox.Children.Add(PageUi.Label("السيرفر"));
         serverBox.Children.Add(_server);
@@ -184,12 +185,7 @@ public partial class GeneratorView : UserControl
         profileBox.Children.Add(_profile);
         routeInputs.Children.Add(serverBox);
         routeInputs.Children.Add(profileBox);
-        // The User Manager account gets a real fourth column only in that
-        // mode; a collapsed child must never create a blank wrapping row.
-        var saveCell=PageUi.Column();
-        saveCell.Margin=new Thickness(3,0,3,0);
-        saveCell.Children.Add(PageUi.Label("إعدادات الباقة"));
-        quickSaveButton.MinWidth=145;
+        quickSaveButton.MinWidth=126;
         quickSaveButton.MinHeight=27;
         quickSaveButton.Padding=new Thickness(12,3,12,3);
         quickSaveButton.Margin=new Thickness(0);
@@ -200,9 +196,9 @@ public partial class GeneratorView : UserControl
             FontWeight=FontWeights.ExtraBold,FontSize=12,
             TextAlignment=TextAlignment.Center
         };
-        saveCell.Children.Add(quickSaveButton);
-        routeInputs.Children.Add(saveCell);
+        routeHeader.Children.Add(quickSaveButton);
         servicePanel.Children.Add(routeInputs);
+        servicePanel.Children.Add(_customerPanel);
         var catalogRow=new DockPanel{Margin=new Thickness(0,3,0,0)};
         var refreshCatalog=PageUi.Button("تحديث الباقات",false);
         refreshCatalog.MinWidth=0;
@@ -245,9 +241,9 @@ public partial class GeneratorView : UserControl
         var row = new UniformGrid { Columns = 5 };
         foreach (var (label, input) in new (string, Control)[]
         {
-            ("عدد الكروت", _count), ("عدد الصفحات", _pagesEstimate),
-            ("بادئة الرقم", _prefix), ("طول المستخدم", _length),
-            ("طول كلمة المرور", _passwordLength)
+            ("طول كلمة المرور", _passwordLength), ("طول المستخدم", _length),
+            ("بادئة الرقم", _prefix), ("عدد الصفحات", _pagesEstimate),
+            ("عدد الكروت", _count)
         })
         {
             var cell = PageUi.Column();
@@ -264,23 +260,18 @@ public partial class GeneratorView : UserControl
         // Hadramout's username and password alphabets are independent.
         // The user may type exact ASCII character sets, without duplicate characters.
         var formatSection=PageUi.Column();
-        formatSection.Children.Add(ReferenceHeader("إنشاء المستخدم وطباعة الكروت"));
+        formatSection.Children.Add(ReferenceHeader("اسم المستخدم وكلمة المرور"));
         var credentialsTop=new Grid{Margin=new Thickness(0,1,0,1)};
-        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{
-            Width=new GridLength(1.2,GridUnitType.Star)});
-        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{
-            Width=new GridLength(2.8,GridUnitType.Star)});
+        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
+        credentialsTop.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
         var modeCell=PageUi.Column();
         modeCell.Margin=new Thickness(1,0,2,0);
-        modeCell.Children.Add(PageUi.Label("طريقة الدخول"));
         modeCell.Children.Add(_credentialMode);
         Grid.SetColumn(modeCell,0);
         credentialsTop.Children.Add(modeCell);
         var sameCell=PageUi.Column();
-        sameCell.Children.Add(PageUi.Label("كلمة المرور"));
         sameCell.Children.Add(_credentialsSame);
         var differentCell=PageUi.Column();
-        differentCell.Children.Add(PageUi.Label("خيار آخر"));
         differentCell.Children.Add(_credentialsDifferent);
         var passwordModeRow=new UniformGrid{Columns=2,Margin=new Thickness(0)};
         passwordModeRow.Children.Add(sameCell);
@@ -294,28 +285,28 @@ public partial class GeneratorView : UserControl
         // Each service's alphabet TYPE and character SET occupy one horizontal row.
         // This removes the old stacked rows without hiding any generation option.
         var usernameGroup=new UniformGrid{Columns=2,Margin=new Thickness(1,0,1,0)};
+        var alphabetFields=new UniformGrid{Columns=2};
         var userKind=PageUi.Column();
         userKind.Children.Add(PageUi.Label("نوع اسم المستخدم"));
         userKind.Children.Add(_usernameAlphabetType);
         var usernameCharsCell=PageUi.Column();
         usernameCharsCell.Children.Add(PageUi.Label("أحرف اسم المستخدم"));
         usernameCharsCell.Children.Add(_usernameCharacters);
-        usernameGroup.Children.Add(userKind);
-        usernameGroup.Children.Add(usernameCharsCell);
-        Grid.SetColumn(usernameGroup,1);
-        credentialsTop.Children.Add(usernameGroup);
+        Grid.SetColumn(passwordModeRow,1);
+        credentialsTop.Children.Add(passwordModeRow);
         formatSection.Children.Add(credentialsTop);
-        formatSection.Children.Add(passwordModeRow);
-        var passwordGroup=new UniformGrid{Columns=2,Margin=new Thickness(1,0,1,0)};
+        formatSection.Children.Add(usernameGroup);
+        usernameGroup.Children.Add(userKind);
+        alphabetFields.Children.Add(usernameCharsCell);
         var passwordKind=PageUi.Column();
         passwordKind.Children.Add(PageUi.Label("نوع كلمة المرور"));
         passwordKind.Children.Add(_passwordAlphabetType);
         var passwordCharsCell=PageUi.Column();
         passwordCharsCell.Children.Add(PageUi.Label("أحرف كلمة المرور"));
         passwordCharsCell.Children.Add(_passwordCharacters);
-        passwordGroup.Children.Add(passwordKind);
-        passwordGroup.Children.Add(passwordCharsCell);
-        formatSection.Children.Add(passwordGroup);
+        usernameGroup.Children.Insert(0,passwordKind);
+        alphabetFields.Children.Insert(0,passwordCharsCell);
+        formatSection.Children.Add(alphabetFields);
         void ApplyAlphabet(ComboBox selector,TextBox target)
         {
             if(_restoringPreset)return;
@@ -332,11 +323,11 @@ public partial class GeneratorView : UserControl
             ApplyAlphabet(_usernameAlphabetType,_usernameCharacters);
         _passwordAlphabetType.SelectionChanged+=(_,_) =>
             ApplyAlphabet(_passwordAlphabetType,_passwordCharacters);
-        formatSection.Children.Add(_lengthWithPrefix);
+        formatSection.Children.Add(PageUi.LabeledCheckBox(_lengthWithPrefix));
         var formatSurface=embedded?CompactSurface(formatSection,"#D2AA61"):
             PageUi.Surface(formatSection,"#D2AA61");
         form.Children.Add(formatSurface);
-        _customerPanel.Children.Add(PageUi.Label("حساب مدير User Manager v6"));
+        _customerPanel.Children.Add(PageUi.Label("مدير المستخدمين (السيرفر 6)"));
         _customerPanel.Children.Add(_customer);
         _customerPanel.Visibility = Visibility.Collapsed;
         _server.ItemsSource=new[]{"all"};
@@ -346,19 +337,11 @@ public partial class GeneratorView : UserControl
         void UpdatePasswordMode()
         {
             bool userOnly=_credentialMode.SelectedIndex==0;
-            // Collapse option captions as well as controls, to avoid
-            // empty gutters when the username-only format is selected.
-            sameCell.Visibility=differentCell.Visibility=
-                userOnly?Visibility.Collapsed:Visibility.Visible;
-            passwordModeRow.Visibility=userOnly?Visibility.Collapsed:Visibility.Visible;
-            _credentialsSame.Visibility=_credentialsDifferent.Visibility=
-                userOnly?Visibility.Collapsed:Visibility.Visible;
+            passwordModeRow.IsEnabled=!userOnly;
             _samePassword.IsChecked=userOnly || _credentialsDifferent.IsChecked!=true;
             bool hasSeparatePassword=!userOnly && _samePassword.IsChecked!=true;
             _passwordLength.IsEnabled=hasSeparatePassword;
-            passwordKind.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
-            passwordCharsCell.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
-            passwordGroup.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
+            passwordKind.IsEnabled=passwordCharsCell.IsEnabled=hasSeparatePassword;
             _designShowPassword.IsChecked=!userOnly;
         }
         _credentialMode.SelectionChanged+=(_,_)=>UpdatePasswordMode();
@@ -387,6 +370,7 @@ public partial class GeneratorView : UserControl
         form.Children.Add(_status);
         // Compact sample data overlays the vector card; title and package
         // are rendered separately, not duplicated inside the username box.
+        _cardPreview.Name="CardNumberPreview";
         _cardPreview.Text="";
         _cardPreview.ToolTip="قالب افتراضي تجريبي؛ ليس كرتا محفوظا أو مرسلا.";
         _cardPreview.FontSize = embedded?17:16;
@@ -465,11 +449,7 @@ public partial class GeneratorView : UserControl
             _server.SelectedIndex=0;
             var userManagerMode=SelectedService=="userman";
             _customerPanel.Visibility=userManagerMode?Visibility.Visible:Visibility.Collapsed;
-            if(userManagerMode && !routeInputs.Children.Contains(_customerPanel))
-                routeInputs.Children.Insert(2,_customerPanel);
-            else if(!userManagerMode && routeInputs.Children.Contains(_customerPanel))
-                routeInputs.Children.Remove(_customerPanel);
-            routeInputs.Columns=userManagerMode?4:3;
+
             if(IsLoaded)await LoadProfilesAsync();
         };
         _profile.SelectionChanged += (_, _) =>
@@ -507,6 +487,7 @@ public partial class GeneratorView : UserControl
             UsernameFontSize=Number(_designFontSize.Text),
             BackgroundColor=_designBackground.Text.Trim(),
             UsernameColor=_designTextColor.Text.Trim(),
+            ElementColor=_designElementColor.Text.Trim(),
             BorderColor=_designBorderColor.Text.Trim(),
             BorderWidth=Number(_designBorderWidth.Text),
             ShowPassword=_designShowPassword.IsChecked==true,
@@ -609,11 +590,11 @@ public partial class GeneratorView : UserControl
 
     internal VoucherCardAppearance ReadDraftPreviewAppearance() =>
         ReadCurrentAppearance() with {ShowPassword=ShowPreviewPassword};
-    public async Task<bool> CreateAndSendAsync()
+    public async Task<bool> CreateAndSendAsync(bool singleCard=false)
     {
         if(_sending||_preparing||!SaveCurrentPackage())return false;
         _batch=[];BatchChanged?.Invoke();
-        await PrepareBatchAsync(true);
+        await PrepareBatchAsync(true,singleCard);
         if(_batch.Count==0)return false;
         await UploadAsync();
         return _batch.Any(v=>v.SentToRouter&&v.DeliveryStatus=="SENT");
@@ -633,7 +614,7 @@ public partial class GeneratorView : UserControl
     /// All generation and DPAPI/SQLite bulk work runs off the WPF UI dispatcher.
     /// Preview is intentionally ephemeral: it never writes to the database or router.
     /// </summary>
-    private async Task PrepareBatchAsync(bool persist)
+    private async Task PrepareBatchAsync(bool persist,bool singleCard=false)
     {
         if(_sending || _preparing)return;
         _preparing = true;
@@ -642,6 +623,7 @@ public partial class GeneratorView : UserControl
         try
         {
             var options=ReadGenerationOptions(forPreview:false);
+            if(singleCard)options=options with {Count=1};
             var service=SelectedService;
             var profile=_profile.SelectedItem?.ToString() ?? "";
             if(service=="hotspot" && _server.SelectedItem?.ToString()!="all")
@@ -650,7 +632,7 @@ public partial class GeneratorView : UserControl
                     "الإرسال الموجه لسيرفر خاص لا يزال بحاجة لاختبارات RouterOS.");
             var customer=service=="userman"?_customer.SelectedItem?.ToString()??"":"";
             if(service=="userman" && string.IsNullOrWhiteSpace(customer))
-                throw new ArgumentException("اختر حساب مدير User Manager v6 قبل إنشاء الكروت.");
+                throw new ArgumentException("اختر مدير المستخدمين (السيرفر 6) قبل إنشاء الكروت.");
             _status.Text = persist
                 ? "جارٍ توليد الدفعة وحفظها محليا بشكل آمن..."
                 : "جارٍ إعداد عينة فعلية محلية دون حفظ أو إرسال...";

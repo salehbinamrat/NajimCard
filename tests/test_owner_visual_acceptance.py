@@ -16,12 +16,12 @@ def source(name):
 class OwnerVisualAcceptance(unittest.TestCase):
     def test_card_editor_matches_two_column_reference_order(self):
         layout = source("GeneratorView.ReferenceLayout.cs")
-        self.assertIn("Grid.SetRow(routeSurface,0)", layout)
-        self.assertIn("Grid.SetRow(formatSurface,1)", layout)
+        self.assertIn("Grid.SetColumn(routeSurface,1)", layout)
+        self.assertIn("full.Children.Add(formatSurface)", layout)
         self.assertIn("Grid.SetColumn(designSurface,1)", layout)
-        self.assertIn("Grid.SetRow(lower,2)", layout)
+        self.assertIn("Grid.SetRow(printColumn,1)", layout)
         generator = source("GeneratorView.cs")
-        for title in ("بيانات ومسار الإرسال", "إنشاء المستخدم وطباعة الكروت",
+        for title in ("باقة وسيرفر الإرسال", "اسم المستخدم وكلمة المرور",
                       "عدد الكروت"):
             self.assertIn(title, generator)
 
@@ -82,7 +82,7 @@ class OwnerVisualAcceptance(unittest.TestCase):
         self.assertIn("FormatException", image_picker)
         self.assertIn("UnauthorizedAccessException", image_picker)
         self.assertIn("FormatException", preview)
-        self.assertIn("PrintingView.ChooseArtworkTextBacking", preview)
+        self.assertIn("appearance.EffectiveElementColor", preview)
         self.assertNotIn("Color.FromArgb(230,255,255,255)", preview)
 
     def test_cancelled_advanced_editor_does_not_change_active_card_style(self):

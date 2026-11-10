@@ -81,6 +81,18 @@ internal static class PageUi
             background=="#E6BC64"?"#52152F":"#FFF5E8")!;
         return button;
     }
+    internal static StackPanel LabeledCheckBox(CheckBox check)
+    {
+        var row=new StackPanel{Orientation=Orientation.Horizontal};
+        var label=Label(check.Content?.ToString()??"");
+        label.VerticalAlignment=VerticalAlignment.Center;
+        label.Margin=new Thickness(4,0,4,0);
+        label.MouseLeftButtonUp+=(_,_)=>check.IsChecked=check.IsChecked!=true;
+        row.Children.Add(check);
+        row.Children.Add(label);
+        return row;
+    }
+
     internal static TextBlock Status() => new() { TextWrapping = TextWrapping.Wrap,
         Foreground = Muted, Margin = new Thickness(0, 3, 0, 3), FontSize = 12, FontWeight=FontWeights.SemiBold };
     internal static TextBox Input(string value = "") => new() { Text = value, FlowDirection = FlowDirection.LeftToRight };

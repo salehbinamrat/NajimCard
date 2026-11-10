@@ -40,8 +40,13 @@ public sealed record VoucherCardAppearance(
     CardElementPosition? TimePosition = null,
     CardElementPosition? DatePosition = null,
     CardElementPosition? SequencePosition = null,
-    CardElementPosition? RoutePosition = null)
+    CardElementPosition? RoutePosition = null,
+    string? ElementColor = null)
 {
+    // Presets saved before the colors were split used the same ink for every element.
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string EffectiveElementColor => ElementColor ?? UsernameColor;
+
     private static readonly HashSet<string> AllowedFonts = new(
         ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
 
@@ -59,7 +64,7 @@ public sealed record VoucherCardAppearance(
         if(TemplateImagePath is null || TemplateImagePath.Length>1024 ||
             (TemplateImagePath.Length>0 && !Path.IsPathFullyQualified(TemplateImagePath)))
             throw new ArgumentException("مسار صورة القالب المحلية غير صالح.");
-        foreach(var hex in new[] {BackgroundColor,UsernameColor,BorderColor})
+        foreach(var hex in new[] {BackgroundColor,UsernameColor,BorderColor,EffectiveElementColor})
         {
             if(hex is null || !Regex.IsMatch(hex,@"^#[0-9a-fA-F]{6}$",
                 RegexOptions.CultureInvariant))

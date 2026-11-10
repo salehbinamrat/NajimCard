@@ -14,8 +14,8 @@ public partial class GeneratorView
     {
         var icon=title switch
         {
-            "بيانات ومسار الإرسال"=>"IconServer",
-            "إنشاء المستخدم وطباعة الكروت"=>"IconPeople",
+            "باقة وسيرفر الإرسال"=>"IconServer",
+            "اسم المستخدم وكلمة المرور"=>"IconPeople",
             "معاينة وتصميم الكرت"=>"IconCard",
             "بيانات التوليد الأساسية"=>"IconPrinter",
             _=>"IconPackages"
@@ -38,7 +38,7 @@ public partial class GeneratorView
         return new Border
         {
             Background=(Brush)new BrushConverter().ConvertFrom(
-                title=="بيانات ومسار الإرسال"?"#791B37":"#63223C")!,
+                title=="باقة وسيرفر الإرسال"?"#791B37":"#63223C")!,
             BorderBrush=(Brush)new BrushConverter().ConvertFrom("#9C4C60")!,
             BorderThickness=new Thickness(0,0,0,1),
             CornerRadius=new CornerRadius(5,5,0,0),
@@ -51,32 +51,23 @@ public partial class GeneratorView
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
         Border basicsSurface,Border designSurface)
     {
-        // Owner-approved reference: route and credential settings span the
-        // ENTIRE editor width; only the lower print/design surfaces are split.
-        // This prevents User Manager customer/profile selectors from vanishing
-        // in the old 58%-width upper-right column.
-        var full=new Grid{FlowDirection=FlowDirection.RightToLeft};
+        var full=new Grid{FlowDirection=FlowDirection.LeftToRight};
+        full.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(41,GridUnitType.Star)});
+        full.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(59,GridUnitType.Star)});
         full.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         full.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        full.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+
         foreach(var panel in new[]{routeSurface,formatSurface,basicsSurface,designSurface})
         {
             panel.FlowDirection=FlowDirection.RightToLeft;
             panel.Margin=new Thickness(1,1,1,3);
             panel.HorizontalAlignment=HorizontalAlignment.Stretch;
-            panel.VerticalAlignment=VerticalAlignment.Top;
+            panel.VerticalAlignment=VerticalAlignment.Stretch;
         }
-        Grid.SetRow(routeSurface,0);
-        Grid.SetRow(formatSurface,1);
-        full.Children.Add(routeSurface);
+        Grid.SetColumn(routeSurface,1);
         full.Children.Add(formatSurface);
+        full.Children.Add(routeSurface);
 
-        var lower=new Grid{FlowDirection=FlowDirection.LeftToRight,
-            Margin=new Thickness(0,1,0,0)};
-        lower.ColumnDefinitions.Add(new ColumnDefinition{
-            Width=new GridLength(36,GridUnitType.Star)});
-        lower.ColumnDefinitions.Add(new ColumnDefinition{
-            Width=new GridLength(64,GridUnitType.Star)});
         var printColumn=new StackPanel{FlowDirection=FlowDirection.RightToLeft};
         printColumn.Children.Add(basicsSurface);
         _embeddedPrintHost=new Grid{Margin=new Thickness(1,0,1,1)};
@@ -85,11 +76,11 @@ public partial class GeneratorView
         _status.Margin=new Thickness(3,0,3,2);
         _status.FontSize=11;
         printColumn.Children.Add(_status);
-        lower.Children.Add(printColumn);
+        Grid.SetRow(printColumn,1);
+        full.Children.Add(printColumn);
         Grid.SetColumn(designSurface,1);
-        lower.Children.Add(designSurface);
-        Grid.SetRow(lower,2);
-        full.Children.Add(lower);
+        Grid.SetRow(designSurface,1);
+        full.Children.Add(designSurface);
         return full;
     }
 

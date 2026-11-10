@@ -168,7 +168,7 @@ public partial class PrintingView : UserControl
             "صفوف يسار","صفوف يمين","صفوف متعرجة","أعمدة يسار","أعمدة يمين"
         },SelectedIndex=1};
         var basicPrintFields=new UniformGrid{Columns=4,Margin=new Thickness(0,1,0,2)};
-        var pagePrintFields=new UniformGrid{Columns=5,Margin=new Thickness(0,1,0,2)};
+        var pagePrintFields=new UniformGrid{Columns=embedded?3:5,Margin=new Thickness(0,1,0,2)};
         void Field(UniformGrid host,string title,FrameworkElement control)
         {
             control.MinWidth=0;
@@ -205,8 +205,11 @@ public partial class PrintingView : UserControl
         Field(basicPrintFields,"الورق",paper);
         stack.Children.Add(basicPrintFields);
 
-        Field(pagePrintFields,"عرض الكرت (مم)",width);
-        Field(pagePrintFields,"ارتفاع الكرت (مم)",height);
+        if(!embedded)
+        {
+            Field(pagePrintFields,"عرض الكرت (مم)",width);
+            Field(pagePrintFields,"ارتفاع الكرت (مم)",height);
+        }
         Field(pagePrintFields,"الهامش",margin);
         Field(pagePrintFields,"الفاصل الأفقي",gapX);
         Field(pagePrintFields,"الفاصل الرأسي",gapY);
@@ -383,8 +386,10 @@ public partial class PrintingView : UserControl
                 appearance.NetworkTitle,appearance.TemplateImagePath,
                 appearance.BackgroundColor);
             if(builtinArtwork)hasArtwork=true;
-            var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
+            var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.EffectiveElementColor)!;
+            var numberInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
             var borderInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.BorderColor)!;
+            var family=new FontFamily(appearance.FontFamily);
             var slotsByPage=plan.Slots.ToLookup(slot=>slot.PageIndex);
             for(int pageNo=0;pageNo<plan.PdfPages;pageNo++)
             {
@@ -406,21 +411,20 @@ public partial class PrintingView : UserControl
                         if(!hasArtwork)return text;
                         return new Border
                         {
-                            Background=new SolidColorBrush(ChooseArtworkTextBacking(appearance.UsernameColor)),
+                            Background=new SolidColorBrush(ChooseArtworkTextBacking(appearance.EffectiveElementColor)),
                             CornerRadius=new CornerRadius(3),Padding=new Thickness(1,0,1,0),
                             Child=text
                         };
                     }
                     void AddText(string value,CardElementPosition pos,double size,
-                        bool enabled=true,bool numeric=false,bool credential=false,bool usernameCredential=false)
+                        bool enabled=true,bool credential=false,bool usernameCredential=false)
                     {
                         if(!enabled || string.IsNullOrWhiteSpace(value))return;
                         var line=new TextBlock
                         {
-                            Text=value,FontFamily=new FontFamily(
-                                numeric && !usernameCredential?"Consolas":appearance.FontFamily),
+                            Text=value,FontFamily=family,
                             FontWeight=usernameCredential?FontWeights.ExtraBold:FontWeights.Bold,FontSize=size,
-                            Foreground=ink,TextAlignment=TextAlignment.Center,
+                            Foreground=usernameCredential?numberInk:ink,TextAlignment=TextAlignment.Center,
                             FlowDirection=FlowDirection.LeftToRight,
                             TextTrimming=TextTrimming.CharacterEllipsis,
                             Background=Brushes.Transparent
@@ -434,10 +438,10 @@ public partial class PrintingView : UserControl
                         10*appearance.TitleScale,appearance.ShowTitle);
                     AddText(card.Username,appearance.CredentialsPosition??
                         CardElementPanel.DefaultCredentials,appearance.UsernameFontSize,
-                        numeric:true,credential:true,usernameCredential:true);
+                        credential:true,usernameCredential:true);
                     AddText(card.Password,appearance.PasswordPosition??
                         CardElementPanel.PasswordBelow(appearance.CredentialsPosition),
-                        10*appearance.PasswordScale,appearance.ShowPassword,numeric:true,credential:true);
+                        10*appearance.PasswordScale,appearance.ShowPassword,credential:true);
                     AddText(card.Profile+" · "+card.Service,appearance.ProfilePosition??
                         CardElementPanel.DefaultProfile,9*appearance.ProfileScale,
                         appearance.ShowProfile);
@@ -446,16 +450,16 @@ public partial class PrintingView : UserControl
                         appearance.ShowCapacity);
                     AddText(appearance.PhoneText,appearance.PhonePosition??
                         new CardElementPosition(0.02,0.98),9,
-                        appearance.ShowPhone,numeric:true);
+                        appearance.ShowPhone);
                     AddText(card.CreatedAt.ToString("HH:mm",CultureInfo.InvariantCulture),
                         appearance.TimePosition??new CardElementPosition(0.94,0.76),
-                        9,appearance.ShowTime,numeric:true);
+                        9,appearance.ShowTime);
                     AddText(card.CreatedAt.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture),
                         appearance.DatePosition??new CardElementPosition(0.98,0.98),
-                        9,appearance.ShowDate,numeric:true);
+                        9,appearance.ShowDate);
                     AddText((slot.VoucherIndex+1).ToString("D4",CultureInfo.InvariantCulture),
                         appearance.SequencePosition??new CardElementPosition(0.08,0.57),
-                        9,appearance.ShowSequence,numeric:true);
+                        9,appearance.ShowSequence);
                     AddText(card.Service,appearance.RoutePosition??
                         new CardElementPosition(0.08,0.13),9,appearance.ShowRoute);
                     if(appearance.ShowQr)

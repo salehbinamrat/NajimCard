@@ -38,11 +38,11 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.workspace)
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",self.workspace)
 
-    def test_full_width_routing_and_user_inputs_above_two_column_print_design(self):
-        self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(formatSurface,1)",self.layout)
-        self.assertIn("Width=new GridLength(36,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(64,GridUnitType.Star)",self.layout)
+    def test_routing_and_user_inputs_are_side_by_side_above_print_and_design(self):
+        self.assertIn("Grid.SetColumn(routeSurface,1)",self.layout)
+        self.assertIn("full.Children.Add(formatSurface)",self.layout)
+        self.assertIn("Width=new GridLength(41,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(59,GridUnitType.Star)",self.layout)
         self.assertIn("printColumn.Children.Add(basicsSurface)",self.layout)
         self.assertIn("printColumn.Children.Add(_embeddedPrintHost)",self.layout)
         self.assertIn("Grid.SetColumn(designSurface,1)",self.layout)

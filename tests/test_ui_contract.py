@@ -79,15 +79,15 @@ class UiDesignContract(unittest.TestCase):
         creator=(DESKTOP / "Views" / "GeneratorView.cs").read_text(encoding="utf-8")
         printer=(DESKTOP / "Views" / "PrintingView.cs").read_text(encoding="utf-8")
         designer=(DESKTOP / "Views" / "GeneratorView.DesignerPanel.cs").read_text(encoding="utf-8")
-        for option in ("بيانات ومسار الإرسال","إنشاء المستخدم وطباعة الكروت",
+        for option in ("باقة وسيرفر الإرسال","اسم المستخدم وكلمة المرور",
                        "معاينة وتصميم الكرت","عدد الكروت",
                        "إعداد الطباعة والدفعة",
-                       "إنشاء وإرسال وحفظ",
-                       "إنشاء وإرسال","معاينة قبل الطباعة",
-                       "حفظ PDF","معاينة PDF","طباعة الدفعة"):
+                       "إنشاء وإرسال واحد",
+                       "إنشاء وإرسال","معاينة قبل الإنشاء",
+                       "ملف PDF","معاينة PDF","طباعة دفعة"):
             self.assertIn(option,combined+creator+printer+designer)
         self.assertIn("CreateAndSendAsync",combined)
-        self.assertIn("PreparePreview",combined)
+        self.assertIn("Execute(PreviewDraftPdf)",combined)
 
     def test_colored_vector_icon_pack_is_complete(self):
         xaml = ET.parse(DESKTOP / "Themes" / "VectorIcons.xaml").getroot()

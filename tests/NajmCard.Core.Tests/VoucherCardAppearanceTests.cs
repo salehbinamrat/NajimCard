@@ -44,4 +44,18 @@ public sealed class VoucherCardAppearanceTests
         Assert.ThrowsAny<ArgumentException>(()=>
             new VoucherCardAppearance(BorderWidth:double.NaN).Validate());
     }
+
+    [Fact]
+    public void CardInkPreservesLegacyStylesAndSupportsIndependentColors()
+    {
+        var legacy=System.Text.Json.JsonSerializer.Deserialize<VoucherCardAppearance>(
+            """{"UsernameColor":"#123456"}""")!.Validate();
+        Assert.Equal("#123456",legacy.EffectiveElementColor);
+
+        var changed=(legacy with {ElementColor="#663355",UsernameColor="#101010"}).Validate();
+        var persisted=System.Text.Json.JsonSerializer.Deserialize<VoucherCardAppearance>(
+            System.Text.Json.JsonSerializer.Serialize(changed))!.Validate();
+        Assert.Equal("#663355",persisted.EffectiveElementColor);
+        Assert.Equal("#101010",persisted.UsernameColor);
+    }
 }

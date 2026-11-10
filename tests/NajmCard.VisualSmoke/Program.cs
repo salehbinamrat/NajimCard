@@ -97,11 +97,14 @@ internal static class Program
             if(footer.ActualHeight<=0 || footerBounds.Bottom>height)
                 throw new InvalidDataException("The creator action bar is outside the window.");
 
-            var palette=VisualChildren<UniformGrid>(root).Single(grid=>Equals(grid.Tag,"CardPalette"));
-            var paletteBounds=palette.TransformToAncestor(root).TransformBounds(new Rect(palette.RenderSize));
-            if(paletteBounds.Height<=0 || paletteBounds.Bottom>footerBounds.Top+1)
-                throw new InvalidDataException("The default creator view clips the card color palette.");
+            var elements=VisualChildren<TextBlock>(root).Single(text=>text.Text=="عناصر الكرت");
+            var bounds=elements.TransformToAncestor(root).TransformBounds(new Rect(elements.RenderSize));
+            if(bounds.Height<=0 || bounds.Bottom>footerBounds.Top+1)
+                throw new InvalidDataException("The default creator view clips the card design controls.");
+            if(VisualChildren<UniformGrid>(root).Any(grid=>Equals(grid.Tag,"CardPalette")))
+                throw new InvalidDataException("The removed color strip is still visible.");
 
+            VerifyNumberPreview(root);
             VerifyPasswordPreview(root);
             root.UpdateLayout();
 
@@ -149,6 +152,25 @@ internal static class Program
             throw new InvalidDataException("A dashboard card is clipped.");
         if(bounds.Max(card=>card.Width)-bounds.Min(card=>card.Width)>2)
             throw new InvalidDataException("Dashboard card columns are not aligned.");
+    }
+
+    private static void VerifyNumberPreview(FrameworkElement root)
+    {
+        var number=VisualChildren<TextBlock>(root).Single(text=>text.Name=="CardNumberPreview");
+        double Width()=>number.TransformToAncestor(root).TransformBounds(new Rect(number.RenderSize)).Width;
+        var initial=Width();
+        number.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice,0,-120)
+        {
+            RoutedEvent=Mouse.PreviewMouseWheelEvent
+        });
+        root.UpdateLayout();
+        if(Width()>=initial-0.1)
+            throw new InvalidDataException("Reducing the card number size did not shrink the rendered text.");
+        number.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice,0,120)
+        {
+            RoutedEvent=Mouse.PreviewMouseWheelEvent
+        });
+        root.UpdateLayout();
     }
 
     private static void VerifyPasswordPreview(FrameworkElement root)
