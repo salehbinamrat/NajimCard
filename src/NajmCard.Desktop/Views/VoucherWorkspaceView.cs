@@ -178,6 +178,23 @@ public sealed class VoucherWorkspaceView : UserControl
                 "تعذر تأكيد الإرسال. راجع حالات الدفعة قبل إعادة المحاولة.";
         });
         actions[2].Click+=(_,_)=>creator.RestoreSavedPackageSettings();
+        async Task PreviewDraftPdf()
+        {
+            var options=printer.GetOptions();
+            var appearance=creator.ReadDraftPreviewAppearance();
+            status.Text="جار إعداد معاينة PDF للكروت التجريبية...";
+            var cards=await creator.BuildDraftPreviewAsync();
+            var path=await printer.CreateDraftPreviewPdfAsync(cards,appearance,options);
+            try
+            {
+                PrintingView.OpenPreviewPdf(path);
+                status.Text="معاينة PDF لـ "+cards.Length+" كرت تجريبي دون حفظ دفعة أو إرسالها.";
+            }
+            catch(System.ComponentModel.Win32Exception)
+            {
+                status.Text="حُفظ ملف المعاينة التجريبية هنا: "+path;
+            }
+        }
         actions[3].Click+=async(_,_)=>await Execute(async()=>
         {
             if(creator.HasBatch)
@@ -186,19 +203,16 @@ public sealed class VoucherWorkspaceView : UserControl
                     ? "معاينة الكروت التي ثبت إرسالها في الدفعة المحددة."
                     : "لم تُجهز معاينة الطباعة؛ راجع حالات إرسال الدفعة وإعدادات الورق.";
             }
-            else
-            {
-                await creator.PreparePreview();
-                status.Text="عينة توليد محلية دون حفظ أو إرسال إلى الراوتر.";
-            }
+            else await PreviewDraftPdf();
         });
         actions[4].Click+=(_,_)=>_ = Execute(()=>
         {
             printer.SavePdf();return Task.CompletedTask;
         });
-        actions[5].Click+=(_,_)=>_ = Execute(()=>
+        actions[5].Click+=async(_,_)=>await Execute(async()=>
         {
-            printer.PreviewPdf();return Task.CompletedTask;
+            if(creator.HasBatch)printer.PreviewPdf();
+            else await PreviewDraftPdf();
         });
         actions[6].Click+=(_,_)=>_ = Execute(()=>
         {

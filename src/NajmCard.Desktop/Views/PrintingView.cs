@@ -42,6 +42,7 @@ public class PrintingView : UserControl
     private readonly Func<bool> _preparePreview;
     private readonly Action _printBatch;
     private readonly Func<string,bool> _exportPdf;
+    private readonly Func<IReadOnlyList<Voucher>,VoucherCardAppearance,CardPrintOptions,string,Task> _exportDraftPdf;
     private readonly Action _invalidate;
     private readonly TextBlock _status;
 
@@ -90,26 +91,41 @@ public class PrintingView : UserControl
     {
         if(!PageUi.Confirm("سيتم فتح ملف PDF مؤقت قد يحتوي كلمات مرور الكروت المرسلة. هل تريد المتابعة؟"))
             return;
-        var dir=Path.Combine(Environment.GetFolderPath(
-            Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
         try
         {
-            Directory.CreateDirectory(dir);
-            foreach(var file in Directory.EnumerateFiles(dir,"Najm_*.pdf"))
-            {
-                try
-                {
-                    if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
-                        File.Delete(file);
-                }
-                catch(IOException) { }
-                catch(UnauthorizedAccessException) { }
-            }
-            var path=Path.Combine(dir,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
-            if(SavePdfToPath(path))
-                Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
+            var path=NewPreviewPdfPath();
+            if(SavePdfToPath(path))OpenPreviewPdf(path);
         }
         catch(Exception ex){_status.Text="تعذر فتح معاينة PDF: "+ex.Message;}
+    }
+
+    internal async Task<string> CreateDraftPreviewPdfAsync(IReadOnlyList<Voucher> cards,
+        VoucherCardAppearance appearance,CardPrintOptions options)
+    {
+        var path=NewPreviewPdfPath();
+        await _exportDraftPdf(cards,appearance,options,path);
+        return path;
+    }
+
+    internal static void OpenPreviewPdf(string path) =>
+        Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
+
+    private static string NewPreviewPdfPath()
+    {
+        var directory=Path.Combine(Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
+        Directory.CreateDirectory(directory);
+        foreach(var file in Directory.EnumerateFiles(directory,"Najm_*.pdf"))
+        {
+            try
+            {
+                if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
+                    File.Delete(file);
+            }
+            catch(IOException) { }
+            catch(UnauthorizedAccessException) { }
+        }
+        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
     }
 
     public PrintingView(VoucherStore store,bool embedded=false,
@@ -272,7 +288,7 @@ public class PrintingView : UserControl
         foreach(var choice in new[]{paper,orientation,order})
             choice.SelectionChanged+=(_,_)=>Clear();
 
-        FixedDocument MakeDocument(IReadOnlyList<Voucher> cards,
+        static FixedDocument MakeDocument(IReadOnlyList<Voucher> cards,
             CardPrintOptions opts,VoucherCardAppearance appearance)
         {
             var plan=CardPrintLayoutPlanner.Calculate(opts,cards.Count);
@@ -386,6 +402,24 @@ public class PrintingView : UserControl
             }
             return doc;
         }
+
+        _exportDraftPdf=(cards,appearance,options,path)=>
+        {
+            var completion=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            // WPF creates and rasterizes the document on the same STA thread.
+            var worker=new Thread(()=>
+            {
+                try
+                {
+                    VoucherPdfExporter.Export(MakeDocument(cards,options,appearance),path);
+                    completion.SetResult();
+                }
+                catch(Exception ex){completion.SetException(ex);}
+            }){IsBackground=true};
+            worker.SetApartmentState(ApartmentState.STA);
+            worker.Start();
+            return completion.Task;
+        };
 
         bool Prepare()
         {

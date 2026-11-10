@@ -553,7 +553,16 @@ public partial class GeneratorView : UserControl
         catch(Exception ex){_status.Text="تعذر استعادة الباقة؛ لم يتغير السجل: "+ex.Message;}
     }
 
-    public Task PreparePreview() => PrepareBatchAsync(false);
+    internal Task<Voucher[]> BuildDraftPreviewAsync()
+    {
+        var options=ReadGenerationOptions(forPreview:true);
+        var service=SelectedService;
+        return Task.Run(()=>VoucherGenerator.Generate(options)
+            .Select(voucher=>voucher with {Service=service}).ToArray());
+    }
+
+    internal VoucherCardAppearance ReadDraftPreviewAppearance() =>
+        ReadCurrentAppearance() with {ShowPassword=ShowPreviewPassword};
     public async Task<bool> CreateAndSendAsync()
     {
         if(_sending||_preparing||!SaveCurrentPackage())return false;
