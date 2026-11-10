@@ -20,11 +20,11 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
         self.assertIn("CreateReferenceLayout(", self.g)
         self.assertNotIn("left.Margin=new Thickness(0,0,9,0)",self.g)
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
-        self.assertIn("Grid.SetRow(secondary,2)",self.layout)
-        self.assertIn("Width=new GridLength(42,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(58,GridUnitType.Star)",self.layout)
+        self.assertIn("Grid.SetRow(formatSurface,1)",self.layout)
+        self.assertIn("Grid.SetColumn(designSurface,1)",self.layout)
+        self.assertIn("Grid.SetRow(lower,2)",self.layout)
+        self.assertIn("Width=new GridLength(39,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(61,GridUnitType.Star)",self.layout)
         self.assertNotIn("Viewbox",self.creator)
     def test_cropped_in_place_editor_controls_are_moved_to_modal(self):
         self.assertIn("تعديلات متقدمة",self.editor)
@@ -59,13 +59,13 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
     def test_dashboard_balanced_cards_and_buttons(self):
         self.assertIn('Text="●  متصل"',self.dash)
         self.assertIn("تعطيل الهوتسبوت",self.dash)
-        self.assertIn("إعادة بناء / تحسين",self.dash)
+        self.assertIn("استعادة الهوتسبوت",self.dash)
         self.assertIn('Text="الرئيسية"',self.dash)
         self.assertIn("ProfileBars",self.dash)
         self.assertIn("ActivityRows",self.dash)
     def test_tables_use_readable_dark_headers_and_contrasting_body(self):
         self.assertIn('Property="Foreground" Value="{StaticResource TextBrush}"',self.theme)
-        self.assertIn('Property="RowBackground" Value="{StaticResource SurfaceBrush}"',self.theme)
+        self.assertIn('Property="RowBackground" Value="#FFF8EC"',self.theme)
         self.assertIn('TargetType="DataGridCell"',self.theme)
     def test_no_extra_workspace_title_or_scrollbar(self):
         self.assertIn('ClipToBounds=true',self.creator)
