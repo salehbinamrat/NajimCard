@@ -16,7 +16,7 @@ public partial class GeneratorView
     {
         var designer=PageUi.Column();
         designer.Children.Add(ReferenceHeader("معاينة وتصميم الكرت"));
-        var toolbar=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,4)};
+        var toolbar=new UniformGrid{Columns=3,Margin=new Thickness(0,0,0,2)};
         var templateImage=PageUi.Button("صورة القالب",false);
         var changeTemplate=PageUi.Button("تغيير القالب",false);
         var advanced=PageUi.Button("تعديلات متقدمة",false);
@@ -38,16 +38,16 @@ public partial class GeneratorView
 
         var previewRow=_designPreviewRow;
         previewRow.FlowDirection=FlowDirection.LeftToRight;
-        previewRow.Margin=new Thickness(0,2,0,4);
+        previewRow.Margin=new Thickness(0,0,0,2);
         previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
-        previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(180)});
+        previewRow.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(168)});
         var options=PageUi.Column();
         options.FlowDirection=FlowDirection.RightToLeft;
         options.Children.Add(ReferenceHeader("خيارات مظهر الكرت"));
         void Option(string label,Control field)
         {
             field.MinWidth=0;field.Width=double.NaN;
-            var line=new Grid{Margin=new Thickness(2,0,2,3)};
+            var line=new Grid{Margin=new Thickness(1,0,1,2)};
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(83)});
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
             var caption=new TextBlock{
@@ -72,7 +72,7 @@ public partial class GeneratorView
         designer.Children.Add(previewRow);
 
         designer.Children.Add(ReferenceHeader("عناصر الكرت"));
-        var designChecks=new WrapPanel{Margin=new Thickness(0,3,0,3)};
+        var designChecks=new WrapPanel{Margin=new Thickness(0,1,0,1)};
         _designShowPassword.Content="كلمة المرور";
         _designShowProfile.Content="الباقة";
         designChecks.Children.Add(_designShowPassword);
@@ -80,7 +80,7 @@ public partial class GeneratorView
         designer.Children.Add(designChecks);
         var saveAppearanceButton=PageUi.Button("حفظ إعدادات القالب لهذه الباقة");
         saveAppearanceButton.MinWidth=0;saveAppearanceButton.Padding=new Thickness(8,6,8,6);
-        saveAppearanceButton.Margin=new Thickness(2,3,2,2);
+        saveAppearanceButton.Margin=new Thickness(1,1,1,1);
         var designStatus=_designStatus;
         designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         designStatus.Margin=new Thickness(1,2,1,3);designStatus.FontSize=12;
