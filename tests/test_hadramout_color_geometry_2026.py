@@ -26,7 +26,7 @@ class PrintPageGeometry(unittest.TestCase):
         self.assertIn("Grid.SetColumn(leftColumn,0)",layout)
         self.assertIn("Grid.SetRow(designSurface,1)",layout)
         self.assertIn("rightColumn.Children.Add(designSurface)",layout)
-        self.assertIn("Grid.SetRow(secondary,1)",layout)
+        self.assertIn("Grid.SetRow(secondary,2)",layout)
         self.assertIn("leftColumn.Children.Add(secondary)",layout)
         self.assertNotIn('fields.Width=1140;',self.w)
         self.assertNotIn('StretchDirection=StretchDirection.DownOnly',self.w)

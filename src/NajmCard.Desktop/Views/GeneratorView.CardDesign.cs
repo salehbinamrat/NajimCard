@@ -131,7 +131,12 @@ public partial class GeneratorView
             CornerRadius=new CornerRadius(8),
             Padding=new Thickness(4,2,4,2),
             Margin=new Thickness(1,6,1,3),
-            Child=_cardPreview
+            Child=new Viewbox
+            {
+                Stretch=Stretch.Uniform,
+                StretchDirection=StretchDirection.DownOnly,
+                Child=_cardPreview
+            }
         };
         _cardPreview.Margin=new Thickness(0);
         _cardPreview.FontWeight=FontWeights.ExtraBold;

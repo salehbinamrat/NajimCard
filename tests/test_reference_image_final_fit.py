@@ -46,7 +46,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
-        self.assertIn("Grid.SetRow(secondary,1)",self.layout)
+        self.assertIn("Grid.SetRow(secondary,2)",self.layout)
     def test_photo_card_preview_is_responsive_without_cutting_actual_artwork(self):
         self.assertIn("new Viewbox",self.creator)
         self.assertIn("Stretch=Stretch.Uniform",self.creator)

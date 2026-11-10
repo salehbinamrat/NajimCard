@@ -14,12 +14,11 @@ public partial class GeneratorView
 
     private Border BuildDesignerPanel(bool embedded)
     {
-        // The preview consumes the available height; fixed-height StackPanel used
-        // to strand a large blank strip below the card design controls.
+        // The card keeps its aspect ratio. Size the row to the artwork and
+        // appearance controls so spare viewport height stays outside the panel.
         var designer=new Grid();
         for(int i=0;i<7;i++)
-            designer.RowDefinitions.Add(new RowDefinition{Height=i==2
-                ?new GridLength(1,GridUnitType.Star):GridLength.Auto});
+            designer.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         void AddPanel(UIElement element,int row)
         {
             Grid.SetRow(element,row);
@@ -95,6 +94,7 @@ public partial class GeneratorView
         designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         designStatus.Margin=new Thickness(1,2,1,3);designStatus.FontSize=12;
         AddPanel(saveAppearanceButton,5);
+        if(embedded)designStatus.Margin=new Thickness(1,0,1,1);
         AddPanel(designStatus,6);
         var designSurface=embedded?CompactSurface(designer,"#D2AA61")
             :PageUi.Surface(designer,"#D2AA61");

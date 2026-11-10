@@ -36,6 +36,9 @@ public partial class GeneratorView
     // Like Hadramout's scheduled sample_card() repaint: no SaveBatch,
     // RouterGateway, PreparedBatch or UploadAsync is reachable from here.
     // The visible text is a non-issuable sample, not a stored voucher number.
+    private bool ShowPreviewPassword => _credentialMode.SelectedIndex!=0 &&
+        _designShowPassword.IsChecked==true;
+
     private void UpdateLiveCardPreview()
     {
         if(_restoringPreset || _preparing || _sending)return;
@@ -43,7 +46,7 @@ public partial class GeneratorView
         {
             var sample=VoucherGenerator.PreviewSample(ReadGenerationOptions(forPreview:true));
             _cardPreview.Text=sample.Username+
-                (_credentialMode.SelectedIndex==0?"":"\n"+sample.Password);
+                (ShowPreviewPassword?"\n"+sample.Password:"");
             _cardPreview.ToolTip="معاينة متغيرة حسب الإعدادات؛ غير محفوظة وغير مرسلة.";
         }
         catch(ArgumentException ex)
@@ -64,6 +67,8 @@ public partial class GeneratorView
             combo.SelectionChanged+=(_,_)=>UpdateLiveCardPreview();
         _credentialsSame.Checked+=(_,_)=>UpdateLiveCardPreview();
         _credentialsDifferent.Checked+=(_,_)=>UpdateLiveCardPreview();
+        _designShowPassword.Checked+=(_,_)=>UpdateLiveCardPreview();
+        _designShowPassword.Unchecked+=(_,_)=>UpdateLiveCardPreview();
         _lengthWithPrefix.Checked+=(_,_)=>UpdateLiveCardPreview();
         _lengthWithPrefix.Unchecked+=(_,_)=>UpdateLiveCardPreview();
         UpdateLiveCardPreview();

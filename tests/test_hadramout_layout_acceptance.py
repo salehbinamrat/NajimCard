@@ -22,7 +22,7 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
         self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
-        self.assertIn("Grid.SetRow(secondary,1)",self.layout)
+        self.assertIn("Grid.SetRow(secondary,2)",self.layout)
         self.assertIn("Width=new GridLength(42,GridUnitType.Star)",self.layout)
         self.assertIn("Width=new GridLength(58,GridUnitType.Star)",self.layout)
         self.assertNotIn("Viewbox",self.creator)

@@ -239,9 +239,12 @@ public partial class GeneratorView : UserControl
         Grid.SetColumn(differentCell,2);
         credentialsTop.Children.Add(differentCell);
         formatSection.Children.Add(credentialsTop);
-        // Quantity and numbering inputs share the creation panel as in the reference.
+        var basicsSection=PageUi.Column();
+        basicsSection.Children.Add(ReferenceHeader("بيانات التوليد الأساسية"));
         row.Margin=new Thickness(0,1,0,2);
-        formatSection.Children.Add(row);
+        basicsSection.Children.Add(row);
+        var basicsSurface=embedded?CompactSurface(basicsSection,"#D2AA61"):
+            PageUi.Surface(basicsSection,"#D2AA61");
         var characterKinds=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,1)};
         var userKind=PageUi.Column();
         userKind.Children.Add(PageUi.Label("نوع اسم المستخدم"));
@@ -324,6 +327,7 @@ public partial class GeneratorView : UserControl
         // Exact reference arrangement: wide graphic preview, narrow appearance
         // settings, compact header tools; editing is a separate window.
         var designSurface=BuildDesignerPanel(embedded);
+        form.Children.Add(basicsSurface);
         form.Children.Add(designSurface);
         var actions = new StackPanel
         {
@@ -372,7 +376,7 @@ public partial class GeneratorView : UserControl
             // Viewbox, stray side gutters, or overflow-hidden StackPanel.
             form.Children.Clear();
             Content=CreateReferenceLayout(
-                routeSurface,formatSurface,designSurface);
+                routeSurface,formatSurface,basicsSurface,designSurface);
         }
         else
         {
@@ -608,7 +612,7 @@ public partial class GeneratorView : UserControl
             _sendButton.IsEnabled=persist;
             var sample=candidates[0];
             _cardPreview.Text=sample.Username+
-                (_credentialMode.SelectedIndex==0?"":"\n"+sample.Password);
+                (ShowPreviewPassword?"\n"+sample.Password:"");
             _status.Text=persist
                 ? $"حُفظت {candidates.Length:N0} كرتا في قاعدة نجم كارد. لم تُرسل إلى الراوتر. "+ 
                     (candidates.Length>500?"الجدول يعرض أول 500 كرت لتسريع العرض.":"")

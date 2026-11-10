@@ -19,7 +19,7 @@ class OwnerVisualAcceptance(unittest.TestCase):
         self.assertIn("Grid.SetColumn(rightColumn,1)", layout)
         self.assertIn("Grid.SetColumn(leftColumn,0)", layout)
         self.assertIn("rightColumn.Children.Add(designSurface)", layout)
-        self.assertIn("Grid.SetRow(secondary,1)", layout)
+        self.assertIn("Grid.SetRow(secondary,2)", layout)
         generator = source("GeneratorView.cs")
         for title in ("بيانات ومسار الإرسال", "إنشاء المستخدم وطباعة الكروت",
                       "عدد الكروت"):

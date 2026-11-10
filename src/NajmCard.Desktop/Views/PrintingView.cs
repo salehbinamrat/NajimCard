@@ -204,6 +204,7 @@ public class PrintingView : UserControl
             printPanel.VerticalAlignment=VerticalAlignment.Top;
             printPanel.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
             printPanel.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
+            _status.Margin=new Thickness(2,0,2,1);
             _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         }
         Content=embedded?printPanel:

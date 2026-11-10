@@ -29,7 +29,7 @@ public partial class GeneratorView
     };
 
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
-        Border designSurface)
+        Border basicsSurface,Border designSurface)
     {
         // Hadramout's original ui/network.py uses two INDEPENDENT columns
         // (42% left, 58% right). A shared 2x2 grid forced the short routing
@@ -43,13 +43,14 @@ public partial class GeneratorView
         var leftColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
         leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         var rightColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
         rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        rightColumn.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
 
         routeSurface.FlowDirection=formatSurface.FlowDirection=
-            designSurface.FlowDirection=FlowDirection.RightToLeft;
-        foreach(var surface in new[]{routeSurface,formatSurface,designSurface})
+            basicsSurface.FlowDirection=designSurface.FlowDirection=FlowDirection.RightToLeft;
+        foreach(var surface in new[]{routeSurface,formatSurface,basicsSurface,designSurface})
         {
             surface.Margin=new Thickness(1,1,1,2);
             surface.HorizontalAlignment=HorizontalAlignment.Stretch;
@@ -70,9 +71,11 @@ public partial class GeneratorView
         _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         Grid.SetRow(_status,1);
         secondary.Children.Add(_status);
-        Grid.SetRow(secondary,1);
+        Grid.SetRow(basicsSurface,1);
+        Grid.SetRow(secondary,2);
 
         leftColumn.Children.Add(formatSurface);
+        leftColumn.Children.Add(basicsSurface);
         leftColumn.Children.Add(secondary);
         rightColumn.Children.Add(routeSurface);
         rightColumn.Children.Add(designSurface);

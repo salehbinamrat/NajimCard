@@ -18,7 +18,7 @@ class CreatorReferenceScreenTests(unittest.TestCase):
 
     def test_upper_left_contains_credentials_and_generation_inputs(self):
         self.assertIn('ReferenceHeader("إنشاء المستخدم وطباعة الكروت")', self.creator)
-        self.assertIn('formatSection.Children.Add(row);', self.creator)
+        self.assertIn('basicsSection.Children.Add(row);', self.creator)
         self.assertIn('Grid.SetRow(formatSurface,0)', self.layout)
         self.assertIn('Grid.SetColumn(leftColumn,0)', self.layout)
 
