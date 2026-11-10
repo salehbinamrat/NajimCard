@@ -386,11 +386,27 @@ public class PrintingView : UserControl
                             }
                         }
                     }
+                    FrameworkElement cardContent=content;
+                    if(appearance.TitlePosition is not null || appearance.CredentialsPosition is not null ||
+                       appearance.ProfilePosition is not null)
+                    {
+                        var elements=content.Children.Cast<UIElement>().ToArray();
+                        content.Children.Clear();
+                        var positioned=new CardElementPanel {FlowDirection=FlowDirection.LeftToRight,ClipToBounds=true};
+                        positioned.Add(elements[0],appearance.TitlePosition??CardElementPanel.DefaultTitle);
+                        var credentials=new StackPanel();
+                        credentials.Children.Add(elements[1]);
+                        if(appearance.ShowPassword)credentials.Children.Add(elements[2]);
+                        positioned.Add(credentials,appearance.CredentialsPosition??CardElementPanel.DefaultCredentials);
+                        if(appearance.ShowProfile)
+                            positioned.Add(elements[^1],appearance.ProfilePosition??CardElementPanel.DefaultProfile);
+                        cardContent=positioned;
+                    }
                     var cardBorder=new Border
                     {
                         Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
                         BorderBrush=borderInk,BorderThickness=new Thickness(appearance.BorderWidth),
-                        Background=fill,ClipToBounds=true,Child=content
+                        Background=fill,ClipToBounds=true,Child=cardContent
                     };
                     FixedPage.SetLeft(cardBorder,Dip(slot.LeftMm));
                     FixedPage.SetTop(cardBorder,Dip(slot.TopMm));

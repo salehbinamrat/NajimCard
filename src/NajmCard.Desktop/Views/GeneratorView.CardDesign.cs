@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.IO;
@@ -56,6 +57,7 @@ public partial class GeneratorView
     private readonly TextBlock _previewPackageName=new();
     private readonly List<UIElement> _sampleArtwork=[];
     private Border? _previewUsernamePlate;
+    private CardElementPanel? _previewElements;
 
     private Grid BuildSampleVoucherVisual()
     {
@@ -98,7 +100,6 @@ public partial class GeneratorView
         _previewPackageName.FontWeight=FontWeights.ExtraBold;
         _previewPackageName.TextAlignment=TextAlignment.Center;
         _previewPackageName.TextWrapping=TextWrapping.Wrap;
-        discContent.Children.Add(_previewPackageName);
         leftDisc.Child=discContent;
         card.Children.Add(leftDisc);_sampleArtwork.Add(leftDisc);
 
@@ -112,25 +113,22 @@ public partial class GeneratorView
         };
         card.Children.Add(rightAccent);_sampleArtwork.Add(rightAccent);
 
-        var data=new StackPanel{
-            Width=280,Margin=new Thickness(100,6,80,7),
-            HorizontalAlignment=HorizontalAlignment.Center,
-            VerticalAlignment=VerticalAlignment.Center
-        };
+        var elements=new CardElementPanel{ClipToBounds=true};
+        _previewElements=elements;
         _previewNetworkName.Text="نجم كارد ✦";
         _previewNetworkName.FontFamily=new FontFamily("Arial");
         _previewNetworkName.Foreground=(Brush)new BrushConverter().ConvertFrom("#210B47")!;
         _previewNetworkName.FontSize=20;
         _previewNetworkName.FontWeight=FontWeights.ExtraBold;
         _previewNetworkName.TextAlignment=TextAlignment.Center;
-        data.Children.Add(_previewNetworkName);
+
         var usernamePlate=new Border{
             Background=new SolidColorBrush(Color.FromArgb(225,255,250,237)),
             BorderBrush=(Brush)new BrushConverter().ConvertFrom("#8A50CF")!,
             BorderThickness=new Thickness(1),
             CornerRadius=new CornerRadius(8),
             Padding=new Thickness(4,2,4,2),
-            Margin=new Thickness(1,6,1,3),
+            Width=280,
             Child=new Viewbox
             {
                 Stretch=Stretch.Uniform,
@@ -143,16 +141,71 @@ public partial class GeneratorView
         _cardPreview.TextAlignment=TextAlignment.Center;
         _cardPreview.Foreground=(Brush)new BrushConverter().ConvertFrom("#220A46")!;
         _previewUsernamePlate=usernamePlate;
-        data.Children.Add(usernamePlate);
-        data.Children.Add(new TextBlock{
-            Text="معاينة القالب — بيانات غير مرسلة",
-            Foreground=(Brush)new BrushConverter().ConvertFrom("#5A4074")!,
-            FontSize=9,FontWeight=FontWeights.SemiBold,
-            TextAlignment=TextAlignment.Center,
-            FontFamily=new FontFamily("Arial")
-        });
-        card.Children.Add(data);
+        elements.Add(_previewNetworkName,CardElementPanel.DefaultTitle);
+        elements.Add(usernamePlate,CardElementPanel.DefaultCredentials);
+        _previewPackageName.MaxWidth=100;
+        elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
+        EnableCardDrag(elements,_previewNetworkName,(style,position)=>style with {TitlePosition=position});
+        EnableCardDrag(elements,usernamePlate,(style,position)=>style with {CredentialsPosition=position});
+        EnableCardDrag(elements,_previewPackageName,(style,position)=>style with {ProfilePosition=position});
+        card.Children.Add(elements);
         return card;
+    }
+
+    private void EnableCardDrag(CardElementPanel panel,FrameworkElement element,
+        Func<VoucherCardAppearance,CardElementPosition,VoucherCardAppearance> change)
+    {
+        element.Cursor=Cursors.SizeAll;
+        element.ToolTip="اسحب العنصر لتغيير موضعه داخل الكرت.";
+        Point? grabOffset=null;
+        Point start=new();
+        element.MouseLeftButtonDown+=(_,args)=>
+        {
+            if(_preparing || _sending || !element.CaptureMouse())return;
+            start=args.GetPosition(panel);
+            grabOffset=args.GetPosition(element);
+            args.Handled=true;
+        };
+        CardElementPosition Position(Point pointer,Point offset)
+        {
+            var travelX=panel.ActualWidth-element.ActualWidth;
+            var travelY=panel.ActualHeight-element.ActualHeight;
+            return new CardElementPosition(
+                travelX>0?Math.Clamp((pointer.X-offset.X)/travelX,0,1):0,
+                travelY>0?Math.Clamp((pointer.Y-offset.Y)/travelY,0,1):0);
+        }
+        element.MouseMove+=(_,args)=>
+        {
+            if(grabOffset is Point offset && args.LeftButton==MouseButtonState.Pressed)
+                panel.Place(element,Position(args.GetPosition(panel),offset));
+        };
+        element.MouseLeftButtonUp+=(_,args)=>
+        {
+            if(grabOffset is not Point offset)return;
+            var pointer=args.GetPosition(panel);
+            grabOffset=null;
+            element.ReleaseMouseCapture();
+            if((pointer-start).Length>0)
+            {
+                ApplyCardAppearance(change(_currentAppearance,Position(pointer,offset)),refreshArtwork:false);
+                _designStatus.Text="تم تغيير الموضع. احفظ إعدادات القالب لهذه الباقة للاحتفاظ به.";
+            }
+            args.Handled=true;
+        };
+        element.LostMouseCapture+=(_,_) =>
+        {
+            if(grabOffset is null)return;
+            grabOffset=null;
+            PlacePreviewElements(_currentAppearance);
+        };
+    }
+
+    private void PlacePreviewElements(VoucherCardAppearance appearance)
+    {
+        if(_previewElements is null || _previewUsernamePlate is null)return;
+        _previewElements.Place(_previewNetworkName,appearance.TitlePosition??CardElementPanel.DefaultTitle);
+        _previewElements.Place(_previewUsernamePlate,appearance.CredentialsPosition??CardElementPanel.DefaultCredentials);
+        _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
     }
 
     private void SubscribeLiveCardAppearance()
@@ -185,21 +238,28 @@ public partial class GeneratorView
     private void ApplyCardAppearance(VoucherCardAppearance appearance,bool refreshArtwork=true)
     {
         appearance.Validate();
+        var changed=_currentAppearance!=appearance;
         _currentAppearance=appearance;
+        if(changed)CardAppearanceChanged?.Invoke();
+        PlacePreviewElements(appearance);
         _previewNetworkName.Text=appearance.NetworkTitle+" ✦";
         _previewPackageName.Text=_profile.SelectedItem?.ToString()??"الباقة";
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
+        var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
+        var backing=new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
+        _previewNetworkName.Foreground=ink;
+        _previewNetworkName.Background=hasPicture || appearance.TitlePosition is not null?backing:null;
+        _previewPackageName.Foreground=hasPicture || appearance.ProfilePosition is not null?ink:Brushes.White;
+        _previewPackageName.Background=hasPicture || appearance.ProfilePosition is not null?backing:null;
         foreach(var shape in _sampleArtwork)
             shape.Visibility=hasPicture?Visibility.Collapsed:Visibility.Visible;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
         _cardPreview.FontSize=appearance.UsernameFontSize;
-        _cardPreview.Foreground=(Brush)new BrushConverter()
-            .ConvertFromInvariantString(appearance.UsernameColor)!;
+        _cardPreview.Foreground=ink;
         _templateImagePath=appearance.TemplateImagePath;
         if(_previewUsernamePlate is not null)
-            _previewUsernamePlate.Background=new SolidColorBrush(
-                PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
+            _previewUsernamePlate.Background=backing;
         if(_appearancePreviewBorder is not null)
         {
             _appearancePreviewBorder.BorderBrush=(Brush)new BrushConverter()

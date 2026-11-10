@@ -23,6 +23,7 @@ public sealed class VoucherWorkspaceView : UserControl
         creator.PackagePrintSettingsRestored+=printer.ApplyOptions;
         printer.LayoutSettingsChanged+=creator.RefreshPageCount;
         creator.BatchChanged+=printer.Invalidate;
+        creator.CardAppearanceChanged+=printer.Invalidate;
         creator.AttachPrintingSection(printer);
         creator.RefreshPageCount();
 

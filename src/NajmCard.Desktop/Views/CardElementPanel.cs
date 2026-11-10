@@ -1,0 +1,48 @@
+using System.Windows;
+using System.Windows.Controls;
+using NajmCard.Core.Models;
+
+namespace NajmCard.Desktop.Views;
+
+/// <summary>Places card elements by fractions of their available travel within the card.</summary>
+internal sealed class CardElementPanel : Panel
+{
+    internal static readonly CardElementPosition DefaultTitle = new(0.5, 0.34);
+    internal static readonly CardElementPosition DefaultCredentials = new(0.55, 0.52);
+    internal static readonly CardElementPosition DefaultProfile = new(0.05, 0.58);
+    private readonly Dictionary<UIElement, CardElementPosition> _positions = new();
+
+    internal void Add(UIElement element, CardElementPosition position)
+    {
+        Children.Add(element);
+        Place(element, position);
+    }
+
+    internal void Place(UIElement element, CardElementPosition position)
+    {
+        _positions[element] = position;
+        InvalidateArrange();
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        foreach (UIElement child in Children)
+            child.Measure(availableSize);
+        return new Size();
+    }
+
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        foreach (UIElement child in Children)
+        {
+            var size = child.DesiredSize;
+            var position = _positions[child];
+            child.Arrange(new Rect(
+                Math.Max(0, finalSize.Width - size.Width) * position.X,
+                Math.Max(0, finalSize.Height - size.Height) * position.Y,
+                Math.Min(size.Width, finalSize.Width),
+                Math.Min(size.Height, finalSize.Height)));
+        }
+        return finalSize;
+    }
+}
