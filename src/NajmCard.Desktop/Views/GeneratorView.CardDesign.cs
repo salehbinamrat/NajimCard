@@ -62,11 +62,32 @@ public partial class GeneratorView
     private readonly TextBlock _previewPackageName=new();
     private readonly List<UIElement> _sampleArtwork=[];
     private Border? _previewUsernamePlate;
+    private Border? _previewPasswordPlate;
+    private Grid? _previewCardCanvas;
+    private static double MmToDip(double millimeters)=>millimeters*96d/25.4d;
+
+    private void RefreshPreviewCardGeometry()
+    {
+        if(_previewCardCanvas is null || _previewUsernamePlate is null ||
+           _previewPasswordPlate is null || PrintOptionsProvider is null)return;
+        try
+        {
+            var options=PrintOptionsProvider();
+            _previewCardCanvas.Width=MmToDip(options.CardWidthMm);
+            _previewCardCanvas.Height=MmToDip(options.CardHeightMm);
+            CardCredentialPlate.Resize(_previewUsernamePlate,
+                options.CardWidthMm,options.CardHeightMm);
+            CardCredentialPlate.Resize(_previewPasswordPlate,
+                options.CardWidthMm,options.CardHeightMm);
+        }
+        catch(ArgumentException) { /* The user might still be editing width/height. */ }
+        catch(FormatException) { /* Keep last valid preview geometry. */ }
+    }
     private readonly TextBlock _previewPassword=new()
     {
         Name="CardPasswordPreview",FontFamily=new FontFamily("Consolas"),FontSize=13,FontWeight=FontWeights.Bold,
         FlowDirection=FlowDirection.LeftToRight,TextAlignment=TextAlignment.Center,
-        MaxWidth=280,Background=Brushes.Transparent,
+        Background=Brushes.Transparent,
         TextTrimming=TextTrimming.CharacterEllipsis,Visibility=Visibility.Collapsed
     };
     private readonly TextBlock _previewCapacity=OverlayText();
@@ -78,7 +99,7 @@ public partial class GeneratorView
     private readonly Image _previewQr=new() {Stretch=Stretch.Uniform,Visibility=Visibility.Collapsed};
     private static TextBlock OverlayText()=>new()
     {
-        FontFamily=new FontFamily("Arial"),FontSize=12,FontWeight=FontWeights.Bold,
+        FontFamily=new FontFamily("Arial"),FontSize=9,FontWeight=FontWeights.Bold,
         TextAlignment=TextAlignment.Center,FlowDirection=FlowDirection.LeftToRight,
         Background=Brushes.Transparent,Visibility=Visibility.Collapsed
     };
@@ -91,11 +112,13 @@ public partial class GeneratorView
         // A selected per-package PNG/JPG/... replaces the base artwork.
         var card=new Grid{
             Tag="CardArtwork",
-            Width=465,Height=178,
+            Width=MmToDip(50),Height=MmToDip(19),
             HorizontalAlignment=HorizontalAlignment.Center,
             VerticalAlignment=VerticalAlignment.Center,
             FlowDirection=FlowDirection.LeftToRight,ClipToBounds=true
         };
+        _previewCardCanvas=card;
+        var artwork=new Grid{Width=465,Height=178};
         var rounded=new Border{
             Background=new LinearGradientBrush(
                 (Color)ColorConverter.ConvertFromString("#FFF8FF")!,
@@ -104,7 +127,7 @@ public partial class GeneratorView
             BorderThickness=new Thickness(1),
             BorderBrush=(Brush)new BrushConverter().ConvertFrom("#8749D5")!
         };
-        card.Children.Add(rounded);_sampleArtwork.Add(rounded);
+        artwork.Children.Add(rounded);_sampleArtwork.Add(rounded);
 
         var leftDisc=new Border{
             Width=98,Height=173,CornerRadius=new CornerRadius(0,78,78,0),
@@ -126,7 +149,7 @@ public partial class GeneratorView
         _previewPackageName.TextAlignment=TextAlignment.Center;
         _previewPackageName.TextWrapping=TextWrapping.Wrap;
         leftDisc.Child=discContent;
-        card.Children.Add(leftDisc);_sampleArtwork.Add(leftDisc);
+        artwork.Children.Add(leftDisc);_sampleArtwork.Add(leftDisc);
 
         var rightAccent=new Border{
             Width=82,Height=170,CornerRadius=new CornerRadius(74,0,0,74),
@@ -136,31 +159,22 @@ public partial class GeneratorView
                 (Color)ColorConverter.ConvertFromString("#D4A8FF")!,
                 (Color)ColorConverter.ConvertFromString("#8B40E2")!,70)
         };
-        card.Children.Add(rightAccent);_sampleArtwork.Add(rightAccent);
+        artwork.Children.Add(rightAccent);_sampleArtwork.Add(rightAccent);
+        card.Children.Add(new Viewbox {Child=artwork,Stretch=Stretch.Fill});
 
         var elements=new CardElementPanel{ClipToBounds=true};
         _previewElements=elements;
-        _previewNetworkName.Text="نجم كارد ✦";
+        _previewNetworkName.Text="نجم كارد";
         _previewNetworkName.FontFamily=new FontFamily("Arial");
         _previewNetworkName.Foreground=(Brush)new BrushConverter().ConvertFrom("#210B47")!;
         _previewNetworkName.FontSize=20;
         _previewNetworkName.FontWeight=FontWeights.ExtraBold;
         _previewNetworkName.TextAlignment=TextAlignment.Center;
 
-        var usernamePlate=new Border{
-            Background=Brushes.Transparent,
-            BorderBrush=Brushes.Transparent,
-            BorderThickness=new Thickness(0),
-            CornerRadius=new CornerRadius(8),
-            Padding=new Thickness(2,0,2,0),
-            Width=280,
-            Child=new Viewbox
-            {
-                Stretch=Stretch.Uniform,
-                StretchDirection=StretchDirection.DownOnly,
-                Child=_cardPreview
-            }
-        };
+        var usernamePlate=CardCredentialPlate.Build(_cardPreview,50,19);
+        var passwordPlate=CardCredentialPlate.Build(_previewPassword,50,19);
+        passwordPlate.Visibility=Visibility.Collapsed;
+        _previewPasswordPlate=passwordPlate;
         _cardPreview.Margin=new Thickness(0);
         _cardPreview.FontWeight=FontWeights.ExtraBold;
         _cardPreview.TextAlignment=TextAlignment.Center;
@@ -168,8 +182,8 @@ public partial class GeneratorView
         _previewUsernamePlate=usernamePlate;
         elements.Add(_previewNetworkName,CardElementPanel.DefaultTitle);
         elements.Add(usernamePlate,CardElementPanel.DefaultCredentials);
-        elements.Add(_previewPassword,CardElementPanel.PasswordBelow(null));
-        _previewPackageName.MaxWidth=100;
+        elements.Add(passwordPlate,CardElementPanel.PasswordBelow(null));
+        _previewPackageName.MaxWidth=90;
         elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
         elements.Add(_previewCapacity,new CardElementPosition(0.75,0.13));
         elements.Add(_previewPhone,new CardElementPosition(0.08,0.91));
@@ -186,7 +200,7 @@ public partial class GeneratorView
             CredentialsPosition=position,
             PasswordPosition=style.PasswordPosition??CardElementPanel.PasswordBelow(style.CredentialsPosition)
         },(style,step)=>style with {UsernameFontSize=Math.Clamp(style.UsernameFontSize+step,8,40)});
-        EnableCardEditing(elements,_previewPassword,
+        EnableCardEditing(elements,passwordPlate,
             (style,position)=>style with {PasswordPosition=position},
             (style,step)=>style with {PasswordScale=ResizeScale(style.PasswordScale,step)});
         EnableCardEditing(elements,_previewPackageName,
@@ -289,7 +303,7 @@ public partial class GeneratorView
         if(_previewElements is null || _previewUsernamePlate is null)return;
         _previewElements.Place(_previewNetworkName,appearance.TitlePosition??CardElementPanel.DefaultTitle);
         _previewElements.Place(_previewUsernamePlate,appearance.CredentialsPosition??CardElementPanel.DefaultCredentials);
-        _previewElements.Place(_previewPassword,appearance.PasswordPosition??
+        _previewElements.Place(_previewPasswordPlate!,appearance.PasswordPosition??
             CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
         _previewElements.Place(_previewCapacity,appearance.CapacityPosition??new CardElementPosition(0.75,0.13));
@@ -427,7 +441,7 @@ public partial class GeneratorView
         _currentAppearance=appearance;
         if(changed)CardAppearanceChanged?.Invoke();
         PlacePreviewElements(appearance);
-        _previewNetworkName.Text=appearance.NetworkTitle+" ✦";
+        _previewNetworkName.Text=appearance.NetworkTitle;
         _previewNetworkName.Visibility=appearance.ShowTitle?Visibility.Visible:Visibility.Collapsed;
         _previewCapacity.Text=appearance.CapacityText;
         _previewPhone.Text=appearance.PhoneText;
@@ -444,21 +458,23 @@ public partial class GeneratorView
         _previewQr.Width=appearance.QrSize;_previewQr.Height=appearance.QrSize;
         _previewQr.Visibility=appearance.ShowQr?Visibility.Visible:Visibility.Collapsed;
         RefreshQrPreview(_cardPreview.Text);
-        _previewPackageName.Text=_profile.SelectedItem?.ToString()??"الباقة";
+        _previewPackageName.Text=(_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
         _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
         var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
         var backing=new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
         _previewNetworkName.Foreground=ink;
         _previewNetworkName.Background=Brushes.Transparent;
-        _previewPackageName.Foreground=hasPicture || appearance.ProfilePosition is not null?ink:Brushes.White;
+        _previewPackageName.Foreground=ink;
         _previewPackageName.Background=Brushes.Transparent;
+        // Default print output is a plain background; never display decorative
+        // shapes that are missing from the actual PDF.
         foreach(var shape in _sampleArtwork)
-            shape.Visibility=hasPicture?Visibility.Collapsed:Visibility.Visible;
+            shape.Visibility=Visibility.Collapsed;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
-        _previewNetworkName.FontSize=20*appearance.TitleScale;
-        _previewPassword.FontSize=13*appearance.PasswordScale;
-        _previewPackageName.FontSize=16*appearance.ProfileScale;
+        _previewNetworkName.FontSize=10*appearance.TitleScale;
+        _previewPassword.FontSize=10*appearance.PasswordScale;
+        _previewPackageName.FontSize=9*appearance.ProfileScale;
         _cardPreview.FontSize=appearance.UsernameFontSize;
         _cardPreview.Foreground=ink;
         _previewPassword.Foreground=ink;

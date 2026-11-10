@@ -172,7 +172,19 @@ public class PrintingView : UserControl
                 caption.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
             }
             part.Children.Add(caption);
-            part.Children.Add(control);
+            var choices=title switch
+            {
+                "عرض الكرت (مم)"=>new[]{"30","35","40","45","50","55","60","65","70","75","80"},
+                "ارتفاع الكرت (مم)"=>new[]{"15","16","18","19","20","22","25","30","35","40"},
+                "الصفوف"=>new[]{"1","2","3","4","5","6","8","10","12","15","16","18","20"},
+                "الأعمدة"=>new[]{"1","2","3","4","5","6","7","8","9","10"},
+                "الفاصل الأفقي" or "الفاصل الرأسي" or "الهامش"
+                    =>new[]{"0","0.2","0.3","0.5","0.7","1","1.5","2","3","4","5"},
+                _=>null
+            };
+            if(control is TextBox value && choices is not null)
+                part.Children.Add(PageUi.CompactNumberChoice(value,choices));
+            else part.Children.Add(control);
             host.Children.Add(part);
         }
         stack.Children.Add(ReferenceHeader("إعدادات الطباعة الأساسية"));
@@ -353,30 +365,32 @@ public class PrintingView : UserControl
                         };
                     }
                     void AddText(string value,CardElementPosition pos,double size,
-                        bool enabled=true,bool numeric=false)
+                        bool enabled=true,bool numeric=false,bool credential=false,bool usernameCredential=false)
                     {
                         if(!enabled || string.IsNullOrWhiteSpace(value))return;
                         var line=new TextBlock
                         {
                             Text=value,FontFamily=new FontFamily(
-                                numeric?"Consolas":appearance.FontFamily),
-                            FontWeight=FontWeights.Bold,FontSize=size,
+                                numeric && !usernameCredential?"Consolas":appearance.FontFamily),
+                            FontWeight=usernameCredential?FontWeights.ExtraBold:FontWeights.Bold,FontSize=size,
                             Foreground=ink,TextAlignment=TextAlignment.Center,
                             FlowDirection=FlowDirection.LeftToRight,
                             TextTrimming=TextTrimming.CharacterEllipsis,
                             Background=Brushes.Transparent
                         };
-                        positioned.Add(Layer(line),pos);
+                        positioned.Add(credential
+                            ?CardCredentialPlate.Build(line,opts.CardWidthMm,opts.CardHeightMm)
+                            :Layer(line),pos);
                     }
                     AddText(appearance.NetworkTitle,
                         appearance.TitlePosition??CardElementPanel.DefaultTitle,
                         10*appearance.TitleScale,appearance.ShowTitle);
                     AddText(card.Username,appearance.CredentialsPosition??
                         CardElementPanel.DefaultCredentials,appearance.UsernameFontSize,
-                        numeric:true);
+                        numeric:true,credential:true,usernameCredential:true);
                     AddText(card.Password,appearance.PasswordPosition??
                         CardElementPanel.PasswordBelow(appearance.CredentialsPosition),
-                        10*appearance.PasswordScale,appearance.ShowPassword,numeric:true);
+                        10*appearance.PasswordScale,appearance.ShowPassword,numeric:true,credential:true);
                     AddText(card.Profile+" · "+card.Service,appearance.ProfilePosition??
                         CardElementPanel.DefaultProfile,9*appearance.ProfileScale,
                         appearance.ShowProfile);

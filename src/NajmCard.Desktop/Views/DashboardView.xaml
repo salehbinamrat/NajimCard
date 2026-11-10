@@ -3,32 +3,37 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     FlowDirection="RightToLeft" MinWidth="0" MinHeight="0">
   <UserControl.Resources>
+    <SolidColorBrush x:Key="DashboardCream" Color="#FFF3DF"/>
+    <SolidColorBrush x:Key="DashboardMaroon" Color="#72203A"/>
     <Style x:Key="DashboardPanel" TargetType="Border" BasedOn="{StaticResource CardPanel}">
       <Setter Property="Padding" Value="12"/>
       <Setter Property="CornerRadius" Value="10"/>
       <Setter Property="Margin" Value="0"/>
-      <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+      <Setter Property="Background" Value="{StaticResource DashboardCream}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource DashboardMaroon}"/>
       <Setter Property="Tag" Value="DashboardPanel"/>
     </Style>
     <Style x:Key="StatNumber" TargetType="TextBlock">
       <Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="ExtraBold"/>
-      <Setter Property="Foreground" Value="#FFE2A5"/><Setter Property="Margin" Value="0,4,0,0"/>
+      <Setter Property="Foreground" Value="#651B38"/><Setter Property="Margin" Value="0,4,0,0"/>
     </Style>
     <Style x:Key="Tiny" TargetType="TextBlock">
-      <Setter Property="FontSize" Value="11"/><Setter Property="Foreground" Value="#E6CDD2"/>
+      <Setter Property="FontSize" Value="11"/><Setter Property="Foreground" Value="#52273A"/>
       <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
       <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
     </Style>
     <Style x:Key="HeaderLabel" TargetType="TextBlock">
       <Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="Bold"/>
-      <Setter Property="Foreground" Value="#FFE3B3"/>
+      <Setter Property="Foreground" Value="#FFF5E8"/>
+      <Setter Property="Background" Value="{StaticResource DashboardMaroon}"/>
+      <Setter Property="Padding" Value="7,3"/>
     </Style>
     <Style x:Key="QuickButton" TargetType="Button" BasedOn="{StaticResource OutlineButton}">
       <Setter Property="Padding" Value="5,6"/><Setter Property="Margin" Value="2"/>
       <Setter Property="MinHeight" Value="38"/><Setter Property="MinWidth" Value="0"/>
       <Setter Property="FontSize" Value="12"/>
-      <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="Background" Value="#6A2344"/>
     </Style>
   </UserControl.Resources>
 
@@ -47,9 +52,9 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
           <Button x:Name="LifecycleButton" Content="◉ تحديث حالة الكروت"
                   Style="{StaticResource QuickButton}"
-                  Padding="12,6" Margin="3,0"
+                  Padding="12,6" Margin="3,0" Background="#634A94" Foreground="White"
                   Click="Lifecycle_Click"/>
-          <Button x:Name="RefreshButton" Content="⟳ تحديث مباشر" Style="{StaticResource QuickButton}" Foreground="White"
+          <Button x:Name="RefreshButton" Content="⟳ تحديث مباشر" Style="{StaticResource QuickButton}" Foreground="White" Background="#116A76"
                   Padding="12,6" Margin="3,0" Click="Refresh_Click"/>
           <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                   CornerRadius="7" Padding="11,6" Margin="7,0">
@@ -58,7 +63,7 @@
           </Border>
         </StackPanel>
         <TextBlock Text="الرئيسية" FontSize="21" FontWeight="ExtraBold"
-                   Foreground="#FFE4AC" VerticalAlignment="Center" Margin="6,0"/>
+                   Foreground="#61213B" VerticalAlignment="Center" Margin="6,0"/>
       </Grid>
     </Border>
     <!-- Row 1: total, live connections and compact CPU/RAM, not duplicated lifecycle cards. -->
@@ -163,18 +168,18 @@
              <TextBlock Grid.Row="0" Grid.Column="2" Text="النسبة %" Foreground="White"
                         FontSize="12" FontWeight="ExtraBold" VerticalAlignment="Center"
                         HorizontalAlignment="Center"/>
-             <Border Grid.Row="1" Grid.ColumnSpan="3" Background="{StaticResource CanvasBrush}" Margin="0,0,0,1"/>
-             <Border Grid.Row="2" Grid.ColumnSpan="3" Background="{StaticResource CanvasBrush}" Margin="0,0,0,1"/>
-             <Border Grid.Row="3" Grid.ColumnSpan="3" Background="{StaticResource CanvasBrush}" Margin="0,0,0,1"/>
-             <TextBlock Grid.Row="1" Grid.Column="0" Text="نشطة" Foreground="#A3F7D2"
+             <Border Grid.Row="1" Grid.ColumnSpan="3" Background="#F6E8D7" Margin="0,0,0,1"/>
+             <Border Grid.Row="2" Grid.ColumnSpan="3" Background="#FFFBF3" Margin="0,0,0,1"/>
+             <Border Grid.Row="3" Grid.ColumnSpan="3" Background="#F6E8D7" Margin="0,0,0,1"/>
+             <TextBlock Grid.Row="1" Grid.Column="0" Text="نشطة" Foreground="#197A54"
                         FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="10,0"/>
-             <TextBlock Grid.Row="2" Grid.Column="0" Text="منتهية" Foreground="#FFB7C4"
+             <TextBlock Grid.Row="2" Grid.Column="0" Text="منتهية" Foreground="#96243F"
                         FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="10,0"
                         ToolTip="استنفاد Transfer Limit الموجب فقط"/>
-             <TextBlock Grid.Row="3" Grid.Column="0" Text="صالحة" Foreground="#FFE5A6"
+             <TextBlock Grid.Row="3" Grid.Column="0" Text="صالحة" Foreground="#A16618"
                         FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="10,0"/>
              <TextBlock x:Name="ActiveLegend" Grid.Row="1" Grid.Column="1" Text="—"
-                        Foreground="White" FontWeight="ExtraBold" FontSize="15"
+                        Foreground="#471A30" FontWeight="ExtraBold" FontSize="15"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="ExpiredLegend" Grid.Row="2" Grid.Column="1" Text="—"
                         Foreground="White" FontWeight="ExtraBold" FontSize="15"
@@ -196,9 +201,9 @@
            </Grid>
            <UniformGrid Grid.Row="2" Columns="2" Margin="0,8,0,0">
             <Button Content="عرض النشطة" Tag="active" Click="OpenLifecycleDetails_Click"
-                    Style="{StaticResource QuickButton}"/>
+                    Background="#197A54" Foreground="White" Style="{StaticResource QuickButton}"/>
             <Button Content="عرض المنتهية" Tag="expired" Click="OpenLifecycleDetails_Click"
-                    Style="{StaticResource QuickButton}"/>
+                    Background="#96243F" Foreground="White" Style="{StaticResource QuickButton}"/>
           </UniformGrid>
         </Grid>
       </Border>
@@ -233,7 +238,7 @@
         <StackPanel>
           <TextBlock Text="بيانات الراوتر" Style="{StaticResource HeaderLabel}" Margin="0,0,0,7"/>
           <TextBlock x:Name="RouterName" Text="—" FontSize="16" FontWeight="Bold"
-                     Foreground="#FFE0A0" TextTrimming="CharacterEllipsis"/>
+                     Foreground="#65223D" TextTrimming="CharacterEllipsis"/>
           <Grid Margin="0,5,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <TextBlock Text="اللوحة" Style="{StaticResource Tiny}" Margin="0,0,8,0"/>
@@ -250,21 +255,21 @@
         <StackPanel>
           <TextBlock Text="إجراءات سريعة" Style="{StaticResource HeaderLabel}" Margin="0,0,0,8"/>
           <UniformGrid Columns="3">
-            <Button Click="NewCards_Click" Style="{StaticResource QuickButton}" ToolTip="إنشاء وطباعة الكروت">
+            <Button Click="NewCards_Click" Style="{StaticResource QuickButton}" Background="#226C9F" ToolTip="إنشاء وطباعة الكروت">
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Path Data="{StaticResource IconPlus}" Stroke="#FFE0A2" StrokeThickness="2"
                       Width="14" Height="14" Margin="0,0,5,0"/>
                 <TextBlock Text="إنشاء" Foreground="#FFF2D9" FontSize="11" FontWeight="Bold"/>
               </StackPanel>
             </Button>
-            <Button Click="ManageCards_Click" Style="{StaticResource QuickButton}" ToolTip="إدارة الكروت">
+            <Button Click="ManageCards_Click" Style="{StaticResource QuickButton}" Background="#8050A5" ToolTip="إدارة الكروت">
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Path Data="{StaticResource IconCard}" Stroke="#B8F2E0" StrokeThickness="2"
                       Width="14" Height="14" Margin="0,0,5,0"/>
                 <TextBlock Text="الكروت" Foreground="#FFF2D9" FontSize="11" FontWeight="Bold"/>
               </StackPanel>
             </Button>
-            <Button Click="Reports_Click" Style="{StaticResource QuickButton}" ToolTip="تقارير الشبكة">
+            <Button Click="Reports_Click" Style="{StaticResource QuickButton}" Background="#BE7236" ToolTip="تقارير الشبكة">
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Path Data="{StaticResource IconReport}" Stroke="#BEDDFF" StrokeThickness="2"
                       Width="14" Height="14" Margin="0,0,5,0"/>
@@ -280,10 +285,10 @@
            <UniformGrid Columns="2" Margin="0,0,0,4">
              <Button Content="⏻ تعطيل الهوتسبوت" Click="Maintenance_Click"
                      Style="{StaticResource QuickButton}"
-                     Foreground="White" ToolTip="افتح أدوات الصيانة، ثم اختر السيرفر وأكد التعطيل"/>
+                     Foreground="White" Background="#9C2947" ToolTip="افتح أدوات الصيانة، ثم اختر السيرفر وأكد التعطيل"/>
              <Button Content="⚙ إعادة بناء / تحسين" Click="Maintenance_Click"
                      Style="{StaticResource QuickButton}"
-                     Foreground="White" ToolTip="افتح أدوات تحسين وصيانة الراوتر مع التأكيد"/>
+                     Foreground="White" Background="#276D83" ToolTip="افتح أدوات تحسين وصيانة الراوتر مع التأكيد"/>
            </UniformGrid>
            <TextBlock Text="سجل تحديث لوحة التحكم" Style="{StaticResource HeaderLabel}"
                       FontSize="13" Margin="0,2,0,5"/>
@@ -297,7 +302,7 @@
        </Border>
     </Grid>
     <TextBlock x:Name="ErrorStatus" Grid.Row="4" Text=""
-               FontSize="11" Foreground="#F2D1B9" TextTrimming="CharacterEllipsis"
+               FontSize="11" Foreground="#FFEAD3" TextTrimming="CharacterEllipsis"
                Margin="3,0,0,0"/>
   </Grid>
 </UserControl>

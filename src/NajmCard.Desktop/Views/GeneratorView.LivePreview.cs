@@ -47,6 +47,8 @@ public partial class GeneratorView
             ?username+"\n"+password:username;
         _previewPassword.Text=showPassword?password:"";
         _previewPassword.Visibility=showPassword?Visibility.Visible:Visibility.Collapsed;
+        if(_previewPasswordPlate is not null)
+            _previewPasswordPlate.Visibility=showPassword?Visibility.Visible:Visibility.Collapsed;
         RefreshQrPreview(username);
     }
 

@@ -10,7 +10,15 @@ namespace NajmCard.Core.Services;
 /// </summary>
 public sealed partial class RouterGateway
 {
-    public async Task<DashboardLiveCounts> ReadDashboardLiveCountsAsync(CancellationToken ct=default)
+    public Task<DashboardLiveCounts> ReadDashboardLiveCountsAsync(CancellationToken ct=default)
+        => ReadDashboardCountsAsync(includeUserManagerTotal:true,ct);
+
+    // Second-by-second connectivity: do not re-read the costly total users counter.
+    public Task<DashboardLiveCounts> ReadDashboardOnlineOnlyAsync(CancellationToken ct=default)
+        => ReadDashboardCountsAsync(includeUserManagerTotal:false,ct);
+
+    private async Task<DashboardLiveCounts> ReadDashboardCountsAsync(
+        bool includeUserManagerTotal,CancellationToken ct)
     {
         if(client is not IRouterReceiptClient receipt)
             throw new InvalidOperationException(
@@ -33,7 +41,8 @@ public sealed partial class RouterGateway
                 return null;
             }
         }
-        int? total=await Count("/tool/user-manager/user/print");
+        int? total=includeUserManagerTotal
+            ?await Count("/tool/user-manager/user/print"):null;
         int? hotspot=await Count("/ip/hotspot/active/print");
         int? ppp=await Count("/ppp/active/print");
         return new DashboardLiveCounts(total,hotspot,ppp);

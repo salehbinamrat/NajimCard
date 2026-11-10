@@ -14,21 +14,34 @@ namespace NajmCard.Desktop.Views;
 /// <summary>Shared visual system: geometric burgundy panels, colorful vector icons and readable RTL grids.</summary>
 internal static class PageUi
 {
-    internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(230, 210, 211));
+    internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(88, 37, 58));
     internal static Brush Gold => new SolidColorBrush(Color.FromRgb(243, 207, 148));
-    internal static Border Surface(UIElement content, string accent = "#80593D") => new()
+    internal static Border Surface(UIElement content,string accent="#80593D")
     {
-        Child = content, CornerRadius = new CornerRadius(12), Padding = new Thickness(12),
-        Margin = new Thickness(0, 0, 0, 8), BorderThickness = new Thickness(1),
-        Background = new SolidColorBrush(Color.FromRgb(54, 16, 34)),
-        BorderBrush = (Brush)new BrushConverter().ConvertFromInvariantString(accent)!
-    };
+        var surface=new Border
+        {
+            Child=content,CornerRadius=new CornerRadius(12),Padding=new Thickness(12),
+            Margin=new Thickness(0,0,0,8),BorderThickness=new Thickness(1),
+            Background=new SolidColorBrush(Color.FromRgb(255,243,223)),
+            BorderBrush=new SolidColorBrush(Color.FromRgb(114,32,58))
+        };
+        // Scope dark default labels to cream panels without affecting the
+        // burgundy application header, login, sidebar or card print artwork.
+        var ordinaryText=new Style(typeof(TextBlock),
+            (Style)Application.Current.FindResource(typeof(TextBlock)));
+        ordinaryText.Setters.Add(new Setter(TextBlock.ForegroundProperty,
+            new SolidColorBrush(Color.FromRgb(75,27,50))));
+        surface.Resources[typeof(TextBlock)]=ordinaryText;
+        return surface;
+    }
     internal static StackPanel Column() => new() { Orientation = Orientation.Vertical };
     internal static TextBlock Title(string text) => new() { Text = text, FontSize = 23, FontWeight = FontWeights.Bold, FontFamily=new FontFamily("Arial"),
-        Foreground = Gold, Margin = new Thickness(0, 0, 0, 6) };
+        Foreground = Brushes.White,
+        Background = new SolidColorBrush(Color.FromRgb(114, 32, 58)),
+        Padding = new Thickness(8,5,8,5),Margin = new Thickness(0, 0, 0, 6) };
     internal static TextBlock Hint(string text) => new() { Text = text, Foreground = Muted, FontSize = 14, FontWeight = FontWeights.Medium,
         TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 17) };
-    internal static TextBlock Label(string text) => new() { Text = text, Foreground = Gold, FontSize = 15, FontWeight=FontWeights.SemiBold,
+    internal static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(74, 25, 46)), FontSize = 15, FontWeight=FontWeights.SemiBold,
         Margin = new Thickness(0, 6, 0, 3) };
     internal static Button Button(string name, bool primary = true) => new()
     {
@@ -39,6 +52,48 @@ internal static class PageUi
     internal static TextBlock Status() => new() { TextWrapping = TextWrapping.Wrap,
         Foreground = Muted, Margin = new Thickness(0, 13, 0, 8), FontSize = 14, FontWeight=FontWeights.SemiBold };
     internal static TextBox Input(string value = "") => new() { Text = value, FlowDirection = FlowDirection.LeftToRight };
+    // Bounded numeric presets, with the original TextBox kept as the single
+    // source of truth for saved package settings and form validation.
+    internal static ComboBox CompactNumberChoice(TextBox value,params string[] choices)
+    {
+        var picker=new ComboBox
+        {
+            MinWidth=0,MinHeight=30,IsEditable=false,
+            FontFamily=new FontFamily("Arial"),FontSize=13,
+            FontWeight=FontWeights.Bold,FlowDirection=FlowDirection.LeftToRight,
+            HorizontalContentAlignment=HorizontalAlignment.Center
+        };
+        foreach(var choice in choices.Distinct(StringComparer.Ordinal))
+            picker.Items.Add(choice);
+        bool syncing=false;
+        void FromValue()
+        {
+            if(syncing)return;
+            syncing=true;
+            try
+            {
+                var current=value.Text.Trim().Replace(',','.');
+                // Old saved profiles may use a custom value. Display it without
+                // discarding the existing preset or expanding the normal list.
+                if(current.Length>0 && !picker.Items.Contains(current))
+                    picker.Items.Add(current);
+                picker.SelectedItem=current;
+                picker.IsEnabled=value.IsEnabled;
+            }
+            finally{syncing=false;}
+        }
+        picker.SelectionChanged+=(_,_) =>
+        {
+            if(syncing)return;
+            if(picker.SelectedItem is string selected && value.Text!=selected)
+                value.Text=selected;
+        };
+        value.TextChanged+=(_,_)=>FromValue();
+        value.IsEnabledChanged+=(_,_)=>picker.IsEnabled=value.IsEnabled;
+        FromValue();
+        return picker;
+    }
+
     internal static DataGrid Table(params (string Header, string Binding)[] columns)
     {
         var grid = new DataGrid { CanUserResizeColumns = true, CanUserSortColumns = true,

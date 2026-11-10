@@ -82,8 +82,8 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("SHA256SUMS-",ci)
 
     def test_shared_pages_have_compact_geometry_and_readable_alternating_tables(self):
-        self.assertIn("Padding = new Thickness(12)",self.pageui)
-        self.assertIn("Margin = new Thickness(0, 0, 0, 8)",self.pageui)
+        self.assertIn("Padding=new Thickness(12)",self.pageui)
+        self.assertIn("Margin=new Thickness(0,0,0,8)",self.pageui)
         self.assertIn('Property="Foreground" Value="{StaticResource TextBrush}"',self.theme)
         self.assertIn('Property="RowBackground" Value="{StaticResource SurfaceBrush}"',self.theme)
         self.assertIn('TargetType="DataGridColumnHeader"',self.theme)
