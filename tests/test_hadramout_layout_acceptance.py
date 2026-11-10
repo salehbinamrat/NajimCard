@@ -43,7 +43,7 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
         for field in ("_usernameAlphabetType","_passwordAlphabetType"):
             self.assertIn("private readonly ComboBox "+field,self.g)
             self.assertIn(field+".SelectionChanged",self.g)
-        for option in ("أرقام فقط","أحرف فقط","مختلطة","مخصصة"):
+        for option in ("أرقام فقط","أحرف صغيرة فقط","مختلطة صغيرة","أحرف كبيرة فقط","مختلطة كبيرة","مخصصة"):
             self.assertIn(option,self.g)
         self.assertIn("VoucherGenerator.UppercaseLetters",self.g)
         self.assertIn("VoucherGenerator.Mixed",self.g)

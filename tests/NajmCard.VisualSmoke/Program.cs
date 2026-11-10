@@ -50,7 +50,7 @@ internal static class Program
             ((ListBox)window.FindName("NavList")).SelectedIndex=1;
             ((RowDefinition)window.FindName("WorkspaceHeaderRow")).Height=new GridLength(0);
             var pageHost=(ContentControl)window.FindName("PageHost");
-            pageHost.Margin=new Thickness(4);
+            pageHost.Margin=new Thickness(12,7,12,7);
             pageHost.Content=creator;
             var root=(Grid)window.Content;
             root.FlowDirection=window.FlowDirection;
@@ -104,19 +104,31 @@ internal static class Program
             if(VisualChildren<UniformGrid>(root).Any(grid=>Equals(grid.Tag,"CardPalette")))
                 throw new InvalidDataException("The removed color strip is still visible.");
 
+            var creatorHeader=(Border)workspace.Children[1];
             VerifyNumberPreview(root);
             VerifyPasswordPreview(root);
             root.UpdateLayout();
 
             Capture(root,width,height,destination);
 
+            var creatorHeaderHeight=creatorHeader.ActualHeight;
             var dashboard=new DashboardView(offline,store,_=>{},"192.168.88.1");
             ((ListBox)window.FindName("NavList")).SelectedIndex=0;
             pageHost.Margin=new Thickness(12,7,12,7);
             pageHost.Content=dashboard;
             root.UpdateLayout();
             VerifyDashboardPanels(dashboard);
+            var dashboardHeader=(Border)((Grid)dashboard.Content).Children[0];
+            if(creatorHeaderHeight!=dashboardHeader.ActualHeight ||
+               !Equals(((SolidColorBrush)creatorHeader.Background).Color,
+                   ((SolidColorBrush)dashboardHeader.Background).Color))
+                throw new InvalidDataException("The creator and dashboard header styles differ.");
             Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x730.png"));
+
+            ((RowDefinition)window.FindName("WorkspaceHeaderRow")).Height=new GridLength(88);
+            var profiles=new ProfilesView(new RouterGateway(new OfflineRouterClient(withProfiles:true)));
+            pageHost.Content=profiles;
+            VerifyProfilesPage(root,profiles);
             return 0;
         }
         catch(Exception ex)
@@ -152,6 +164,26 @@ internal static class Program
             throw new InvalidDataException("A dashboard card is clipped.");
         if(bounds.Max(card=>card.Width)-bounds.Min(card=>card.Width)>2)
             throw new InvalidDataException("Dashboard card columns are not aligned.");
+    }
+
+    private static void VerifyProfilesPage(FrameworkElement root,ProfilesView profiles)
+    {
+        var tabs=(TabControl)profiles.Content;
+        tabs.SelectedIndex=1;
+        root.UpdateLayout();
+        var tab=(TabItem)tabs.SelectedItem;
+        var scroll=(ScrollViewer)((DockPanel)tab.Content).Children[1];
+        var grids=VisualChildren<DataGrid>(profiles).ToArray();
+        if(grids.Length!=2 || grids[0].Items.Count!=1 ||
+           !VisualChildren<TextBlock>(profiles).Any(x=>x.Text.Contains("تعذرت قراءة المحددات")))
+            throw new InvalidDataException("User Manager profiles disappeared when loading their limits failed.");
+        var refresh=VisualChildren<Button>(profiles).Single(x=>Equals(x.Content,"تحديث من الراوتر"));
+        var top=refresh.TransformToAncestor(root).TransformBounds(new Rect(refresh.RenderSize)).Top;
+        scroll.ScrollToEnd();
+        root.UpdateLayout();
+        if(scroll.VerticalOffset<=0 ||
+           refresh.TransformToAncestor(root).TransformBounds(new Rect(refresh.RenderSize)).Top!=top)
+            throw new InvalidDataException("Profile details are not scrollable below the fixed refresh button.");
     }
 
     private static void VerifyNumberPreview(FrameworkElement root)
@@ -207,13 +239,18 @@ internal static class Program
         }
     }
 
-    private sealed class OfflineRouterClient : IRouterCommandClient
+    private sealed class OfflineRouterClient(bool withProfiles=false) : IRouterCommandClient
     {
         public Task<IReadOnlyList<IReadOnlyDictionary<string,string>>> CommandAsync(
             string command,IReadOnlyDictionary<string,string>? attributes=null,
             CancellationToken cancellationToken=default)
         {
             // Read-only fake: offscreen constructor cannot contact a router.
+            if(withProfiles && command=="/tool/user-manager/profile/print")
+                return Task.FromResult<IReadOnlyList<IReadOnlyDictionary<string,string>>>(
+                    [new Dictionary<string,string>{{".id","*1"},{"name","200RY"}}]);
+            if(withProfiles && command=="/tool/user-manager/profile/limitation/print")
+                throw new IOException("Limitation read deliberately unavailable.");
             return Task.FromResult<IReadOnlyList<IReadOnlyDictionary<string,string>>>(
                 Array.Empty<IReadOnlyDictionary<string,string>>());
         }

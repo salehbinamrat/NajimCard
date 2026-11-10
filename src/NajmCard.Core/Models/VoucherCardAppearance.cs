@@ -47,6 +47,8 @@ public sealed record VoucherCardAppearance(
     [System.Text.Json.Serialization.JsonIgnore]
     public string EffectiveElementColor => ElementColor ?? UsernameColor;
 
+    public bool NumberNeedsBacking() => ContrastRatio(BackgroundColor,UsernameColor)<4.5;
+
     private static readonly HashSet<string> AllowedFonts = new(
         ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
 
@@ -87,11 +89,6 @@ public sealed record VoucherCardAppearance(
         if(PhoneText is null || PhoneText.Length>48 || PhoneText.Any(char.IsControl) ||
            CapacityText is null || CapacityText.Length>48 || CapacityText.Any(char.IsControl))
             throw new ArgumentException("بيانات الهاتف أو السعة غير صالحة.");
-        // WCAG relative luminance: keep voucher numbers legible regardless
-        // of a custom dark burgundy or a bright paper background.
-        if(ContrastRatio(BackgroundColor,UsernameColor)<4.5)
-            throw new ArgumentException(
-                "لون رقم الكرت قريب جدا من لون الخلفية؛ اختر لونا أوضح لتظهر الخطوط بارزة.");
         return this;
     }
 

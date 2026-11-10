@@ -10,6 +10,8 @@ public static class VoucherGenerator
     public const string Digits = "0123456789";
     public const string UppercaseLetters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
     public const string Mixed = Digits + UppercaseLetters;
+    public const string LowercaseLetters = "abcdefghijklmnopqrstuvwxyz";
+    public const string LowercaseMixed = Digits + LowercaseLetters;
 
     // One validation path for both live artwork samples and actual voucher batches.
     // Preview intentionally returns plain text, never an issuable Voucher entity.

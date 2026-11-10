@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using NajmCard.Core.Models;
 
 namespace NajmCard.Desktop.Views;
 
@@ -38,6 +39,16 @@ internal static class CardCredentialPlate
         };
         Resize(plate,cardWidthMm,cardHeightMm);
         return plate;
+    }
+
+    internal static void ApplyNumberBacking(Border plate,VoucherCardAppearance appearance,bool hasArtwork)
+    {
+        var needsBacking=hasArtwork || appearance.NumberNeedsBacking();
+        var backing=PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor);
+        var contrastingBrush=backing.R<128?Brushes.Black:Brushes.White;
+        var text=(TextBlock)((Viewbox)plate.Child).Child;
+        text.Background=needsBacking?contrastingBrush:Brushes.Transparent;
+        text.Padding=new Thickness(needsBacking?2:0,0,needsBacking?2:0,0);
     }
 
     internal static void Resize(Border plate,double cardWidthMm,double cardHeightMm)

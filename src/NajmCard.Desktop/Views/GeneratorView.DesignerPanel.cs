@@ -66,7 +66,7 @@ public partial class GeneratorView
             Child=palette
         };
         button.Click+=(_,_)=>popup.IsOpen=!popup.IsOpen;
-        button.ToolTip="اختر من شريط الألوان أو اكتب رمز اللون في الخانة المجاورة.";
+        button.ToolTip="اختر لونا أو أدخل رمز اللون في تعديلات متقدمة.";
         void Paint()
         {
             try
@@ -76,7 +76,7 @@ public partial class GeneratorView
                 button.Content=new TextBlock
                 {
                     Text=caption,Tag="ColorButtonLabel",Foreground=0.2126*color.R+0.7152*color.G+0.0722*color.B>135
-                        ?Brushes.Black:Brushes.FloralWhite
+                        ?PageUi.Muted:Brushes.FloralWhite
                 };
             }
             catch(FormatException){ /* Keep previous color until a complete hex code is entered. */ }
@@ -100,13 +100,13 @@ public partial class GeneratorView
         }
         AddPanel(ReferenceHeader("معاينة وتصميم الكرت"),0);
         var toolbar=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,2)};
-        var templateImage=PageUi.Button("تغيير الثيم",false);
+        var templateImage=PageUi.Button("تغيير صورة القالب",false);
         var advanced=PageUi.Button("تعديلات متقدمة",false);
         foreach(var button in new[]{templateImage,advanced})
         {
             button.MinWidth=0;button.Margin=new Thickness(2);
             button.Padding=new Thickness(3,1,3,1);
-            button.FontSize=12;button.FontWeight=FontWeights.Bold;
+            button.FontSize=10;button.FontWeight=FontWeights.Bold;
             button.MinHeight=21;button.Foreground=Brushes.FloralWhite;
             button.Background=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
             toolbar.Children.Add(button);
@@ -158,8 +158,10 @@ public partial class GeneratorView
             line.Children.Add(field);
             options.Children.Add(line);
         }
-        Option("حجم الخط",PageUi.CompactNumberChoice(_designFontSize,
-            "8","10","12","14","16","18","20","22","24","26","28","30","32","36","40"));
+        var sizes=Enumerable.Range(8,33).Select(size=>size.ToString(CultureInfo.InvariantCulture));
+        var fontSizeChoice=PageUi.CompactNumberChoice(_designFontSize,sizes.ToArray());
+        fontSizeChoice.ToolTip="حجم رقم الكرت من 8 إلى 40. يصغر النص الطويل ليلائم المساحة.";
+        Option("حجم الخط",fontSizeChoice);
         Option("نوع الخط",_designFontFamily);
         Option("لون النص",PaletteButton("تغيير",_designElementColor));
         Option("لون رقم الكرت",PaletteButton("تغيير",_designTextColor));

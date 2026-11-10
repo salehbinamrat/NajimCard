@@ -58,4 +58,14 @@ public sealed class VoucherCardAppearanceTests
         Assert.Equal("#663355",persisted.EffectiveElementColor);
         Assert.Equal("#101010",persisted.UsernameColor);
     }
+
+    [Fact]
+    public void LightNumberInkIsSavedAndRequestsAContrastingBacking()
+    {
+        var style=new VoucherCardAppearance(BackgroundColor:"#FFF6EB",UsernameColor:"#FFFFFF")
+            .Validate();
+        Assert.Equal("#FFFFFF",style.UsernameColor);
+        Assert.True(style.NumberNeedsBacking());
+        Assert.False(new VoucherCardAppearance().NumberNeedsBacking());
+    }
 }

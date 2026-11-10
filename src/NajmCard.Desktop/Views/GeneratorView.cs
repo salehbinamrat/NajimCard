@@ -64,16 +64,18 @@ public partial class GeneratorView : UserControl
     private readonly TextBox _pagesEstimate = PageUi.Input("1");
     private readonly TextBox _prefix = PageUi.Input("");
     private readonly TextBox _length = PageUi.Input("8");
-    private readonly TextBox _usernameCharacters = PageUi.Input(VoucherGenerator.Digits);
-    private readonly TextBox _passwordCharacters = PageUi.Input(VoucherGenerator.Mixed);
+    private readonly TextBox _usernameCharacters = PageUi.Input(VoucherGenerator.LowercaseMixed);
+    private readonly TextBox _passwordCharacters = PageUi.Input(VoucherGenerator.LowercaseMixed);
+    private static readonly string[] AlphabetChoices=
+        ["أرقام فقط","أحرف صغيرة فقط","مختلطة صغيرة","أحرف كبيرة فقط","مختلطة كبيرة","مخصصة"];
     private readonly ComboBox _usernameAlphabetType=new()
     {
-        ItemsSource=new[]{"أرقام فقط","أحرف فقط","مختلطة","مخصصة"},
-        SelectedIndex=0
+        ItemsSource=AlphabetChoices,
+        SelectedIndex=2
     };
     private readonly ComboBox _passwordAlphabetType=new()
     {
-        ItemsSource=new[]{"أرقام فقط","أحرف فقط","مختلطة","مخصصة"},
+        ItemsSource=AlphabetChoices,
         SelectedIndex=2
     };
     private readonly TextBox _passwordLength = PageUi.Input("6");
@@ -170,11 +172,7 @@ public partial class GeneratorView : UserControl
         quickSaveButton.Foreground=(Brush)new BrushConverter().ConvertFrom("#56172F")!;
         quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#F0C96E")!;
         quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
-        var packageSaveFeedback=PageUi.Status();
-        packageSaveFeedback.FontSize=11;
-        packageSaveFeedback.TextWrapping=TextWrapping.Wrap;
-        packageSaveFeedback.Visibility=Visibility.Collapsed;
-        WirePackageSaveNotification(quickSaveButton,packageSaveFeedback);
+        WirePackageSaveNotification(quickSaveButton);
         servicePanel.Children.Add(routeHeader);
         var routeInputs=new UniformGrid{Columns=2,Margin=new Thickness(0,1,0,1)};
         var serverBox=PageUi.Column();
@@ -313,8 +311,10 @@ public partial class GeneratorView : UserControl
             switch(selector.SelectedIndex)
             {
                 case 0:target.Text=VoucherGenerator.Digits;break;
-                case 1:target.Text=VoucherGenerator.UppercaseLetters;break;
-                case 2:target.Text=VoucherGenerator.Mixed;break;
+                case 1:target.Text=VoucherGenerator.LowercaseLetters;break;
+                case 2:target.Text=VoucherGenerator.LowercaseMixed;break;
+                case 3:target.Text=VoucherGenerator.UppercaseLetters;break;
+                case 4:target.Text=VoucherGenerator.Mixed;break;
                 // Custom preserves existing characters for exact manual editing.
                 default:break;
             }
@@ -332,8 +332,6 @@ public partial class GeneratorView : UserControl
         _customerPanel.Visibility = Visibility.Collapsed;
         _server.ItemsSource=new[]{"all"};
         _server.SelectedIndex=0;
-        // Feedback appears only on explicit save, within the routing section.
-        servicePanel.Children.Add(packageSaveFeedback);
         void UpdatePasswordMode()
         {
             bool userOnly=_credentialMode.SelectedIndex==0;
@@ -435,8 +433,6 @@ public partial class GeneratorView : UserControl
         }
         _service.SelectionChanged += async (_, _) =>
         {
-            packageSaveFeedback.Text="";
-            packageSaveFeedback.Visibility=Visibility.Collapsed;
             _batch = [];
             BatchChanged?.Invoke();
             ServiceChanged?.Invoke();
@@ -455,8 +451,6 @@ public partial class GeneratorView : UserControl
         _profile.SelectionChanged += (_, _) =>
         {
             if(_restoringPreset || _applyingProfileCatalog)return;
-            packageSaveFeedback.Text="";
-            packageSaveFeedback.Visibility=Visibility.Collapsed;
             _batch=[];
             BatchChanged?.Invoke();
             _applyingProfileCatalog=true;
@@ -467,8 +461,6 @@ public partial class GeneratorView : UserControl
         _customer.SelectionChanged += (_,_) =>
         {
             if(_restoringPreset)return;
-            packageSaveFeedback.Text="";
-            packageSaveFeedback.Visibility=Visibility.Collapsed;
             RestorePackagePreset();
         };
         SubscribeLiveCardPreview();
@@ -552,14 +544,16 @@ public partial class GeneratorView : UserControl
                 _count.Text=(v?.Quantity??60).ToString(CultureInfo.InvariantCulture);
                 _prefix.Text=v?.Prefix??"";
                 _length.Text=(v?.UsernameLength??10).ToString(CultureInfo.InvariantCulture);
-                _usernameCharacters.Text=v?.UsernameCharacters??VoucherGenerator.Digits;
-                _passwordCharacters.Text=v?.PasswordCharacters??VoucherGenerator.Mixed;
+                _usernameCharacters.Text=v?.UsernameCharacters??VoucherGenerator.LowercaseMixed;
+                _passwordCharacters.Text=v?.PasswordCharacters??VoucherGenerator.LowercaseMixed;
                 static int AlphabetIndex(string value)=>value switch
                 {
                     VoucherGenerator.Digits=>0,
-                    VoucherGenerator.UppercaseLetters=>1,
-                    VoucherGenerator.Mixed=>2,
-                    _=>3
+                    VoucherGenerator.LowercaseLetters=>1,
+                    VoucherGenerator.LowercaseMixed=>2,
+                    VoucherGenerator.UppercaseLetters=>3,
+                    VoucherGenerator.Mixed=>4,
+                    _=>5
                 };
                 _usernameAlphabetType.SelectedIndex=AlphabetIndex(_usernameCharacters.Text);
                 _passwordAlphabetType.SelectedIndex=AlphabetIndex(_passwordCharacters.Text);
