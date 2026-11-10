@@ -78,7 +78,8 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         {
             TitlePosition=new CardElementPosition(0.2,0.3),
             CredentialsPosition=new CardElementPosition(0.8,0.5),
-            ProfilePosition=new CardElementPosition(1,0)
+            ProfilePosition=new CardElementPosition(1,0),
+            PasswordPosition=new CardElementPosition(0.4,0.75)
         };
         using(var store=new VoucherStore(_root))
         {
@@ -92,7 +93,7 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
 
         using var reopened=new VoucherStore(_root);
         Assert.Equal(moved,reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!.Appearance);
-        Assert.Null(reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","7 Day")!.Appearance.TitlePosition);
+        Assert.Null(reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","7 Day")!.Appearance.PasswordPosition);
     }
 
     [Theory]

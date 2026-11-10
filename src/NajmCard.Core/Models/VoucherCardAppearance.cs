@@ -18,7 +18,8 @@ public sealed record VoucherCardAppearance(
     string TemplateImagePath = "",
     CardElementPosition? TitlePosition = null,
     CardElementPosition? CredentialsPosition = null,
-    CardElementPosition? ProfilePosition = null)
+    CardElementPosition? ProfilePosition = null,
+    CardElementPosition? PasswordPosition = null)
 {
     private static readonly HashSet<string> AllowedFonts = new(
         ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
@@ -43,7 +44,7 @@ public sealed record VoucherCardAppearance(
                 RegexOptions.CultureInvariant))
                 throw new ArgumentException("لون الكرت يجب أن يكون بصيغة #RRGGBB.");
         }
-        foreach(var position in new[]{TitlePosition,CredentialsPosition,ProfilePosition})
+        foreach(var position in new[]{TitlePosition,CredentialsPosition,ProfilePosition,PasswordPosition})
         {
             if(position is not null && (!double.IsFinite(position.X) || !double.IsFinite(position.Y)
                 || position.X is < 0 or > 1 || position.Y is < 0 or > 1))
