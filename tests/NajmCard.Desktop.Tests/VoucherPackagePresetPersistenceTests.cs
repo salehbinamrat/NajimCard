@@ -65,7 +65,7 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         store.SavePackagePreset(Preset());
         Assert.ThrowsAny<ArgumentException>(()=>store.SavePackagePreset(Preset() with
         {
-            Appearance=Preset().Appearance with {UsernameColor="#33142C"}
+            Appearance=Preset().Appearance with {UsernameColor="#33142X"}
         }));
         Assert.Equal("#FFE2A3",store.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!.Appearance.UsernameColor);
     }
