@@ -18,8 +18,8 @@ public partial class GeneratorView
         BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!,
         BorderThickness=new Thickness(0,0,0,1),
         CornerRadius=new CornerRadius(5,5,0,0),
-        Padding=new Thickness(9,6,9,6),
-        Margin=new Thickness(0,0,0,3),
+        Padding=new Thickness(8,4,8,4),
+        Margin=new Thickness(0,0,0,2),
         Child=new TextBlock
         {
             Text=title,Tag="SectionTitle",FontFamily=new FontFamily("Arial"),FontSize=15,
@@ -37,14 +37,14 @@ public partial class GeneratorView
         var split=new Grid{FlowDirection=FlowDirection.LeftToRight};
         // Align the reference photograph's almost equal widths. The editor
         // leaves only a thin geometric separator; no outer fixed-width canvas.
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(48,GridUnitType.Star)});
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(52,GridUnitType.Star)});
+        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(42,GridUnitType.Star)});
+        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(58,GridUnitType.Star)});
         split.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         split.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         routeSurface.FlowDirection=formatSurface.FlowDirection=
             designSurface.FlowDirection=FlowDirection.RightToLeft;
         foreach(var surface in new[]{routeSurface,formatSurface,designSurface})
-            surface.Margin=new Thickness(2,2,2,4);
+            surface.Margin=new Thickness(1,1,1,2);
         routeSurface.VerticalAlignment=VerticalAlignment.Stretch;
         formatSurface.VerticalAlignment=VerticalAlignment.Stretch;
         designSurface.VerticalAlignment=VerticalAlignment.Stretch;
@@ -61,11 +61,11 @@ public partial class GeneratorView
         // Generation controls are placed inside the upper-left credentials area.
         secondary.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        _embeddedPrintHost=new Grid{Margin=new Thickness(2,2,2,0)};
+        _embeddedPrintHost=new Grid{Margin=new Thickness(1,1,1,0)};
         Grid.SetRow(_embeddedPrintHost,0);
         secondary.Children.Add(_embeddedPrintHost);
         _status.FontSize=12;
-        _status.Margin=new Thickness(3,1,3,2);
+        _status.Margin=new Thickness(2,0,2,1);
         _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
         Grid.SetRow(_status,1);
         secondary.Children.Add(_status);
