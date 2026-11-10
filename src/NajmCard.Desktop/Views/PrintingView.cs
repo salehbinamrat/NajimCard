@@ -388,16 +388,26 @@ public class PrintingView : UserControl
                     }
                     FrameworkElement cardContent=content;
                     if(appearance.TitlePosition is not null || appearance.CredentialsPosition is not null ||
-                       appearance.ProfilePosition is not null)
+                       appearance.ProfilePosition is not null || appearance.PasswordPosition is not null)
                     {
                         var elements=content.Children.Cast<UIElement>().ToArray();
                         content.Children.Clear();
                         var positioned=new CardElementPanel {FlowDirection=FlowDirection.LeftToRight,ClipToBounds=true};
                         positioned.Add(elements[0],appearance.TitlePosition??CardElementPanel.DefaultTitle);
-                        var credentials=new StackPanel();
-                        credentials.Children.Add(elements[1]);
-                        if(appearance.ShowPassword)credentials.Children.Add(elements[2]);
-                        positioned.Add(credentials,appearance.CredentialsPosition??CardElementPanel.DefaultCredentials);
+                        var usernamePosition=appearance.CredentialsPosition??CardElementPanel.DefaultCredentials;
+                        if(appearance.ShowPassword && appearance.PasswordPosition is { } passwordPosition)
+                        {
+                            positioned.Add(elements[1],usernamePosition);
+                            positioned.Add(elements[2],passwordPosition);
+                        }
+                        else
+                        {
+                            // Older templates keep the original combined credentials block.
+                            var credentials=new StackPanel();
+                            credentials.Children.Add(elements[1]);
+                            if(appearance.ShowPassword)credentials.Children.Add(elements[2]);
+                            positioned.Add(credentials,usernamePosition);
+                        }
                         if(appearance.ShowProfile)
                             positioned.Add(elements[^1],appearance.ProfilePosition??CardElementPanel.DefaultProfile);
                         cardContent=positioned;

@@ -64,6 +64,9 @@ internal static class Program
             if(footer.ActualHeight<=0 || footerBounds.Bottom>height)
                 throw new InvalidDataException("The creator action bar is outside the window.");
 
+            VerifyPasswordPreview(root);
+            root.UpdateLayout();
+
             var bitmap=new RenderTargetBitmap(width,height,96,96,PixelFormats.Pbgra32);
             bitmap.Render(root);
             var encoder=new PngBitmapEncoder();
@@ -79,6 +82,33 @@ internal static class Program
         {
             Console.Error.WriteLine("WPF visual smoke test failed: "+ex);
             return 1;
+        }
+    }
+
+    private static void VerifyPasswordPreview(FrameworkElement root)
+    {
+        var mode=VisualChildren<ComboBox>(root).Single(box=>
+            box.Items.Contains("اسم مستخدم وكلمة مرور"));
+        var password=VisualChildren<TextBlock>(root).Single(text=>text.Name=="CardPasswordPreview");
+        if(password.Visibility!=Visibility.Collapsed)
+            throw new InvalidDataException("Username-only cards must hide the password.");
+        mode.SelectedIndex=1;
+        root.UpdateLayout();
+        if(password.Visibility!=Visibility.Visible || password.Text.Length==0 ||
+            password.ActualWidth<=0)
+            throw new InvalidDataException("The separate password preview did not render.");
+        mode.SelectedIndex=0;
+        if(password.Visibility!=Visibility.Collapsed || password.Text.Length!=0)
+            throw new InvalidDataException("The preview retained the previous password.");
+    }
+
+    private static IEnumerable<T> VisualChildren<T>(DependencyObject parent) where T:DependencyObject
+    {
+        for(int i=0;i<VisualTreeHelper.GetChildrenCount(parent);i++)
+        {
+            var child=VisualTreeHelper.GetChild(parent,i);
+            if(child is T match)yield return match;
+            foreach(var descendant in VisualChildren<T>(child))yield return descendant;
         }
     }
 

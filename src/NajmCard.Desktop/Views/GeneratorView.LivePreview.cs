@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Globalization;
 using System.Windows.Controls;
 using NajmCard.Core.Models;
@@ -39,19 +40,27 @@ public partial class GeneratorView
     private bool ShowPreviewPassword => _credentialMode.SelectedIndex!=0 &&
         _designShowPassword.IsChecked==true;
 
+    private void SetPreviewCredentials(string username,string password="")
+    {
+        bool showPassword=ShowPreviewPassword && password.Length>0;
+        _cardPreview.Text=_previewElements is null && showPassword
+            ?username+"\n"+password:username;
+        _previewPassword.Text=showPassword?password:"";
+        _previewPassword.Visibility=showPassword?Visibility.Visible:Visibility.Collapsed;
+    }
+
     private void UpdateLiveCardPreview()
     {
         if(_restoringPreset || _preparing || _sending)return;
         try
         {
             var sample=VoucherGenerator.PreviewSample(ReadGenerationOptions(forPreview:true));
-            _cardPreview.Text=sample.Username+
-                (ShowPreviewPassword?"\n"+sample.Password:"");
+            SetPreviewCredentials(sample.Username,sample.Password);
             _cardPreview.ToolTip="معاينة متغيرة حسب الإعدادات؛ غير محفوظة وغير مرسلة.";
         }
         catch(ArgumentException ex)
         {
-            _cardPreview.Text="راجع إعدادات رقم الكرت";
+            SetPreviewCredentials("راجع إعدادات رقم الكرت");
             _cardPreview.ToolTip="المعاينة: "+ex.Message;
         }
     }

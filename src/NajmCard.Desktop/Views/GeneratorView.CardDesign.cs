@@ -57,6 +57,12 @@ public partial class GeneratorView
     private readonly TextBlock _previewPackageName=new();
     private readonly List<UIElement> _sampleArtwork=[];
     private Border? _previewUsernamePlate;
+    private readonly TextBlock _previewPassword=new()
+    {
+        Name="CardPasswordPreview",FontFamily=new FontFamily("Consolas"),FontSize=13,FontWeight=FontWeights.Bold,
+        FlowDirection=FlowDirection.LeftToRight,TextAlignment=TextAlignment.Center,
+        MaxWidth=280,TextTrimming=TextTrimming.CharacterEllipsis,Visibility=Visibility.Collapsed
+    };
     private CardElementPanel? _previewElements;
 
     private Grid BuildSampleVoucherVisual()
@@ -143,10 +149,16 @@ public partial class GeneratorView
         _previewUsernamePlate=usernamePlate;
         elements.Add(_previewNetworkName,CardElementPanel.DefaultTitle);
         elements.Add(usernamePlate,CardElementPanel.DefaultCredentials);
+        elements.Add(_previewPassword,CardElementPanel.PasswordBelow(null));
         _previewPackageName.MaxWidth=100;
         elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
         EnableCardDrag(elements,_previewNetworkName,(style,position)=>style with {TitlePosition=position});
-        EnableCardDrag(elements,usernamePlate,(style,position)=>style with {CredentialsPosition=position});
+        EnableCardDrag(elements,usernamePlate,(style,position)=>style with
+        {
+            CredentialsPosition=position,
+            PasswordPosition=style.PasswordPosition??CardElementPanel.PasswordBelow(style.CredentialsPosition)
+        });
+        EnableCardDrag(elements,_previewPassword,(style,position)=>style with {PasswordPosition=position});
         EnableCardDrag(elements,_previewPackageName,(style,position)=>style with {ProfilePosition=position});
         card.Children.Add(elements);
         return card;
@@ -205,6 +217,8 @@ public partial class GeneratorView
         if(_previewElements is null || _previewUsernamePlate is null)return;
         _previewElements.Place(_previewNetworkName,appearance.TitlePosition??CardElementPanel.DefaultTitle);
         _previewElements.Place(_previewUsernamePlate,appearance.CredentialsPosition??CardElementPanel.DefaultCredentials);
+        _previewElements.Place(_previewPassword,appearance.PasswordPosition??
+            CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
     }
 
@@ -257,6 +271,8 @@ public partial class GeneratorView
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
         _cardPreview.FontSize=appearance.UsernameFontSize;
         _cardPreview.Foreground=ink;
+        _previewPassword.Foreground=ink;
+        _previewPassword.Background=backing;
         _templateImagePath=appearance.TemplateImagePath;
         if(_previewUsernamePlate is not null)
             _previewUsernamePlate.Background=backing;

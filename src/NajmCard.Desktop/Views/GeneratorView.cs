@@ -31,7 +31,7 @@ public partial class GeneratorView : UserControl
     public Func<CardPrintOptions>? PrintOptionsProvider;
     public Action<CardPrintOptions>? ApplyPrintOptions;
     public string CurrentService => SelectedService;
-    public VoucherCardAppearance CurrentAppearance=>_currentAppearance;
+    public VoucherCardAppearance CurrentAppearance=>_currentAppearance with {ShowPassword=ShowPreviewPassword};
     public bool HasBatch => _batch.Count>0;
     public IReadOnlyList<Voucher> ConfirmedBatch()
     {
@@ -427,7 +427,7 @@ public partial class GeneratorView : UserControl
             ServiceChanged?.Invoke();
             _table.ItemsSource = null;
             _sendButton.IsEnabled = false;
-            _cardPreview.Text="";
+            SetPreviewCredentials("");
             _profile.ItemsSource = null;
             _customer.ItemsSource = null;
             _customerPanel.Visibility = SelectedService == "userman"
@@ -467,7 +467,7 @@ public partial class GeneratorView : UserControl
             Number(_designBorderWidth.Text),_designShowPassword.IsChecked==true,
             _designShowProfile.IsChecked==true,_templateImagePath,
             _currentAppearance.TitlePosition,_currentAppearance.CredentialsPosition,
-            _currentAppearance.ProfilePosition).Validate();
+            _currentAppearance.ProfilePosition,_currentAppearance.PasswordPosition).Validate();
     }
 
     public bool SaveCurrentPackage()
@@ -624,8 +624,7 @@ public partial class GeneratorView : UserControl
             _table.ItemsSource=candidates.Take(500).ToArray();
             _sendButton.IsEnabled=persist;
             var sample=candidates[0];
-            _cardPreview.Text=sample.Username+
-                (ShowPreviewPassword?"\n"+sample.Password:"");
+            SetPreviewCredentials(sample.Username,sample.Password);
             _status.Text=persist
                 ? $"حُفظت {candidates.Length:N0} كرتا في قاعدة نجم كارد. لم تُرسل إلى الراوتر. "+ 
                     (candidates.Length>500?"الجدول يعرض أول 500 كرت لتسريع العرض.":"")
@@ -637,7 +636,7 @@ public partial class GeneratorView : UserControl
             _batch=[];
             _table.ItemsSource=null;
             _sendButton.IsEnabled=false;
-            _cardPreview.Text="تعذر تجهيز المعاينة أو إنشاء الكروت.";
+            SetPreviewCredentials("تعذر تجهيز المعاينة أو إنشاء الكروت.");
             _status.Text="فشل تجهيز الدفعة: "+ex.Message;
             BatchChanged?.Invoke();
         }

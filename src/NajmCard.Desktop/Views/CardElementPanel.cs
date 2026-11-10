@@ -9,6 +9,14 @@ internal sealed class CardElementPanel : Panel
 {
     internal static readonly CardElementPosition DefaultTitle = new(0.5, 0.34);
     internal static readonly CardElementPosition DefaultCredentials = new(0.55, 0.52);
+    internal static CardElementPosition PasswordBelow(CardElementPosition? credentials)
+    {
+        var username = credentials ?? DefaultCredentials;
+        // Keep the password on the card even when an older template placed the
+        // credential block close to the bottom edge.
+        return new CardElementPosition(username.X, username.Y <= 0.8 ? username.Y + 0.2 : username.Y - 0.2);
+    }
+
     internal static readonly CardElementPosition DefaultProfile = new(0.08, 0.72);
     private readonly Dictionary<UIElement, CardElementPosition> _positions = new();
 
