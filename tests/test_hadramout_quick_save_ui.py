@@ -9,12 +9,14 @@ class HadramoutQuickSaveUi(unittest.TestCase):
     def setUpClass(cls):
         cls.g=(VIEW/"GeneratorView.cs").read_text(encoding="utf-8")
         cls.w=(VIEW/"VoucherWorkspaceView.cs").read_text(encoding="utf-8")
+        cls.toast=(VIEW/"GeneratorView.SaveToast.cs").read_text(encoding="utf-8")
 
     def test_direct_package_save_uses_existing_sqlite_preset(self):
         s=self.g
         self.assertIn('PageUi.Button("حفظ إعدادات الباقة",false)',s)
-        self.assertIn('quickSaveButton.Click+=',s)
-        self.assertIn('var saved=SaveCurrentPackage()',s)
+        self.assertIn('WirePackageSaveNotification(quickSaveButton,packageSaveFeedback)',s)
+        self.assertIn("saveButton.Click+=",self.toast)
+        self.assertIn('var saved=SaveCurrentPackage()',self.toast)
         self.assertIn('_store.SavePackagePreset(saved)',s)
         self.assertIn('PrintOptionsProvider?.Invoke()',s)
         self.assertIn('ReadCurrentAppearance()',s)
