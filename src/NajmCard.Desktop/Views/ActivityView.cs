@@ -45,7 +45,7 @@ public sealed class ActivityView : UserControl
         var grid=PageUi.Table(("الوقت","Timestamp"),("الفئة","Category"),
             ("العملية","Action"),("النتيجة","Status"),("التفاصيل","Detail"));
         grid.IsReadOnly=true;grid.CanUserAddRows=false;grid.CanUserDeleteRows=false;
-        grid.EnableRowVirtualization=true;grid.MinHeight=365;
+        grid.EnableRowVirtualization=true;grid.MinHeight=330;grid.MaxHeight=400;
         root.Children.Add(grid);
         var pager=new WrapPanel{Margin=new Thickness(0,5,0,6)};
         var previous=PageUi.Button("السابق",false);

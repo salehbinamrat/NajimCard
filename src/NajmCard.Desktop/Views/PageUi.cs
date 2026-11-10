@@ -68,7 +68,9 @@ internal static class PageUi
                     ConverterCulture=CultureInfo.GetCultureInfo("en-US"),
                     Converter=new AsciiDigitDisplayConverter()
                 },
-                ElementStyle=textStyle,MinWidth=84
+                ElementStyle=textStyle,
+                Width=new DataGridLength(binding=="Detail"?2:1,DataGridLengthUnitType.Star),
+                MinWidth=binding=="Timestamp"?138:84
             });
         return grid;
     }

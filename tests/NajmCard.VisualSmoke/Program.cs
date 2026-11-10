@@ -92,6 +92,11 @@ internal static class Program
             root.Measure(new Size(width,height));
             root.Arrange(new Rect(0,0,width,height));
             root.UpdateLayout();
+            root.Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle,
+                new Action(()=>{}));
+            root.UpdateLayout();
+            if(activityGrid.Columns.Sum(column=>column.ActualWidth)<activityGrid.ActualWidth*0.8)
+                throw new InvalidDataException("Activity table columns do not fill the available width.");
             if(!VisualChildren<System.Windows.Controls.Primitives.ScrollBar>(activityGrid)
                 .Any(bar=>bar.Visibility==Visibility.Visible && bar.ActualHeight>0 &&
                     bar.Template.FindName("PART_Track",bar) is System.Windows.Controls.Primitives.Track))
