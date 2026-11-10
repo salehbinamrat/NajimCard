@@ -182,19 +182,19 @@
                         Foreground="#471A30" FontWeight="ExtraBold" FontSize="15"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="ExpiredLegend" Grid.Row="2" Grid.Column="1" Text="—"
-                        Foreground="White" FontWeight="ExtraBold" FontSize="15"
+                        Foreground="#471A30" FontWeight="ExtraBold" FontSize="15"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="DisabledLegend" Grid.Row="3" Grid.Column="1" Text="—"
-                        Foreground="White" FontWeight="ExtraBold" FontSize="15"
+                        Foreground="#471A30" FontWeight="ExtraBold" FontSize="15"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="ActivePercent" Grid.Row="1" Grid.Column="2" Text="—"
-                        Foreground="#A3F7D2" FontWeight="ExtraBold" FontSize="14"
+                        Foreground="#176047" FontWeight="ExtraBold" FontSize="14"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="ExpiredPercent" Grid.Row="2" Grid.Column="2" Text="—"
-                        Foreground="#FFB7C4" FontWeight="ExtraBold" FontSize="14"
+                        Foreground="#89243C" FontWeight="ExtraBold" FontSize="14"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="ValidPercent" Grid.Row="3" Grid.Column="2" Text="—"
-                        Foreground="#FFE5A6" FontWeight="ExtraBold" FontSize="14"
+                        Foreground="#77511A" FontWeight="ExtraBold" FontSize="14"
                         VerticalAlignment="Center" TextAlignment="Center"/>
              <TextBlock x:Name="Enabled" Visibility="Collapsed" Text="—"/>
              <TextBlock x:Name="Expired" Visibility="Collapsed" Text="—"/>

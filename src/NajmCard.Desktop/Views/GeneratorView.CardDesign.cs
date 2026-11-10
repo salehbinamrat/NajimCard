@@ -86,10 +86,19 @@ public partial class GeneratorView
                 options.CardWidthMm,options.CardHeightMm);
             CardCredentialPlate.Resize(_previewPasswordPlate,
                 options.CardWidthMm,options.CardHeightMm);
+            RefreshDemoPlateWidth();
         }
         catch(ArgumentException) { /* The user might still be editing width/height. */ }
         catch(FormatException) { /* Keep last valid preview geometry. */ }
     }
+    private void RefreshDemoPlateWidth()
+    {
+        if(_previewCardCanvas is null || _previewUsernamePlate is null ||
+           _previewPasswordPlate is null)return;
+        var maxWidth=_showDemoArtwork?_previewCardCanvas.Width*0.53:double.PositiveInfinity;
+        _previewUsernamePlate.MaxWidth=_previewPasswordPlate.MaxWidth=maxWidth;
+    }
+
     private readonly TextBlock _previewPassword=new()
     {
         Name="CardPasswordPreview",FontFamily=new FontFamily("Consolas"),FontSize=13,FontWeight=FontWeights.Bold,
@@ -456,6 +465,7 @@ public partial class GeneratorView
             string.IsNullOrEmpty(appearance.CapacityText) && string.IsNullOrEmpty(appearance.PhoneText) &&
             appearance.NetworkTitle==new VoucherCardAppearance().NetworkTitle;
         PlacePreviewElements(appearance);
+        RefreshDemoPlateWidth();
         _previewPhone.FontSize=_showDemoArtwork?7:9;
         _previewDate.FontSize=_showDemoArtwork?7:9;
         _previewNetworkName.Text=_showDemoArtwork?"نجم نت ★":appearance.NetworkTitle;
