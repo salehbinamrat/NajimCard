@@ -26,7 +26,7 @@ public partial class GeneratorView
             Child=message,CornerRadius=new CornerRadius(8),
             BorderThickness=new Thickness(1),
             BorderBrush=(Brush)new BrushConverter().ConvertFrom("#EAC48A")!,
-            Padding=new Thickness(13,9),Margin=new Thickness(0,4,0,0)
+            Padding=new Thickness(13,9,13,9),Margin=new Thickness(0,4,0,0)
         };
         popup.Child=surface;
         var timer=new DispatcherTimer{Interval=TimeSpan.FromSeconds(3)};
