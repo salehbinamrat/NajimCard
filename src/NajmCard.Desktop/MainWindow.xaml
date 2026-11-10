@@ -67,7 +67,7 @@
                                 <ComboBox x:Name="SavedConnectionsInput" DisplayMemberPath="DisplayName" SelectionChanged="SavedConnections_SelectionChanged" MinWidth="160"/>
                             </DockPanel>
                             <!-- Collapsible saved-router history: no password is ever displayed in this table. -->
-                            <Expander Header="عرض سجل محفوظات الاتصال" Margin="0,6,0,0" Foreground="#FFF1E1"
+                            <Expander x:Name="SavedHistoryExpander" Header="عرض سجل محفوظات الاتصال" Margin="0,6,0,0" Foreground="#FFF1E1"
                                       FontWeight="Bold" FontSize="12">
                                 <DataGrid x:Name="HistoryConnectionsGrid" AutoGenerateColumns="False"
                                           SelectionChanged="HistoryGrid_SelectionChanged"
@@ -78,6 +78,23 @@
                                           Background="#FFF3DF" Foreground="#48192A"
                                           RowBackground="#FFF3DF" AlternatingRowBackground="#F4E2D5"
                                           BorderBrush="#75203E" BorderThickness="1">
+                                    <DataGrid.CellStyle>
+                                        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+                                            <Setter Property="Foreground" Value="#48192A"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Style>
+                                    </DataGrid.CellStyle>
+                                    <DataGrid.RowStyle>
+                                        <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                            <Setter Property="Foreground" Value="#48192A"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter Property="Background" Value="#EAC4CE"/>
+                                                    <Setter Property="Foreground" Value="#48192A"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </DataGrid.RowStyle>
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="الاتصال" Binding="{Binding ModeLabel}" Width="75"/>
                                         <DataGridTextColumn Header="المنفذ" Binding="{Binding Port}" Width="60"/>
