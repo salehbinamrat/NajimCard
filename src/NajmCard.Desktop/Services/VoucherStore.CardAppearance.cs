@@ -17,7 +17,7 @@ public sealed partial class VoucherStore
         using var cmd=db.CreateCommand();
         cmd.CommandText="SELECT value FROM app_preferences WHERE key='voucher_card_appearance'";
         var raw=cmd.ExecuteScalar() as string;
-        if(raw is null)return new VoucherCardAppearance();
+        if(raw is null)return new VoucherCardAppearance(NetworkTitle:"نجم نت");
         try
         {
             if(raw.Length > 4096)

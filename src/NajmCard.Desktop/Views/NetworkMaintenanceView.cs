@@ -20,7 +20,8 @@ public sealed class NetworkMaintenanceView : UserControl
         {
             var tab=new TabItem{Header=name,Content=new ScrollViewer
             {
-                VerticalScrollBarVisibility=ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility=ScrollBarVisibility.Hidden,
+                HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
                 Content=element
             }};
             tabs.Items.Add(tab);return tab;

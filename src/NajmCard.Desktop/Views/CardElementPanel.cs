@@ -7,8 +7,8 @@ namespace NajmCard.Desktop.Views;
 /// <summary>Places card elements by fractions of their available travel within the card.</summary>
 internal sealed class CardElementPanel : Panel
 {
-    internal static readonly CardElementPosition DefaultTitle = new(0.5, 0.34);
-    internal static readonly CardElementPosition DefaultCredentials = new(0.55, 0.52);
+    internal static readonly CardElementPosition DefaultTitle = new(0.53, 0.04);
+    internal static readonly CardElementPosition DefaultCredentials = new(0.72, 0.50);
     internal static CardElementPosition PasswordBelow(CardElementPosition? credentials)
     {
         var username = credentials ?? DefaultCredentials;
@@ -17,7 +17,7 @@ internal sealed class CardElementPanel : Panel
         return new CardElementPosition(username.X, username.Y <= 0.8 ? username.Y + 0.2 : username.Y - 0.2);
     }
 
-    internal static readonly CardElementPosition DefaultProfile = new(0.08, 0.72);
+    internal static readonly CardElementPosition DefaultProfile = new(0.02, 0.64);
     private readonly Dictionary<UIElement, CardElementPosition> _positions = new();
 
     internal void Add(UIElement element, CardElementPosition position)

@@ -25,7 +25,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("WorkspaceHeaderRow.Height=isImmersive",self.main)
         self.assertIn("new Thickness(4,4,4,4)",self.main)
         self.assertNotIn("fields.Width=1140",self.workspace)
-        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Auto",self.workspace)
+        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Hidden",self.workspace)
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.workspace)
     def test_short_windows_screen_keeps_footer_visible_and_forms_accessible(self):
         # On 1366x768 laptops, full-screen reference proportions cannot fit
@@ -34,19 +34,19 @@ class ReferenceImageFinalFit(unittest.TestCase):
         win=(ROOT/"MainWindow.xaml").read_text(encoding="utf-8")
         self.assertIn("SystemParameters.WorkArea",self.main)
         self.assertIn("MinHeight",win)
-        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Auto",self.workspace)
+        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Hidden",self.workspace)
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.workspace)
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",self.workspace)
 
-    def test_top_grid_balances_credential_and_profile_without_blank_side_columns(self):
-        self.assertIn("Width=new GridLength(42,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(58,GridUnitType.Star)",self.layout)
-        self.assertIn("surface.VerticalAlignment=VerticalAlignment.Stretch",self.layout)
-        self.assertIn("leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto})",self.layout)
+    def test_full_width_routing_and_user_inputs_above_two_column_print_design(self):
         self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
-        self.assertIn("Grid.SetRow(secondary,2)",self.layout)
+        self.assertIn("Grid.SetRow(formatSurface,1)",self.layout)
+        self.assertIn("Width=new GridLength(39,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(61,GridUnitType.Star)",self.layout)
+        self.assertIn("printColumn.Children.Add(basicsSurface)",self.layout)
+        self.assertIn("printColumn.Children.Add(_embeddedPrintHost)",self.layout)
+        self.assertIn("Grid.SetColumn(designSurface,1)",self.layout)
+        self.assertNotIn("leftColumn.RowDefinitions",self.layout)
     def test_photo_card_preview_is_responsive_without_cutting_actual_artwork(self):
         self.assertIn("new Viewbox",self.creator)
         self.assertIn("Stretch=Stretch.Uniform",self.creator)
@@ -71,7 +71,9 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("popup.ShowDialog()",self.design)
         self.assertIn("ApplyCardAppearance(ReadCurrentAppearance())",self.design)
         self.assertNotIn("SaveCurrentPackage()",self.design)
-        self.assertIn('var saved=SaveCurrentPackage()',self.creator)
+        self.assertIn("WirePackageSaveNotification(quickSaveButton,packageSaveFeedback)",self.creator)
+        self.assertIn("var saved=SaveCurrentPackage()",
+            (VIEW/"GeneratorView.SaveToast.cs").read_text(encoding="utf-8"))
         self.assertIn("TemplateImagePath",self.card)
     def test_both_windows_release_targets_are_tested_before_four_packages(self):
         ci=(ROOT.parents[1]/".github/workflows/windows-ci.yml").read_text(encoding="utf-8")
@@ -85,6 +87,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("Padding=new Thickness(12)",self.pageui)
         self.assertIn("Margin=new Thickness(0,0,0,8)",self.pageui)
         self.assertIn('Property="Foreground" Value="{StaticResource TextBrush}"',self.theme)
-        self.assertIn('Property="RowBackground" Value="{StaticResource SurfaceBrush}"',self.theme)
+        self.assertIn('Property="RowBackground" Value="#FFF8EC"',self.theme)
+        self.assertIn('Property="Foreground" Value="{StaticResource CreamTextBrush}"',self.theme)
         self.assertIn('TargetType="DataGridColumnHeader"',self.theme)
 if __name__=="__main__":unittest.main()

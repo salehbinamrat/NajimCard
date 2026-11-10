@@ -40,17 +40,49 @@ internal static class PageUi
         Background = new SolidColorBrush(Color.FromRgb(114, 32, 58)),
         Padding = new Thickness(8,5,8,5),Margin = new Thickness(0, 0, 0, 6) };
     internal static TextBlock Hint(string text) => new() { Text = text, Foreground = Muted, FontSize = 14, FontWeight = FontWeights.Medium,
-        TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 17) };
+        TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
     internal static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(74, 25, 46)), FontSize = 15, FontWeight=FontWeights.SemiBold,
-        Margin = new Thickness(0, 6, 0, 3) };
-    internal static Button Button(string name, bool primary = true) => new()
+        Margin = new Thickness(0, 3, 0, 2) };
+    internal static Button Button(string name,bool primary=true)
     {
-        Content = name, Style = (Style)Application.Current.FindResource(primary ? "PrimaryButton" : "OutlineButton"),
-        Margin = new Thickness(0, 0, 9, 0), MinWidth = 125, Padding = new Thickness(14, 10, 14, 10),
-        FontFamily = new FontFamily("Arial"), FontWeight=FontWeights.Bold, FontSize=14
-    };
+        var button=new Button
+        {
+            Content=name,Style=(Style)Application.Current.FindResource(
+                primary?"PrimaryButton":"OutlineButton"),
+            Margin=new Thickness(0,0,5,0),MinWidth=112,MinHeight=34,
+            Padding=new Thickness(9,6,9,6),FontFamily=new FontFamily("Arial"),
+            FontWeight=FontWeights.Bold,FontSize=13
+        };
+        // A consistent role-based palette across every screen, unless the
+        // caller explicitly overrides the action with a more specific color.
+        string background=name switch
+        {
+            var n when n.Contains("حذف",StringComparison.Ordinal) ||
+                n.Contains("تعطيل",StringComparison.Ordinal) ||
+                n.Contains("إيقاف",StringComparison.Ordinal) ||
+                n.Contains("خروج",StringComparison.Ordinal)=>"#982E46",
+            var n when n.Contains("استعادة",StringComparison.Ordinal) ||
+                n.Contains("تفعيل",StringComparison.Ordinal) ||
+                n.Contains("حفظ",StringComparison.Ordinal) ||
+                n.Contains("إنشاء",StringComparison.Ordinal)=>"#197854",
+            var n when n.Contains("معاينة",StringComparison.Ordinal) ||
+                n.Contains("بحث",StringComparison.Ordinal)=>"#197E9A",
+            var n when n.Contains("طباعة",StringComparison.Ordinal) ||
+                n.Contains("كروت",StringComparison.Ordinal)=>"#285E9C",
+            var n when n.Contains("تصدير",StringComparison.Ordinal) ||
+                n.Contains("تقارير",StringComparison.Ordinal)=>"#8050A5",
+            var n when n.Contains("تحديث",StringComparison.Ordinal) ||
+                n.Contains("قراءة",StringComparison.Ordinal)=>"#216C80",
+            var n when n.Contains("إعادة تشغيل",StringComparison.Ordinal)=>"#A16618",
+            _=>primary?"#E6BC64":"#68233D"
+        };
+        button.Background=(Brush)new BrushConverter().ConvertFrom(background)!;
+        button.Foreground=(Brush)new BrushConverter().ConvertFrom(
+            background=="#E6BC64"?"#52152F":"#FFF5E8")!;
+        return button;
+    }
     internal static TextBlock Status() => new() { TextWrapping = TextWrapping.Wrap,
-        Foreground = Muted, Margin = new Thickness(0, 13, 0, 8), FontSize = 14, FontWeight=FontWeights.SemiBold };
+        Foreground = Muted, Margin = new Thickness(0, 3, 0, 3), FontSize = 12, FontWeight=FontWeights.SemiBold };
     internal static TextBox Input(string value = "") => new() { Text = value, FlowDirection = FlowDirection.LeftToRight };
     // Bounded numeric presets, with the original TextBox kept as the single
     // source of truth for saved package settings and form validation.
@@ -124,7 +156,7 @@ internal static class PageUi
         stack.ToolTip=subtitle;
         stack.Children.Add(body);
         return new ScrollViewer { FlowDirection = FlowDirection.RightToLeft,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = stack };
     }
     internal static bool Confirm(string text) => MessageBox.Show(text, "نجم كارد | تأكيد عملية", MessageBoxButton.YesNo,

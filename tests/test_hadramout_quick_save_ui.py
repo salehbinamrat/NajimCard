@@ -9,12 +9,14 @@ class HadramoutQuickSaveUi(unittest.TestCase):
     def setUpClass(cls):
         cls.g=(VIEW/"GeneratorView.cs").read_text(encoding="utf-8")
         cls.w=(VIEW/"VoucherWorkspaceView.cs").read_text(encoding="utf-8")
+        cls.toast=(VIEW/"GeneratorView.SaveToast.cs").read_text(encoding="utf-8")
 
     def test_direct_package_save_uses_existing_sqlite_preset(self):
         s=self.g
         self.assertIn('PageUi.Button("حفظ إعدادات الباقة",false)',s)
-        self.assertIn('quickSaveButton.Click+=',s)
-        self.assertIn('var saved=SaveCurrentPackage()',s)
+        self.assertIn('WirePackageSaveNotification(quickSaveButton,packageSaveFeedback)',s)
+        self.assertIn("saveButton.Click+=",self.toast)
+        self.assertIn('var saved=SaveCurrentPackage()',self.toast)
         self.assertIn('_store.SavePackagePreset(saved)',s)
         self.assertIn('PrintOptionsProvider?.Invoke()',s)
         self.assertIn('ReadCurrentAppearance()',s)
@@ -25,7 +27,8 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn('ItemsSource=new[]{"اسم مستخدم فقط","اسم مستخدم وكلمة مرور"},\n        SelectedIndex=0',s)
         self.assertIn('v?.UsernameOnly==false?1:0',s)
         self.assertIn('sameCell.Visibility=differentCell.Visibility=',s)
-        self.assertIn('credentialsTop.ColumnDefinitions[1].Width=new GridLength(',s)
+        self.assertIn("passwordModeRow.Visibility=userOnly?Visibility.Collapsed:Visibility.Visible",s)
+        self.assertIn("Grid.SetColumn(usernameGroup,1)",s)
 
     def test_save_feedback_resets_for_service_profile_and_customer(self):
         s=self.g

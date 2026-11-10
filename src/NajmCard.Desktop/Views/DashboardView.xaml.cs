@@ -75,12 +75,15 @@ public partial class DashboardView : UserControl
     {
         if(!IsLoaded || _liveTelemetryRunning || _refreshing)return;
         _liveTelemetryRunning=true;
-        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(4));
-        _telemetryToken=timeout;
+        // A 4-second cancellation previously disposed the shared RouterOS TCP
+        // session while other views still held a gateway to it. Use the command
+        // client's built-in RouterOS timeouts and reconnect logic instead.
+        using var visibility=new CancellationTokenSource();
+        _telemetryToken=visibility;
         try
         {
-            var resource=await _gateway.ReadResourceAsync(timeout.Token);
-            if(!IsLoaded || timeout.IsCancellationRequested)return;
+            var resource=await _gateway.ReadResourceAsync();
+            if(!IsLoaded || visibility.IsCancellationRequested)return;
             Cpu.Text=resource.CpuLoad+"%";
             CpuProgress.Value=double.TryParse(resource.CpuLoad,NumberStyles.Float,
                 CultureInfo.InvariantCulture,out var cpu)?Math.Clamp(cpu,0,100):0;
@@ -93,8 +96,8 @@ public partial class DashboardView : UserControl
                 MemoryProgress.Value=usage;
                 MemoryUsePercent.Text=usage.ToString("F0",CultureInfo.InvariantCulture)+"%";
             }
-            var live=await _gateway.ReadDashboardOnlineOnlyAsync(timeout.Token);
-            if(!IsLoaded || timeout.IsCancellationRequested)return;
+            var live=await _gateway.ReadDashboardOnlineOnlyAsync();
+            if(!IsLoaded || visibility.IsCancellationRequested)return;
             Online.Text=live.OnlineTotal?.ToString("N0",CultureInfo.InvariantCulture)??"—";
             OnlineBreakdown.Text="Hotspot "+(live.HotspotOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
                 " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
@@ -105,7 +108,7 @@ public partial class DashboardView : UserControl
         catch(Exception ex) {if(IsLoaded)ErrorStatus.Text="تعذر تحديث الاتصال المباشر: "+ex.Message;}
         finally
         {
-            if(ReferenceEquals(_telemetryToken,timeout))_telemetryToken=null;
+            if(ReferenceEquals(_telemetryToken,visibility))_telemetryToken=null;
             _liveTelemetryRunning=false;
         }
     }
@@ -485,23 +488,23 @@ public partial class DashboardView : UserControl
         if(activities.Count==0)
         {
             ActivityRows.Children.Add(new TextBlock{
-                Text="لا توجد عمليات مسجلة بعد.",Foreground=Brushes.LightGray,
+                Text="لا توجد عمليات مسجلة بعد.",Foreground=new SolidColorBrush(Color.FromRgb(86,37,57)),
                 Margin=new Thickness(8,12,8,10)});
             return;
         }
         foreach(var item in activities.Take(6))
         {
             var line=new Grid{
-                Background=(Brush)FindResource("CanvasBrush"),
+                Background=(Brush)new BrushConverter().ConvertFrom("#F5E6DB")!,
                 Height=25,Margin=new Thickness(0,0,0,1)
             };
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(0.85,GridUnitType.Star)});
             var color=item.Status switch{
-                "SUCCESS"=>Brushes.LightGreen,
-                "ERROR"=>Brushes.LightCoral,
-                "PARTIAL"=>Brushes.Khaki,
-                _=>Brushes.LightSkyBlue};
+                "SUCCESS"=>(Brush)new BrushConverter().ConvertFrom("#176D4F")!,
+                "ERROR"=>(Brush)new BrushConverter().ConvertFrom("#96243F")!,
+                "PARTIAL"=>(Brush)new BrushConverter().ConvertFrom("#A16618")!,
+                _=>(Brush)new BrushConverter().ConvertFrom("#285E9C")!};
             line.Children.Add(new TextBlock{
                 Text="● "+item.Action,Foreground=color,FontSize=12,
                 FontWeight=FontWeights.SemiBold,VerticalAlignment=VerticalAlignment.Center,
@@ -510,7 +513,8 @@ public partial class DashboardView : UserControl
             var stamp=DateTimeOffset.TryParse(item.Timestamp,out var t)
                 ?t.ToLocalTime().ToString("HH:mm",CultureInfo.InvariantCulture):"—";
             var detail=new TextBlock{
-                Text=stamp+"  "+item.Detail,ToolTip=item.Detail,Foreground=Brushes.White,FontSize=11,
+                Text=stamp+"  "+item.Detail,ToolTip=item.Detail,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#4B1B32")!,FontSize=11,
                 VerticalAlignment=VerticalAlignment.Center,TextTrimming=TextTrimming.CharacterEllipsis,
                 Margin=new Thickness(6,0,6,0)};
             Grid.SetColumn(detail,1);line.Children.Add(detail);

@@ -379,6 +379,10 @@ public partial class PrintingView : UserControl
                     throw new InvalidDataException("تعذر فك صورة القالب المحفوظة؛ لن تُطبع دفعة بتصميم خاطئ.",ex);
                 }
             }
+            bool builtinArtwork=NajmNetCardArtwork.IsDefault(
+                appearance.NetworkTitle,appearance.TemplateImagePath,
+                appearance.BackgroundColor);
+            if(builtinArtwork)hasArtwork=true;
             var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
             var borderInk=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.BorderColor)!;
             var slotsByPage=plan.Slots.ToLookup(slot=>slot.PageIndex);
@@ -438,16 +442,16 @@ public partial class PrintingView : UserControl
                         CardElementPanel.DefaultProfile,9*appearance.ProfileScale,
                         appearance.ShowProfile);
                     AddText(appearance.CapacityText,appearance.CapacityPosition??
-                        new CardElementPosition(0.75,0.13),9,
+                        new CardElementPosition(0.96,0.24),9,
                         appearance.ShowCapacity);
                     AddText(appearance.PhoneText,appearance.PhonePosition??
-                        new CardElementPosition(0.08,0.91),9,
+                        new CardElementPosition(0.02,0.98),9,
                         appearance.ShowPhone,numeric:true);
                     AddText(card.CreatedAt.ToString("HH:mm",CultureInfo.InvariantCulture),
-                        appearance.TimePosition??new CardElementPosition(0.74,0.90),
+                        appearance.TimePosition??new CardElementPosition(0.94,0.76),
                         9,appearance.ShowTime,numeric:true);
                     AddText(card.CreatedAt.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture),
-                        appearance.DatePosition??new CardElementPosition(0.48,0.90),
+                        appearance.DatePosition??new CardElementPosition(0.98,0.98),
                         9,appearance.ShowDate,numeric:true);
                     AddText((slot.VoucherIndex+1).ToString("D4",CultureInfo.InvariantCulture),
                         appearance.SequencePosition??new CardElementPosition(0.08,0.57),
@@ -466,6 +470,18 @@ public partial class PrintingView : UserControl
                             new CardElementPosition(0.85,0.45));
                     }
                     FrameworkElement cardContent=positioned;
+                    if(builtinArtwork)
+                    {
+                        var withArtwork=new Grid
+                        {
+                            Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
+                            ClipToBounds=true
+                        };
+                        withArtwork.Children.Add(NajmNetCardArtwork.Create(
+                            Dip(opts.CardWidthMm),Dip(opts.CardHeightMm)));
+                        withArtwork.Children.Add(positioned);
+                        cardContent=withArtwork;
+                    }
                     var cardBorder=new Border
                     {
                         Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
