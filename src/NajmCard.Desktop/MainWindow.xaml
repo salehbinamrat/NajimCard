@@ -165,7 +165,7 @@
                     <ListBox x:Name="NavList" SelectionChanged="NavList_SelectionChanged" Background="Transparent" BorderThickness="0" Padding="7" ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
-                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/><Setter Property="Margin" Value="0,2"/><Setter Property="Padding" Value="14,9"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextBrush}"/><Setter Property="Margin" Value="0,2"/><Setter Property="Padding" Value="14,6"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                 <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Selection" CornerRadius="9" Background="Transparent" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Selection" Property="Background" Value="#77432F"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Selection" Property="Background" Value="#4F2933"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
                             </Style>
                         </ListBox.ItemContainerStyle>

@@ -51,6 +51,7 @@ internal static class Program
             pageHost.Margin=new Thickness(4);
             pageHost.Content=creator;
             var root=(Grid)window.Content;
+            root.FlowDirection=window.FlowDirection;
             window.Content=null;
 
             root.Measure(new Size(width,height));
