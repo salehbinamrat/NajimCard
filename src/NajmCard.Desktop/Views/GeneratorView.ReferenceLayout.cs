@@ -29,7 +29,7 @@ public partial class GeneratorView
     };
 
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
-        Border designSurface,UIElement basicsTitle,UniformGrid basicsRow)
+        Border designSurface)
     {
         // Same 2x2 geometry as Hadramout screenshot, without fixed reference width.
         // First row: credentials on the left, package/server on the right.
@@ -57,23 +57,17 @@ public partial class GeneratorView
         // The print area stretches down to the designer's bottom edge.
         // A StackPanel here left an unpainted strip under the printing form.
         var secondary=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
+        // The lower-left quadrant is exclusively for the printing form.
+        // Generation controls are placed inside the upper-left credentials area.
         secondary.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
         secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        var basics=PageUi.Column();
-        basics.Children.Add(basicsTitle);
-        basics.Children.Add(basicsRow);
-        var basicsSurface=CompactSurface(basics,"#D2AA61");
-        basicsSurface.Margin=new Thickness(2,2,2,4);
-        Grid.SetRow(basicsSurface,0);
-        secondary.Children.Add(basicsSurface);
-        _embeddedPrintHost=new Grid{Margin=new Thickness(2,0,2,0)};
-        Grid.SetRow(_embeddedPrintHost,1);
+        _embeddedPrintHost=new Grid{Margin=new Thickness(2,2,2,0)};
+        Grid.SetRow(_embeddedPrintHost,0);
         secondary.Children.Add(_embeddedPrintHost);
         _status.FontSize=12;
         _status.Margin=new Thickness(3,1,3,2);
         _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
-        Grid.SetRow(_status,2);
+        Grid.SetRow(_status,1);
         secondary.Children.Add(_status);
         Grid.SetRow(secondary,1);
         Grid.SetColumn(secondary,0);
