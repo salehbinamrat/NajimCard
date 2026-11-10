@@ -169,7 +169,7 @@ public class PrintingView : UserControl
             {
                 caption.FontSize=11;
                 caption.Margin=new Thickness(0,2,0,2);
-                caption.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
+                caption.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
             }
             part.Children.Add(caption);
             part.Children.Add(control);
@@ -195,6 +195,8 @@ public class PrintingView : UserControl
         stack.Children.Add(ordering);
         rows.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
         cols.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
+        width.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
+        height.TextChanged+=(_,_)=>LayoutSettingsChanged?.Invoke();
 
         var actions=new WrapPanel{Margin=new Thickness(0,1,0,10)};
         var previewButton=PageUi.Button("معاينة قبل الطباعة");
@@ -220,10 +222,10 @@ public class PrintingView : UserControl
             // Size to the last working control; never fill the left column
             // with an empty 300px bordered block.
             printPanel.VerticalAlignment=VerticalAlignment.Top;
-            printPanel.Background=(Brush)new BrushConverter().ConvertFrom("#321526")!;
-            printPanel.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!;
+            printPanel.Background=(Brush)new BrushConverter().ConvertFrom("#FFF4DF")!;
+            printPanel.BorderBrush=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
             _status.Margin=new Thickness(2,0,2,1);
-            _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#F8E6C7")!;
+            _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
         }
         Content=embedded?printPanel:
             PageUi.Wrap("إنشاء وطباعة الكروت","المعاينة والطباعة من البيانات المحلية المؤكدة.",
@@ -334,87 +336,79 @@ public class PrintingView : UserControl
                 foreach(var slot in slotsByPage[pageNo])
                 {
                     var card=cards[slot.VoucherIndex];
-                    var content=new StackPanel
+                    // Use the identical normalized element positions in preview and print.
+                    // Every visible caption, credential and QR has its own transparent layer.
+                    var positioned=new CardElementPanel
                     {
-                        Orientation=Orientation.Vertical,
-                        FlowDirection=FlowDirection.LeftToRight,
-                        Margin=new Thickness(3)
+                        FlowDirection=FlowDirection.LeftToRight,ClipToBounds=true
                     };
-                    content.Children.Add(new TextBlock
+                    UIElement Layer(TextBlock text)
                     {
-                        Text=appearance.NetworkTitle,FontFamily=new FontFamily(appearance.FontFamily),
-                        FontWeight=FontWeights.Bold,FontSize=10*appearance.TitleScale,Foreground=ink,
-                        TextAlignment=TextAlignment.Center,
-                        TextTrimming=TextTrimming.CharacterEllipsis
-                    });
-                    content.Children.Add(new TextBlock
+                        if(!hasArtwork)return text;
+                        return new Border
+                        {
+                            Background=new SolidColorBrush(ChooseArtworkTextBacking(appearance.UsernameColor)),
+                            CornerRadius=new CornerRadius(3),Padding=new Thickness(1,0,1,0),
+                            Child=text
+                        };
+                    }
+                    void AddText(string value,CardElementPosition pos,double size,
+                        bool enabled=true,bool numeric=false)
                     {
-                        Text=card.Username,FontFamily=new FontFamily(appearance.FontFamily),
-                        FontWeight=FontWeights.ExtraBold,FontSize=appearance.UsernameFontSize,
-                        Foreground=ink,TextAlignment=TextAlignment.Center,
-                        TextTrimming=TextTrimming.CharacterEllipsis
-                    });
-                    if(appearance.ShowPassword)
-                        content.Children.Add(new TextBlock
+                        if(!enabled || string.IsNullOrWhiteSpace(value))return;
+                        var line=new TextBlock
                         {
-                            Text=card.Password,FontFamily=new FontFamily("Consolas"),
-                            FontWeight=FontWeights.Bold,FontSize=10*appearance.PasswordScale,Foreground=ink,
-                            TextAlignment=TextAlignment.Center,
-                            TextTrimming=TextTrimming.CharacterEllipsis
-                        });
-                    if(appearance.ShowProfile)
-                        content.Children.Add(new TextBlock
-                        {
-                            Text=card.Profile+" · "+card.Service,
-                            FontSize=9*appearance.ProfileScale,FontWeight=FontWeights.SemiBold,
+                            Text=value,FontFamily=new FontFamily(
+                                numeric?"Consolas":appearance.FontFamily),
+                            FontWeight=FontWeights.Bold,FontSize=size,
                             Foreground=ink,TextAlignment=TextAlignment.Center,
-                            TextTrimming=TextTrimming.CharacterEllipsis
-                        });
-                    // Readable translucent backing behind dynamic data when a
-                    // customer-supplied image has uncontrolled contrast.
-                    if(hasArtwork)
-                    {
-                        for(int i=0;i<content.Children.Count;i++)
-                        {
-                            if(content.Children[i] is TextBlock dynamicText)
-                            {
-                                content.Children.RemoveAt(i);
-                                content.Children.Insert(i,new Border
-                                {
-                                    Background=new SolidColorBrush(ChooseArtworkTextBacking(appearance.UsernameColor)),
-                                    CornerRadius=new CornerRadius(3),
-                                    Padding=new Thickness(1,0,1,0),
-                                    Child=dynamicText
-                                });
-                            }
-                        }
+                            FlowDirection=FlowDirection.LeftToRight,
+                            TextTrimming=TextTrimming.CharacterEllipsis,
+                            Background=Brushes.Transparent
+                        };
+                        positioned.Add(Layer(line),pos);
                     }
-                    FrameworkElement cardContent=content;
-                    if(appearance.TitlePosition is not null || appearance.CredentialsPosition is not null ||
-                       appearance.ProfilePosition is not null || appearance.PasswordPosition is not null)
+                    AddText(appearance.NetworkTitle,
+                        appearance.TitlePosition??CardElementPanel.DefaultTitle,
+                        10*appearance.TitleScale,appearance.ShowTitle);
+                    AddText(card.Username,appearance.CredentialsPosition??
+                        CardElementPanel.DefaultCredentials,appearance.UsernameFontSize,
+                        numeric:true);
+                    AddText(card.Password,appearance.PasswordPosition??
+                        CardElementPanel.PasswordBelow(appearance.CredentialsPosition),
+                        10*appearance.PasswordScale,appearance.ShowPassword,numeric:true);
+                    AddText(card.Profile+" · "+card.Service,appearance.ProfilePosition??
+                        CardElementPanel.DefaultProfile,9*appearance.ProfileScale,
+                        appearance.ShowProfile);
+                    AddText(appearance.CapacityText,appearance.CapacityPosition??
+                        new CardElementPosition(0.75,0.13),9,
+                        appearance.ShowCapacity);
+                    AddText(appearance.PhoneText,appearance.PhonePosition??
+                        new CardElementPosition(0.08,0.91),9,
+                        appearance.ShowPhone,numeric:true);
+                    AddText(card.CreatedAt.ToString("HH:mm",CultureInfo.InvariantCulture),
+                        appearance.TimePosition??new CardElementPosition(0.74,0.90),
+                        9,appearance.ShowTime,numeric:true);
+                    AddText(card.CreatedAt.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture),
+                        appearance.DatePosition??new CardElementPosition(0.48,0.90),
+                        9,appearance.ShowDate,numeric:true);
+                    AddText((slot.VoucherIndex+1).ToString("D4",CultureInfo.InvariantCulture),
+                        appearance.SequencePosition??new CardElementPosition(0.08,0.57),
+                        9,appearance.ShowSequence,numeric:true);
+                    AddText(card.Service,appearance.RoutePosition??
+                        new CardElementPosition(0.08,0.13),9,appearance.ShowRoute);
+                    if(appearance.ShowQr)
                     {
-                        var elements=content.Children.Cast<UIElement>().ToArray();
-                        content.Children.Clear();
-                        var positioned=new CardElementPanel {FlowDirection=FlowDirection.LeftToRight,ClipToBounds=true};
-                        positioned.Add(elements[0],appearance.TitlePosition??CardElementPanel.DefaultTitle);
-                        var usernamePosition=appearance.CredentialsPosition??CardElementPanel.DefaultCredentials;
-                        if(appearance.ShowPassword && appearance.PasswordPosition is { } passwordPosition)
+                        var qr=new Image
                         {
-                            positioned.Add(elements[1],usernamePosition);
-                            positioned.Add(elements[2],passwordPosition);
-                        }
-                        else
-                        {
-                            // Older templates keep the original combined credentials block.
-                            var credentials=new StackPanel();
-                            credentials.Children.Add(elements[1]);
-                            if(appearance.ShowPassword)credentials.Children.Add(elements[2]);
-                            positioned.Add(credentials,usernamePosition);
-                        }
-                        if(appearance.ShowProfile)
-                            positioned.Add(elements[^1],appearance.ProfilePosition??CardElementPanel.DefaultProfile);
-                        cardContent=positioned;
+                            Source=CardQrRenderer.Render(card.Username),
+                            Width=appearance.QrSize,Height=appearance.QrSize,
+                            Stretch=Stretch.Uniform
+                        };
+                        positioned.Add(qr,appearance.QrPosition??
+                            new CardElementPosition(0.85,0.45));
                     }
+                    FrameworkElement cardContent=positioned;
                     var cardBorder=new Border
                     {
                         Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
