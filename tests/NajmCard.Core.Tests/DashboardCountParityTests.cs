@@ -47,6 +47,16 @@ public sealed class DashboardCountParityTests
             "/ppp/active/print"],spy.Paths);
     }
     [Fact]
+    public async Task PerSecond_Online_Refresh_Must_Not_Requery_UserManager_Total()
+    {
+        var spy=new RouterSpy();
+        var result=await new RouterGateway(spy).ReadDashboardOnlineOnlyAsync();
+        Assert.Null(result.UserManagerTotal);
+        Assert.Equal(261,result.OnlineTotal);
+        Assert.Equal(["/ip/hotspot/active/print","/ppp/active/print"],spy.Paths);
+    }
+
+    [Fact]
     public async Task Partial_Online_Counter_Reports_Only_Known_Components()
     {
         var spy=new RouterSpy{Denied="/ppp/active/print"};
