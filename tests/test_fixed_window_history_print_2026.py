@@ -26,6 +26,10 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
     def test_history_row_click_fills_router_fields_without_connecting(self):
         window=ET.parse(DESKTOP/"MainWindow.xaml").getroot()
         self.assertIsNotNone(window.find(".//w:DataGrid[@"+XNS+"Name='HistoryConnectionsGrid']",NS))
+        saved=window.find(".//w:DataGrid[@"+XNS+"Name='HistoryConnectionsGrid']",NS)
+        columns=saved.findall("./w:DataGrid.Columns/w:DataGridTextColumn",NS)
+        self.assertEqual([c.attrib["Width"] for c in columns],["82","72","120","210"])
+        self.assertEqual(saved.attrib["EnableColumnVirtualization"],"False")
         code=read(DESKTOP/"MainWindow.xaml.cs")
         self.assertIn("HistoryGrid_SelectionChanged(",code)
         self.assertIn("SavedConnectionsInput.SelectedItem=item",code)
