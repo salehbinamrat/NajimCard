@@ -71,7 +71,7 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
     }
 
     [Fact]
-    public void Dragged_Card_Positions_Reload_Only_For_The_Saved_Package()
+    public void Card_Positions_And_Scales_Reload_Only_For_The_Saved_Package()
     {
         var preset=Preset();
         var moved=preset.Appearance with
@@ -79,7 +79,8 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
             TitlePosition=new CardElementPosition(0.2,0.3),
             CredentialsPosition=new CardElementPosition(0.8,0.5),
             ProfilePosition=new CardElementPosition(1,0),
-            PasswordPosition=new CardElementPosition(0.4,0.75)
+            PasswordPosition=new CardElementPosition(0.4,0.75),
+            TitleScale=1.2,PasswordScale=0.8,ProfileScale=1.3
         };
         using(var store=new VoucherStore(_root))
         {
@@ -89,11 +90,17 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
             {
                 Appearance=moved with {ProfilePosition=new CardElementPosition(-0.1,0)}
             }));
+            Assert.Throws<ArgumentException>(()=>store.SavePackagePreset(preset with
+            {
+                Appearance=moved with {PasswordScale=double.NaN}
+            }));
         }
 
         using var reopened=new VoucherStore(_root);
         Assert.Equal(moved,reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!.Appearance);
-        Assert.Null(reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","7 Day")!.Appearance.PasswordPosition);
+        var other=reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","7 Day")!.Appearance;
+        Assert.Null(other.PasswordPosition);
+        Assert.Equal(1,other.PasswordScale);
     }
 
     [Theory]

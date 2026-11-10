@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NajmCard.Core.Services;
@@ -97,6 +98,13 @@ internal static class Program
         if(password.Visibility!=Visibility.Visible || password.Text.Length==0 ||
             password.ActualWidth<=0)
             throw new InvalidDataException("The separate password preview did not render.");
+        var initialSize=password.FontSize;
+        password.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice,0,120)
+        {
+            RoutedEvent=Mouse.PreviewMouseWheelEvent
+        });
+        if(password.FontSize<=initialSize)
+            throw new InvalidDataException("The password did not resize with the mouse wheel.");
         mode.SelectedIndex=0;
         if(password.Visibility!=Visibility.Collapsed || password.Text.Length!=0)
             throw new InvalidDataException("The preview retained the previous password.");
