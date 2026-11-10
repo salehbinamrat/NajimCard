@@ -42,7 +42,7 @@ public partial class GeneratorView
 
         var leftColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
         leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         var rightColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
         rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         rightColumn.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
@@ -60,7 +60,7 @@ public partial class GeneratorView
         Grid.SetRow(designSurface,1);
 
         var secondary=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        secondary.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
+        secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         _embeddedPrintHost=new Grid{Margin=new Thickness(1,1,1,0)};
         Grid.SetRow(_embeddedPrintHost,0);
