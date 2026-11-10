@@ -168,12 +168,12 @@ public partial class GeneratorView : UserControl
         quickSaveButton.HorizontalAlignment=HorizontalAlignment.Left;
         quickSaveButton.VerticalAlignment=VerticalAlignment.Center;
         quickSaveButton.Margin=new Thickness(5,1,5,4);
-        quickSaveButton.Padding=new Thickness(9,2,9,2);
-        quickSaveButton.MinHeight=26;
-        quickSaveButton.FontSize=11;
+        quickSaveButton.Padding=new Thickness(14,6,14,6);
+        quickSaveButton.MinHeight=34;
+        quickSaveButton.FontSize=13;
         quickSaveButton.FontWeight=FontWeights.Bold;
         quickSaveButton.Foreground=Brushes.White;
-        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#8B122A")!;
+        quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#AD2450")!;
         quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
         var packageSaveFeedback=PageUi.Status();
         packageSaveFeedback.FontSize=11;
@@ -184,7 +184,7 @@ public partial class GeneratorView : UserControl
             var saved=SaveCurrentPackage();
             packageSaveFeedback.Text=_status.Text;
             packageSaveFeedback.Foreground=(Brush)new BrushConverter().ConvertFrom(
-                saved?"#A5F3CD":"#FFC1BF")!;
+                saved?"#176B49":"#9B2140")!;
             packageSaveFeedback.Visibility=Visibility.Visible;
         };
         routeHeader.Children.Add(quickSaveButton);
@@ -198,6 +198,7 @@ public partial class GeneratorView : UserControl
         profileBox.Children.Add(_profile);
         routeInputs.Children.Add(serverBox);
         routeInputs.Children.Add(profileBox);
+        routeInputs.Children.Add(_customerPanel);
         servicePanel.Children.Add(routeInputs);
         var catalogRow=new DockPanel{Margin=new Thickness(0,3,0,0)};
         var refreshCatalog=PageUi.Button("تحديث الباقات",false);
@@ -252,7 +253,10 @@ public partial class GeneratorView : UserControl
             var caption=PageUi.Label(label);
             caption.FontSize=11;
             cell.Children.Add(caption);
-            cell.Children.Add(input);
+            if(ReferenceEquals(input,_length) || ReferenceEquals(input,_passwordLength))
+                cell.Children.Add(PageUi.CompactNumberChoice((TextBox)input,
+                    "4","5","6","7","8","9","10","11","12","13","14","15","16"));
+            else cell.Children.Add(input);
             row.Children.Add(cell);
         }
 
@@ -286,26 +290,30 @@ public partial class GeneratorView : UserControl
         basicsSection.Children.Add(row);
         var basicsSurface=embedded?CompactSurface(basicsSection,"#D2AA61"):
             PageUi.Surface(basicsSection,"#D2AA61");
+        // Each service's alphabet TYPE and character SET occupy one horizontal row.
+        // This removes the old stacked rows without hiding any generation option.
         var characterKinds=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,1)};
+        var usernameGroup=new UniformGrid{Columns=2,Margin=new Thickness(1,0,1,0)};
         var userKind=PageUi.Column();
         userKind.Children.Add(PageUi.Label("نوع اسم المستخدم"));
         userKind.Children.Add(_usernameAlphabetType);
-        characterKinds.Children.Add(userKind);
-        var passwordKind=PageUi.Column();
-        passwordKind.Children.Add(PageUi.Label("نوع كلمة المرور"));
-        passwordKind.Children.Add(_passwordAlphabetType);
-        characterKinds.Children.Add(passwordKind);
-        formatSection.Children.Add(characterKinds);
-        var characterRow=new UniformGrid{Columns=2,Margin=new Thickness(0,0,0,1)};
         var usernameCharsCell=PageUi.Column();
         usernameCharsCell.Children.Add(PageUi.Label("أحرف اسم المستخدم"));
         usernameCharsCell.Children.Add(_usernameCharacters);
-        characterRow.Children.Add(usernameCharsCell);
+        usernameGroup.Children.Add(userKind);
+        usernameGroup.Children.Add(usernameCharsCell);
+        characterKinds.Children.Add(usernameGroup);
+        var passwordGroup=new UniformGrid{Columns=2,Margin=new Thickness(1,0,1,0)};
+        var passwordKind=PageUi.Column();
+        passwordKind.Children.Add(PageUi.Label("نوع كلمة المرور"));
+        passwordKind.Children.Add(_passwordAlphabetType);
         var passwordCharsCell=PageUi.Column();
         passwordCharsCell.Children.Add(PageUi.Label("أحرف كلمة المرور"));
         passwordCharsCell.Children.Add(_passwordCharacters);
-        characterRow.Children.Add(passwordCharsCell);
-        formatSection.Children.Add(characterRow);
+        passwordGroup.Children.Add(passwordKind);
+        passwordGroup.Children.Add(passwordCharsCell);
+        characterKinds.Children.Add(passwordGroup);
+        formatSection.Children.Add(characterKinds);
         void ApplyAlphabet(ComboBox selector,TextBox target)
         {
             if(_restoringPreset)return;
@@ -332,7 +340,6 @@ public partial class GeneratorView : UserControl
         _customerPanel.Visibility = Visibility.Collapsed;
         _server.ItemsSource=new[]{"all"};
         _server.SelectedIndex=0;
-        servicePanel.Children.Add(_customerPanel);
         // Feedback appears only on explicit save, within the routing section.
         servicePanel.Children.Add(packageSaveFeedback);
         void UpdatePasswordMode()
@@ -356,7 +363,7 @@ public partial class GeneratorView : UserControl
             passwordKind.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
             passwordCharsCell.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
             characterKinds.Columns=hasSeparatePassword?2:1;
-            characterRow.Columns=hasSeparatePassword?2:1;
+            passwordGroup.Visibility=hasSeparatePassword?Visibility.Visible:Visibility.Collapsed;
             _designShowPassword.IsChecked=!userOnly;
         }
         _credentialMode.SelectionChanged+=(_,_)=>UpdatePasswordMode();
@@ -465,6 +472,7 @@ public partial class GeneratorView : UserControl
             _server.SelectedIndex=0;
             _customerPanel.Visibility = SelectedService == "userman"
                 ? Visibility.Visible : Visibility.Collapsed;
+            routeInputs.Columns=SelectedService=="userman"?3:2;
             if(IsLoaded)await LoadProfilesAsync();
         };
         _profile.SelectionChanged += (_, _) =>
