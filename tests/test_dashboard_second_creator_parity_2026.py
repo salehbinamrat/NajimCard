@@ -76,7 +76,7 @@ class NewDashboardAndCreatorContract(unittest.TestCase):
 
     def test_one_line_route_and_side_by_side_username_kind_and_chars(self):
         generator=read(V/"GeneratorView.cs")
-        self.assertIn("routeInputs.Children.Add(_customerPanel)",generator)
+        self.assertIn("routeInputs.Children.Insert(2,_customerPanel)",generator)
         self.assertIn("usernameGroup.Children.Add(userKind)",generator)
         self.assertIn("usernameGroup.Children.Add(usernameCharsCell)",generator)
         self.assertIn("quickSaveButton.MinHeight=34",generator)
