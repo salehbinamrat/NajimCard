@@ -19,7 +19,7 @@ public partial class PrintingView
         _batchSelector=batchSelector;
         batchSelector.Items.Add(new ComboBoxItem
         {
-            Content=selectedBatch is null?"آخر كروت مؤكدة":"الدفعة الحالية المؤكدة",Tag=null
+            Content=selectedBatch is null?"الدفعة الأخيرة":"الدفعة الحالية",Tag=null
         });
         batchSelector.SelectedIndex=0;
         bool loadingBatches=false;
@@ -35,13 +35,13 @@ public partial class PrintingView
                 batchSelector.Items.Clear();
                 batchSelector.Items.Add(new ComboBoxItem
                 {
-                    Content=selectedBatch is null?"آخر كروت مؤكدة":"الدفعة الحالية المؤكدة",
+                    Content=selectedBatch is null?"الدفعة الأخيرة":"الدفعة الحالية",
                     Tag=null
                 });
                 foreach(var info in history)
                     batchSelector.Items.Add(new ComboBoxItem
                     {
-                        Content=info.DisplayName,Tag=info
+                        Content=info.DisplayName,ToolTip=info.DisplayName,Tag=info
                     });
                 var selected=batchSelector.Items.OfType<ComboBoxItem>().FirstOrDefault(x=>
                     x.Tag is PrintableBatchSummary item && previous is not null &&
@@ -58,7 +58,7 @@ public partial class PrintingView
         {
             MinWidth=0,ToolTip="اختر طابعة مثبتة على Windows، أو اترك الافتراضية."
         };
-        selectedPrinter.Items.Add("طابعة Windows الافتراضية");
+        selectedPrinter.Items.Add("الافتراضية");
         selectedPrinter.SelectedIndex=0;
         bool loadingPrinters=false;
         selectedPrinter.DropDownOpened+=async (_,_) =>
@@ -76,7 +76,7 @@ public partial class PrintingView
                 });
                 var selected=selectedPrinter.SelectedItem?.ToString();
                 selectedPrinter.Items.Clear();
-                selectedPrinter.Items.Add("طابعة Windows الافتراضية");
+                selectedPrinter.Items.Add("الافتراضية");
                 foreach(var name in printers)selectedPrinter.Items.Add(name);
                 selectedPrinter.SelectedItem=selected is not null &&
                     selectedPrinter.Items.Contains(selected)?selected: selectedPrinter.Items[0];
