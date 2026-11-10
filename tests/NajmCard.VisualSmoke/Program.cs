@@ -64,7 +64,20 @@ internal static class Program
             var workspaceLayer=(Grid)window.FindName("WorkspaceLayer");
             workspaceLayer.Visibility=Visibility.Collapsed;
             loginLayer.Visibility=Visibility.Visible;
+            // Use a synthetic, non-secret history row to verify selecting a
+            // saved connection fills the real login form without API activity.
+            var example=new SavedRouterConnection("192.168.220.1",8728,"admin",
+                false,"local");
+            ((ComboBox)window.FindName("SavedConnectionsInput")).ItemsSource=
+                new[]{example};
+            var history=(DataGrid)window.FindName("HistoryConnectionsGrid");
+            history.ItemsSource=new[]{example};
+            ((Expander)window.FindName("SavedHistoryExpander")).IsExpanded=true;
+            history.SelectedItem=example;
             root.UpdateLayout();
+            if(((TextBox)window.FindName("HostInput")).Text!="192.168.220.1" ||
+               ((TextBox)window.FindName("UserInput")).Text!="admin")
+                throw new InvalidDataException("Selecting a saved router did not fill the login fields.");
             var connect=(Button)window.FindName("ConnectButton");
             var connectBounds=connect.TransformToAncestor(root)
                 .TransformBounds(new Rect(connect.RenderSize));
