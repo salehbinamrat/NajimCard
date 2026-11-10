@@ -59,7 +59,8 @@ class UiDesignContract(unittest.TestCase):
                     "GeneratorView.ReferenceLayout.cs",
                     "GeneratorView.DesignerPanel.cs",
                     "GeneratorView.ProfileLoading.cs",
-                    "GeneratorView.PageCount.cs"})
+                    "GeneratorView.PageCount.cs",
+                    "GeneratorView.SaveToast.cs"})
             if view=="PrintingView":
                 expected.add("PrintingView.PrintSelectors.cs")
             self.assertEqual(set(matches), expected,
