@@ -25,7 +25,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("WorkspaceHeaderRow.Height=isImmersive",self.main)
         self.assertIn("new Thickness(4,4,4,4)",self.main)
         self.assertNotIn("fields.Width=1140",self.workspace)
-        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Auto",self.workspace)
+        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Hidden",self.workspace)
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.workspace)
     def test_short_windows_screen_keeps_footer_visible_and_forms_accessible(self):
         # On 1366x768 laptops, full-screen reference proportions cannot fit
@@ -34,7 +34,7 @@ class ReferenceImageFinalFit(unittest.TestCase):
         win=(ROOT/"MainWindow.xaml").read_text(encoding="utf-8")
         self.assertIn("SystemParameters.WorkArea",self.main)
         self.assertIn("MinHeight",win)
-        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Auto",self.workspace)
+        self.assertIn("VerticalScrollBarVisibility=ScrollBarVisibility.Hidden",self.workspace)
         self.assertIn("HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled",self.workspace)
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",self.workspace)
 
