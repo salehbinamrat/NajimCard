@@ -26,6 +26,7 @@ public partial class GeneratorView : UserControl
     }
     public event Action<CardPrintOptions>? PackagePrintSettingsRestored;
     public event Action? BatchChanged;
+    internal event Action? CardAppearanceChanged;
     public event Action? ServiceChanged;
     public Func<CardPrintOptions>? PrintOptionsProvider;
     public Action<CardPrintOptions>? ApplyPrintOptions;
@@ -464,7 +465,9 @@ public partial class GeneratorView : UserControl
             Number(_designFontSize.Text),_designBackground.Text.Trim(),
             _designTextColor.Text.Trim(),_designBorderColor.Text.Trim(),
             Number(_designBorderWidth.Text),_designShowPassword.IsChecked==true,
-            _designShowProfile.IsChecked==true,_templateImagePath).Validate();
+            _designShowProfile.IsChecked==true,_templateImagePath,
+            _currentAppearance.TitlePosition,_currentAppearance.CredentialsPosition,
+            _currentAppearance.ProfilePosition).Validate();
     }
 
     public bool SaveCurrentPackage()

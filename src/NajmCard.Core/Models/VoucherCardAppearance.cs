@@ -2,6 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace NajmCard.Core.Models;
 
+public sealed record CardElementPosition(double X, double Y);
+
 /// <summary>Safe, reusable NajmCard card design settings (never a voucher password).</summary>
 public sealed record VoucherCardAppearance(
     string NetworkTitle = "نجم كارد",
@@ -13,7 +15,10 @@ public sealed record VoucherCardAppearance(
     double BorderWidth = 1,
     bool ShowPassword = true,
     bool ShowProfile = true,
-    string TemplateImagePath = "")
+    string TemplateImagePath = "",
+    CardElementPosition? TitlePosition = null,
+    CardElementPosition? CredentialsPosition = null,
+    CardElementPosition? ProfilePosition = null)
 {
     private static readonly HashSet<string> AllowedFonts = new(
         ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
@@ -37,6 +42,12 @@ public sealed record VoucherCardAppearance(
             if(hex is null || !Regex.IsMatch(hex,@"^#[0-9a-fA-F]{6}$",
                 RegexOptions.CultureInvariant))
                 throw new ArgumentException("لون الكرت يجب أن يكون بصيغة #RRGGBB.");
+        }
+        foreach(var position in new[]{TitlePosition,CredentialsPosition,ProfilePosition})
+        {
+            if(position is not null && (!double.IsFinite(position.X) || !double.IsFinite(position.Y)
+                || position.X is < 0 or > 1 || position.Y is < 0 or > 1))
+                throw new ArgumentException("موضع عنصر الكرت خارج حدود التصميم.");
         }
         // WCAG relative luminance: keep voucher numbers legible regardless
         // of a custom dark burgundy or a bright paper background.

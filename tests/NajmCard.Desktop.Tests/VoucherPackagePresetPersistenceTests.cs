@@ -70,6 +70,31 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         Assert.Equal("#FFE2A3",store.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!.Appearance.UsernameColor);
     }
 
+    [Fact]
+    public void Dragged_Card_Positions_Reload_Only_For_The_Saved_Package()
+    {
+        var preset=Preset();
+        var moved=preset.Appearance with
+        {
+            TitlePosition=new CardElementPosition(0.2,0.3),
+            CredentialsPosition=new CardElementPosition(0.8,0.5),
+            ProfilePosition=new CardElementPosition(1,0)
+        };
+        using(var store=new VoucherStore(_root))
+        {
+            store.SavePackagePreset(preset with {Appearance=moved});
+            store.SavePackagePreset(Preset(profile:"7 Day"));
+            Assert.Throws<ArgumentException>(()=>store.SavePackagePreset(preset with
+            {
+                Appearance=moved with {ProfilePosition=new CardElementPosition(-0.1,0)}
+            }));
+        }
+
+        using var reopened=new VoucherStore(_root);
+        Assert.Equal(moved,reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!.Appearance);
+        Assert.Null(reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","7 Day")!.Appearance.TitlePosition);
+    }
+
     [Theory]
     [InlineData("unknown","30 Day")]
     [InlineData("hotspot","")]
