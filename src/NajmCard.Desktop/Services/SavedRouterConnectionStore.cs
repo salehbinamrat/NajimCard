@@ -9,6 +9,7 @@ namespace NajmCard.Desktop.Services;
 public sealed record SavedRouterConnection(string Host, int Port, string Username,
     bool UseTls, string Mode, string Password = "")
 {
+    public string ModeLabel => Mode=="remote"?"VPN":"محلي";
     public string DisplayName => $"{(Mode == "remote" ? "VPN · " : "محلي · ")}{Host}:{Port} · {Username}" +
         (UseTls ? " · SSL" : "");
 }
