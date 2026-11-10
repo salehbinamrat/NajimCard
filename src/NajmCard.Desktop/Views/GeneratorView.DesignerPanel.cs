@@ -33,6 +33,7 @@ public partial class GeneratorView
         catch(ArgumentException) { /* Do not replace valid input with a partially edited size. */ }
         catch(FormatException) { /* The left print fields may still be in progress. */ }
         finally {_syncingInlineSize=false;}
+        RefreshPreviewCardGeometry();
     }
 
     private Button PaletteButton(string caption,TextBox target)
