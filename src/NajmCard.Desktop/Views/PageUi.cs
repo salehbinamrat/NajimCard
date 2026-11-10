@@ -16,13 +16,24 @@ internal static class PageUi
 {
     internal static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(88, 37, 58));
     internal static Brush Gold => new SolidColorBrush(Color.FromRgb(243, 207, 148));
-    internal static Border Surface(UIElement content, string accent = "#80593D") => new()
+    internal static Border Surface(UIElement content,string accent="#80593D")
     {
-        Child = content, CornerRadius = new CornerRadius(12), Padding = new Thickness(12),
-        Margin = new Thickness(0, 0, 0, 8), BorderThickness = new Thickness(1),
-        Background = new SolidColorBrush(Color.FromRgb(255, 243, 223)),
-        BorderBrush = new SolidColorBrush(Color.FromRgb(114, 32, 58))
-    };
+        var surface=new Border
+        {
+            Child=content,CornerRadius=new CornerRadius(12),Padding=new Thickness(12),
+            Margin=new Thickness(0,0,0,8),BorderThickness=new Thickness(1),
+            Background=new SolidColorBrush(Color.FromRgb(255,243,223)),
+            BorderBrush=new SolidColorBrush(Color.FromRgb(114,32,58))
+        };
+        // Scope dark default labels to cream panels without affecting the
+        // burgundy application header, login, sidebar or card print artwork.
+        var ordinaryText=new Style(typeof(TextBlock),
+            (Style)Application.Current.FindResource(typeof(TextBlock)));
+        ordinaryText.Setters.Add(new Setter(TextBlock.ForegroundProperty,
+            new SolidColorBrush(Color.FromRgb(75,27,50))));
+        surface.Resources[typeof(TextBlock)]=ordinaryText;
+        return surface;
+    }
     internal static StackPanel Column() => new() { Orientation = Orientation.Vertical };
     internal static TextBlock Title(string text) => new() { Text = text, FontSize = 23, FontWeight = FontWeights.Bold, FontFamily=new FontFamily("Arial"),
         Foreground = Brushes.White,
