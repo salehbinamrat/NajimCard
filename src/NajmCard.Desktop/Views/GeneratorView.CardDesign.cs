@@ -467,8 +467,10 @@ public partial class GeneratorView
         _previewNetworkName.Background=Brushes.Transparent;
         _previewPackageName.Foreground=ink;
         _previewPackageName.Background=Brushes.Transparent;
+        // Default print output is a plain background; never display decorative
+        // shapes that are missing from the actual PDF.
         foreach(var shape in _sampleArtwork)
-            shape.Visibility=hasPicture?Visibility.Collapsed:Visibility.Visible;
+            shape.Visibility=Visibility.Collapsed;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
         _previewNetworkName.FontSize=10*appearance.TitleScale;
         _previewPassword.FontSize=10*appearance.PasswordScale;
