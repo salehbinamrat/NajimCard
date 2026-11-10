@@ -14,7 +14,7 @@ public partial class GeneratorView
     private static Border ReferenceHeader(string title)=>new()
     {
         Background=(Brush)new BrushConverter().ConvertFrom(
-            title=="الباقة ومسار الإرسال"?"#720F30":"#57213E")!,
+            title=="بيانات ومسار الإرسال"?"#720F30":"#57213E")!,
         BorderBrush=(Brush)new BrushConverter().ConvertFrom("#D2AA61")!,
         BorderThickness=new Thickness(0,0,0,1),
         CornerRadius=new CornerRadius(5,5,0,0),
