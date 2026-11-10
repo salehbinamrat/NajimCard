@@ -92,4 +92,27 @@ public sealed class ResilientRouterSessionTests
             await session.CommandAsync("/system/resource/print"));
         Assert.Equal(1,first.Disposals);
     }
+    [Fact]
+    public async Task Logout_During_Reconnect_Discards_Late_Transport_Without_Running_Command()
+    {
+        var broken=new Fake { Break=true };
+        var replacement=new Fake();
+        var reconnecting=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var connect=new TaskCompletionSource<IRouterCommandClient>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session=new ResilientRouterSession(broken,_=>
+        {
+            reconnecting.SetResult();
+            return connect.Task;
+        });
+
+        var command=session.CommandAsync("/system/resource/print");
+        await reconnecting.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        var closing=session.DisposeAsync().AsTask();
+        connect.SetResult(replacement);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async()=>await command);
+        await closing.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal(1,broken.Disposals);
+        Assert.Equal(1,replacement.Disposals);
+        Assert.Equal(0,replacement.Calls);
+    }
 }

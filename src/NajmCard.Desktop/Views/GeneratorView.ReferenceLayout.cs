@@ -10,22 +10,43 @@ namespace NajmCard.Desktop.Views;
 
 public partial class GeneratorView
 {
-    private static Border ReferenceHeader(string title)=>new()
+    private static Border ReferenceHeader(string title)
     {
-        Background=(Brush)new BrushConverter().ConvertFrom(
-            title=="بيانات ومسار الإرسال"?"#791B37":"#63223C")!,
-        BorderBrush=(Brush)new BrushConverter().ConvertFrom("#9C4C60")!,
-        BorderThickness=new Thickness(0,0,0,1),
-        CornerRadius=new CornerRadius(5,5,0,0),
-        Padding=new Thickness(8,4,8,4),
-        Margin=new Thickness(0,0,0,2),
-        Child=new TextBlock
+        var icon=title switch
+        {
+            "بيانات ومسار الإرسال"=>"IconServer",
+            "إنشاء المستخدم وطباعة الكروت"=>"IconPeople",
+            "معاينة وتصميم الكرت"=>"IconCard",
+            "بيانات التوليد الأساسية"=>"IconPrinter",
+            _=>"IconPackages"
+        };
+        var cream=Brushes.FloralWhite;
+        var heading=new DockPanel { FlowDirection=FlowDirection.LeftToRight };
+        var glyph=new System.Windows.Shapes.Path
+        {
+            Data=(Geometry)Application.Current.FindResource(icon),Stroke=cream,
+            Stretch=Stretch.Uniform,StrokeThickness=1.6,
+            Width=15,Height=15,Margin=new Thickness(6,0,0,0)
+        };
+        DockPanel.SetDock(glyph,Dock.Right);
+        heading.Children.Add(glyph);
+        heading.Children.Add(new TextBlock
         {
             Text=title,Tag="SectionTitle",FontFamily=new FontFamily("Arial"),FontSize=15,
-            FontWeight=FontWeights.ExtraBold,Foreground=Brushes.White,
-            TextAlignment=TextAlignment.Right
-        }
-    };
+            FontWeight=FontWeights.ExtraBold,Foreground=cream,TextAlignment=TextAlignment.Right
+        });
+        return new Border
+        {
+            Background=(Brush)new BrushConverter().ConvertFrom(
+                title=="بيانات ومسار الإرسال"?"#791B37":"#63223C")!,
+            BorderBrush=(Brush)new BrushConverter().ConvertFrom("#9C4C60")!,
+            BorderThickness=new Thickness(0,0,0,1),
+            CornerRadius=new CornerRadius(5,5,0,0),
+            Padding=new Thickness(8,3,8,3),
+            Margin=new Thickness(0,0,0,2),
+            Child=heading
+        };
+    }
 
     private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
         Border basicsSurface,Border designSurface)
@@ -53,9 +74,9 @@ public partial class GeneratorView
         var lower=new Grid{FlowDirection=FlowDirection.LeftToRight,
             Margin=new Thickness(0,1,0,0)};
         lower.ColumnDefinitions.Add(new ColumnDefinition{
-            Width=new GridLength(39,GridUnitType.Star)});
+            Width=new GridLength(36,GridUnitType.Star)});
         lower.ColumnDefinitions.Add(new ColumnDefinition{
-            Width=new GridLength(61,GridUnitType.Star)});
+            Width=new GridLength(64,GridUnitType.Star)});
         var printColumn=new StackPanel{FlowDirection=FlowDirection.RightToLeft};
         printColumn.Children.Add(basicsSurface);
         _embeddedPrintHost=new Grid{Margin=new Thickness(1,0,1,1)};

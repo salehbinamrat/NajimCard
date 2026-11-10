@@ -190,7 +190,7 @@ public partial class GeneratorView : UserControl
         saveCell.Margin=new Thickness(3,0,3,0);
         saveCell.Children.Add(PageUi.Label("إعدادات الباقة"));
         quickSaveButton.MinWidth=145;
-        quickSaveButton.MinHeight=32;
+        quickSaveButton.MinHeight=27;
         quickSaveButton.Padding=new Thickness(12,3,12,3);
         quickSaveButton.Margin=new Thickness(0);
         quickSaveButton.Content=new TextBlock
@@ -206,9 +206,9 @@ public partial class GeneratorView : UserControl
         var catalogRow=new DockPanel{Margin=new Thickness(0,3,0,0)};
         var refreshCatalog=PageUi.Button("تحديث الباقات",false);
         refreshCatalog.MinWidth=0;
-        refreshCatalog.MinHeight=29;
+        refreshCatalog.MinHeight=22;
         refreshCatalog.FontSize=11;
-        refreshCatalog.Padding=new Thickness(8,3,8,3);
+        refreshCatalog.Padding=new Thickness(6,1,6,1);
         refreshCatalog.Margin=new Thickness(0,0,5,0);
         refreshCatalog.Click+=async (_,_) =>
         {
@@ -402,6 +402,7 @@ public partial class GeneratorView : UserControl
         // ordinary 1366px displays. Scale its artwork but not surrounding UI.
         _appearancePreviewBorder.Margin=new Thickness(0);
         var scalableCard=new Viewbox{
+            MaxHeight=153,
             Stretch=Stretch.Uniform,
             StretchDirection=StretchDirection.Both,
             HorizontalAlignment=HorizontalAlignment.Stretch,
@@ -531,7 +532,7 @@ public partial class GeneratorView : UserControl
             if(_sending||_preparing||_restoringPreset)
                 throw new InvalidOperationException("لا يمكن حفظ إعدادات الباقة أثناء إرسال الكروت أو استعادة الإعدادات.");
             var profile=_profile.SelectedItem?.ToString()??"";
-            if(profile.Length==0)throw new ArgumentException("اختر الباقة من الراوتر.");
+            RequireRouteSelection();
             if(SelectedService=="hotspot" && _server.SelectedItem?.ToString()!="all")
                 throw new InvalidOperationException(
                     "السيرفر المختار ظاهر للفحص، لكن إرسال كروت لسيرفر محدد غير متاح بعد. "+

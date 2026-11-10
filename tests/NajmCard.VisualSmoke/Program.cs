@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -22,7 +23,7 @@ internal static class Program
         try
         {
             var destination=Path.GetFullPath(args.Length>0
-                ? args[0] : "out/creator-1200x750.png");
+                ? args[0] : "out/creator-1200x730.png");
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             var application=new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};
             application.Resources.MergedDictionaries.Add(new ResourceDictionary
@@ -41,7 +42,7 @@ internal static class Program
             var window=new MainWindow();
             var width=(int)window.Width;
             var height=(int)window.Height;
-            if(width!=1200 || height!=750)
+            if(width!=1200 || height!=730)
                 throw new InvalidDataException("Unexpected default window size.");
 
             ((Grid)window.FindName("LoginLayer")).Visibility=Visibility.Collapsed;
@@ -83,9 +84,9 @@ internal static class Program
                 .TransformBounds(new Rect(connect.RenderSize));
             if(connectBounds.Width<=0 || connectBounds.Height<=0 ||
                 connectBounds.Bottom>height || connectBounds.Top<0)
-                throw new InvalidDataException("The login connect button is clipped at 1200x750.");
+                throw new InvalidDataException("The login connect button is clipped at 1200x730.");
             Capture(root,width,height,Path.Combine(
-                Path.GetDirectoryName(destination)!,"login-1200x750.png"));
+                Path.GetDirectoryName(destination)!,"login-1200x730.png"));
             loginLayer.Visibility=Visibility.Collapsed;
             workspaceLayer.Visibility=Visibility.Visible;
             root.UpdateLayout();
@@ -95,6 +96,11 @@ internal static class Program
             var footerBounds=footer.TransformToAncestor(root).TransformBounds(new Rect(footer.RenderSize));
             if(footer.ActualHeight<=0 || footerBounds.Bottom>height)
                 throw new InvalidDataException("The creator action bar is outside the window.");
+
+            var palette=VisualChildren<UniformGrid>(root).Single(grid=>Equals(grid.Tag,"CardPalette"));
+            var paletteBounds=palette.TransformToAncestor(root).TransformBounds(new Rect(palette.RenderSize));
+            if(paletteBounds.Height<=0 || paletteBounds.Bottom>footerBounds.Top+1)
+                throw new InvalidDataException("The default creator view clips the card color palette.");
 
             VerifyPasswordPreview(root);
             root.UpdateLayout();
@@ -107,7 +113,7 @@ internal static class Program
             pageHost.Content=dashboard;
             root.UpdateLayout();
             VerifyDashboardPanels(dashboard);
-            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x750.png"));
+            Capture(root,width,height,Path.Combine(Path.GetDirectoryName(destination)!,"dashboard-1200x730.png"));
             return 0;
         }
         catch(Exception ex)

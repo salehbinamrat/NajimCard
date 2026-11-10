@@ -19,7 +19,7 @@ public partial class GeneratorView
     {
         var surface=PageUi.Surface(content,accent);
         // Hadramout reference geometry with NajmCard burgundy/gold surfaces.
-        surface.Padding=new Thickness(6);
+        surface.Padding=new Thickness(4);
         surface.Margin=new Thickness(0);
         surface.CornerRadius=new CornerRadius(9);
         surface.Background=(Brush)new BrushConverter().ConvertFrom("#FFF4DF")!;
@@ -39,8 +39,8 @@ public partial class GeneratorView
             label.FontWeight=FontWeights.SemiBold;
             // PageUi.Label has 12pt top padding for spacious pages; inside the
             // single Hadramout-style voucher editor this creates tall empty gaps.
-            label.Margin=new Thickness(1,2,1,2);
-            label.FontSize=Math.Min(label.FontSize,13);
+            label.Margin=new Thickness(1,1,1,1);
+            label.FontSize=Math.Min(label.FontSize,12);
         }
         if(node is CheckBox checkbox)
             checkbox.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
@@ -413,7 +413,7 @@ public partial class GeneratorView
             !appearance.ShowCapacity && !appearance.ShowPhone && !appearance.ShowTime;
         _previewCapacity.Text=builtInSample?"2 جيجا":appearance.CapacityText;
         _previewPhone.Text=builtInSample?"780757658 - 775321455":appearance.PhoneText;
-        _previewTime.Text=builtInSample?"30 يوم":
+        _previewTime.Text=builtInSample?"1 يوم":
             DateTime.Now.ToString("HH:mm",CultureInfo.InvariantCulture);
         _previewDate.Text=DateTime.Now.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
         _previewSequence.Text="0001";
@@ -443,7 +443,7 @@ public partial class GeneratorView
         var backing=new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
         _previewNetworkName.Foreground=ink;
         _previewNetworkName.Background=Brushes.Transparent;
-        _previewPackageName.Foreground=ink;
+        _previewPackageName.Foreground=builtInSample?Brushes.FloralWhite:ink;
         _previewPackageName.Background=Brushes.Transparent;
         if(_defaultArtworkLayer is not null)
             _defaultArtworkLayer.Visibility=NajmNetCardArtwork.IsDefault(
@@ -452,7 +452,7 @@ public partial class GeneratorView
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
         _previewNetworkName.FontSize=10*appearance.TitleScale;
         _previewPassword.FontSize=10*appearance.PasswordScale;
-        _previewPackageName.FontSize=9*appearance.ProfileScale;
+        _previewPackageName.FontSize=(builtInSample?8:9)*appearance.ProfileScale;
         _cardPreview.FontSize=appearance.UsernameFontSize;
         _cardPreview.Foreground=ink;
         _previewPassword.Foreground=ink;

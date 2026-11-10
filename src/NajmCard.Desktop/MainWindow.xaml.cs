@@ -17,6 +17,7 @@ public sealed record NavEntry(string Key, Geometry Glyph, Brush Accent,
 public partial class MainWindow : Window
 {
     private ResilientRouterSession? _session;
+    private bool _closed;
     private RouterGateway? _gateway;
     private readonly VoucherStore _store = new();
     private readonly HttpClient _licenseHttp = new();
@@ -457,7 +458,11 @@ public partial class MainWindow : Window
             var session = new ResilientRouterSession(authenticated,
                 async token => await RouterOsClient.ConnectAsync(endpoint,token));
             var gateway = new RouterGateway(session);
-            try { await gateway.ReadResourceAsync(); }
+            try
+            {
+                await gateway.ReadResourceAsync();
+                if(_closed)throw new OperationCanceledException();
+            }
             catch { await session.DisposeAsync(); throw; }
             LicenseCheck entitlement;
             try
@@ -598,13 +603,18 @@ public partial class MainWindow : Window
         if (previous is not null) await previous.DisposeAsync();
     }
 
-    protected override void OnClosed(EventArgs e)
+    protected override async void OnClosed(EventArgs e)
     {
+        _closed=true;
         _licenseMonitor?.Stop();
         _sidebarCountdown?.Stop();
-        _session?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        var session=_session;
+        _session=null;
+        _gateway=null;
+        var disposal=session?.DisposeAsync();
         _licenseHttp.Dispose();
         _store.Dispose();
         base.OnClosed(e);
+        if(disposal is { } pending)await pending;
     }
 }

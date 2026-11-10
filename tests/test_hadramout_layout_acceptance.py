@@ -23,8 +23,8 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
         self.assertIn("Grid.SetRow(formatSurface,1)",self.layout)
         self.assertIn("Grid.SetColumn(designSurface,1)",self.layout)
         self.assertIn("Grid.SetRow(lower,2)",self.layout)
-        self.assertIn("Width=new GridLength(39,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(61,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(36,GridUnitType.Star)",self.layout)
+        self.assertIn("Width=new GridLength(64,GridUnitType.Star)",self.layout)
         self.assertNotIn("Viewbox",self.creator)
     def test_cropped_in_place_editor_controls_are_moved_to_modal(self):
         self.assertIn("تعديلات متقدمة",self.editor)
