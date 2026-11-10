@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -152,23 +153,52 @@ public partial class GeneratorView
         elements.Add(_previewPassword,CardElementPanel.PasswordBelow(null));
         _previewPackageName.MaxWidth=100;
         elements.Add(_previewPackageName,CardElementPanel.DefaultProfile);
-        EnableCardDrag(elements,_previewNetworkName,(style,position)=>style with {TitlePosition=position});
-        EnableCardDrag(elements,usernamePlate,(style,position)=>style with
+        EnableCardEditing(elements,_previewNetworkName,
+            (style,position)=>style with {TitlePosition=position},
+            (style,step)=>style with {TitleScale=ResizeScale(style.TitleScale,step)});
+        EnableCardEditing(elements,usernamePlate,(style,position)=>style with
         {
             CredentialsPosition=position,
             PasswordPosition=style.PasswordPosition??CardElementPanel.PasswordBelow(style.CredentialsPosition)
-        });
-        EnableCardDrag(elements,_previewPassword,(style,position)=>style with {PasswordPosition=position});
-        EnableCardDrag(elements,_previewPackageName,(style,position)=>style with {ProfilePosition=position});
+        },(style,step)=>style with {UsernameFontSize=Math.Clamp(style.UsernameFontSize+step,8,40)});
+        EnableCardEditing(elements,_previewPassword,
+            (style,position)=>style with {PasswordPosition=position},
+            (style,step)=>style with {PasswordScale=ResizeScale(style.PasswordScale,step)});
+        EnableCardEditing(elements,_previewPackageName,
+            (style,position)=>style with {ProfilePosition=position},
+            (style,step)=>style with {ProfileScale=ResizeScale(style.ProfileScale,step)});
         card.Children.Add(elements);
         return card;
     }
 
-    private void EnableCardDrag(CardElementPanel panel,FrameworkElement element,
-        Func<VoucherCardAppearance,CardElementPosition,VoucherCardAppearance> change)
+    private static double ResizeScale(double scale,int step) =>
+        Math.Clamp(Math.Round(scale+step*0.1,2),0.4,4);
+
+    private void EnableCardEditing(CardElementPanel panel,FrameworkElement element,
+        Func<VoucherCardAppearance,CardElementPosition,VoucherCardAppearance> change,
+        Func<VoucherCardAppearance,int,VoucherCardAppearance> resize)
     {
         element.Cursor=Cursors.SizeAll;
-        element.ToolTip="اسحب العنصر لتغيير موضعه داخل الكرت.";
+        element.ToolTip="اسحب لتغيير الموضع، واستخدم عجلة الماوس لتغيير الحجم.";
+        element.PreviewMouseWheel+=(_,args)=>
+        {
+            if(_preparing || _sending || element.IsMouseCaptured || args.Delta==0)return;
+            args.Handled=true;
+            try
+            {
+                var before=ReadCurrentAppearance();
+                var after=resize(before,Math.Sign(args.Delta));
+                if(before==after)return;
+                ApplyCardAppearance(after,refreshArtwork:false);
+                if(before.UsernameFontSize!=after.UsernameFontSize)
+                    _designFontSize.Text=after.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
+                _designStatus.Text="تم تغيير الحجم. احفظ إعدادات القالب لهذه الباقة للاحتفاظ به.";
+            }
+            catch(Exception ex) when(ex is ArgumentException or FormatException or OverflowException)
+            {
+                _designStatus.Text=ex.Message;
+            }
+        };
         Point? grabOffset=null;
         Point start=new();
         element.MouseLeftButtonDown+=(_,args)=>
@@ -269,6 +299,9 @@ public partial class GeneratorView
         foreach(var shape in _sampleArtwork)
             shape.Visibility=hasPicture?Visibility.Collapsed:Visibility.Visible;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
+        _previewNetworkName.FontSize=20*appearance.TitleScale;
+        _previewPassword.FontSize=13*appearance.PasswordScale;
+        _previewPackageName.FontSize=16*appearance.ProfileScale;
         _cardPreview.FontSize=appearance.UsernameFontSize;
         _cardPreview.Foreground=ink;
         _previewPassword.Foreground=ink;

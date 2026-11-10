@@ -460,14 +460,19 @@ public partial class GeneratorView : UserControl
     {
         static double Number(string v)=>double.Parse(v.Trim().Replace(',','.'),
             CultureInfo.InvariantCulture);
-        return new VoucherCardAppearance(_designTitle.Text.Trim(),
-            _designFontFamily.SelectedItem?.ToString()??"Arial",
-            Number(_designFontSize.Text),_designBackground.Text.Trim(),
-            _designTextColor.Text.Trim(),_designBorderColor.Text.Trim(),
-            Number(_designBorderWidth.Text),_designShowPassword.IsChecked==true,
-            _designShowProfile.IsChecked==true,_templateImagePath,
-            _currentAppearance.TitlePosition,_currentAppearance.CredentialsPosition,
-            _currentAppearance.ProfilePosition,_currentAppearance.PasswordPosition).Validate();
+        return (_currentAppearance with
+        {
+            NetworkTitle=_designTitle.Text.Trim(),
+            FontFamily=_designFontFamily.SelectedItem?.ToString()??"Arial",
+            UsernameFontSize=Number(_designFontSize.Text),
+            BackgroundColor=_designBackground.Text.Trim(),
+            UsernameColor=_designTextColor.Text.Trim(),
+            BorderColor=_designBorderColor.Text.Trim(),
+            BorderWidth=Number(_designBorderWidth.Text),
+            ShowPassword=_designShowPassword.IsChecked==true,
+            ShowProfile=_designShowProfile.IsChecked==true,
+            TemplateImagePath=_templateImagePath
+        }).Validate();
     }
 
     public bool SaveCurrentPackage()

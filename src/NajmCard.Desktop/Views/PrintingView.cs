@@ -340,7 +340,7 @@ public class PrintingView : UserControl
                     content.Children.Add(new TextBlock
                     {
                         Text=appearance.NetworkTitle,FontFamily=new FontFamily(appearance.FontFamily),
-                        FontWeight=FontWeights.Bold,FontSize=10,Foreground=ink,
+                        FontWeight=FontWeights.Bold,FontSize=10*appearance.TitleScale,Foreground=ink,
                         TextAlignment=TextAlignment.Center,
                         TextTrimming=TextTrimming.CharacterEllipsis
                     });
@@ -355,7 +355,7 @@ public class PrintingView : UserControl
                         content.Children.Add(new TextBlock
                         {
                             Text=card.Password,FontFamily=new FontFamily("Consolas"),
-                            FontWeight=FontWeights.Bold,FontSize=10,Foreground=ink,
+                            FontWeight=FontWeights.Bold,FontSize=10*appearance.PasswordScale,Foreground=ink,
                             TextAlignment=TextAlignment.Center,
                             TextTrimming=TextTrimming.CharacterEllipsis
                         });
@@ -363,7 +363,7 @@ public class PrintingView : UserControl
                         content.Children.Add(new TextBlock
                         {
                             Text=card.Profile+" · "+card.Service,
-                            FontSize=9,FontWeight=FontWeights.SemiBold,
+                            FontSize=9*appearance.ProfileScale,FontWeight=FontWeights.SemiBold,
                             Foreground=ink,TextAlignment=TextAlignment.Center,
                             TextTrimming=TextTrimming.CharacterEllipsis
                         });

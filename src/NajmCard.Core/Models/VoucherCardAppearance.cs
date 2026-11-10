@@ -19,7 +19,10 @@ public sealed record VoucherCardAppearance(
     CardElementPosition? TitlePosition = null,
     CardElementPosition? CredentialsPosition = null,
     CardElementPosition? ProfilePosition = null,
-    CardElementPosition? PasswordPosition = null)
+    CardElementPosition? PasswordPosition = null,
+    double TitleScale = 1,
+    double PasswordScale = 1,
+    double ProfileScale = 1)
 {
     private static readonly HashSet<string> AllowedFonts = new(
         ["Arial","Segoe UI","Tahoma","Calibri"],StringComparer.OrdinalIgnoreCase);
@@ -49,6 +52,11 @@ public sealed record VoucherCardAppearance(
             if(position is not null && (!double.IsFinite(position.X) || !double.IsFinite(position.Y)
                 || position.X is < 0 or > 1 || position.Y is < 0 or > 1))
                 throw new ArgumentException("موضع عنصر الكرت خارج حدود التصميم.");
+        }
+        foreach(var scale in new[]{TitleScale,PasswordScale,ProfileScale})
+        {
+            if(!double.IsFinite(scale) || scale is < 0.4 or > 4)
+                throw new ArgumentException("حجم عنصر الكرت خارج النطاق المسموح.");
         }
         // WCAG relative luminance: keep voucher numbers legible regardless
         // of a custom dark burgundy or a bright paper background.
