@@ -25,6 +25,9 @@ public partial class MainWindow : Window
     private LicenseGate? _licenseGate;
     private LocalTrialService? _localTrial;
     private DispatcherTimer? _licenseMonitor;
+    private DispatcherTimer? _sidebarCountdown;
+    private LicenseCheck? _lastLicenseStatus;
+    private DashboardView? _dashboardPage;
     private string _storedPaidCode="";
     private string _activeLicenseMode="";
     private DateTimeOffset _nextPaidVerifyUtc=DateTimeOffset.MaxValue;
@@ -331,6 +334,38 @@ public partial class MainWindow : Window
         LicenseCodeInput.Focus();
     }
 
+    private void UpdateLicenseCountdown()
+    {
+        var status=_lastLicenseStatus;
+        if(status is null || _gateway is null)return;
+        var remaining=status.ExpiresAtUtc is DateTimeOffset expiry
+            ?Math.Max(0,(long)Math.Ceiling((expiry-DateTimeOffset.UtcNow).TotalSeconds))
+            :status.RemainingSeconds;
+        if(status.Mode=="trial")
+        {
+            if(remaining<0)remaining=0;
+            var span=TimeSpan.FromSeconds(remaining);
+            SidebarLicense.Text="التجربة المجانية · المتبقي\n"+
+                ((int)span.TotalDays).ToString("00")+":"+
+                span.Hours.ToString("00")+":"+span.Minutes.ToString("00")+":"+
+                span.Seconds.ToString("00");
+        }
+        else if(status.Mode=="active")
+        {
+            if(status.ExpiresAtUtc is null)
+                SidebarLicense.Text="الترخيص المدفوع · فعال (بدون تاريخ انتهاء محدد)";
+            else
+            {
+                var span=TimeSpan.FromSeconds(Math.Max(0,remaining));
+                SidebarLicense.Text="الترخيص المدفوع · المتبقي\n"+
+                    ((int)span.TotalDays).ToString("00")+":"+
+                    span.Hours.ToString("00")+":"+span.Minutes.ToString("00")+":"+
+                    span.Seconds.ToString("00");
+            }
+        }
+        else SidebarLicense.Text=status.Message;
+    }
+
     private async void MonitorLicense_Tick(object? sender,EventArgs e)
     {
         if(_monitorBusy || _gateway is null || _licenseGate is null)return;
@@ -340,7 +375,8 @@ public partial class MainWindow : Window
             if(_activeLicenseMode=="trial" && _localTrial is not null)
             {
                 var trial=_localTrial.Check();
-                SidebarLicense.Text=TrialNotice(trial);
+                _lastLicenseStatus=trial;
+                UpdateLicenseCountdown();
                 if(trial.Mode!="trial")
                 {
                     await LogoutAsync();
@@ -355,7 +391,8 @@ public partial class MainWindow : Window
                 _nextPaidVerifyUtc=DateTimeOffset.UtcNow.AddMinutes(30);
                 var check=await _paidLicense.VerifyAsync(_storedPaidCode);
                 _licenseGate.SetPaid(check);
-                SidebarLicense.Text=check.Message;
+                _lastLicenseStatus=check;
+                UpdateLicenseCountdown();
                 if(!check.Permitted)
                 {
                     await LogoutAsync();
@@ -417,8 +454,8 @@ public partial class MainWindow : Window
             _session = session;
             _gateway = gateway;
             _activeLicenseMode=entitlement.Mode;
-            SidebarLicense.Text=entitlement.Mode=="trial"
-                ?TrialNotice(entitlement):entitlement.Message;
+            _lastLicenseStatus=entitlement;
+            UpdateLicenseCountdown();
             _nextPaidVerifyUtc=DateTimeOffset.UtcNow.AddMinutes(30);
             LicenseNotice.Text=entitlement.Message;
             if(entitlement.Mode=="trial")
@@ -430,7 +467,10 @@ public partial class MainWindow : Window
             _licenseMonitor.Tick-=MonitorLicense_Tick;
             _licenseMonitor.Tick+=MonitorLicense_Tick;
             _licenseMonitor.Start();
-            SidebarRouter.Text = endpoint.Host + " : " + endpoint.Port + "  •  " + endpoint.Username;
+            _sidebarCountdown ??= new DispatcherTimer {Interval=TimeSpan.FromSeconds(1)};
+            _sidebarCountdown.Tick-=SidebarCountdown_Tick;
+            _sidebarCountdown.Tick+=SidebarCountdown_Tick;
+            _sidebarCountdown.Start();
             if(SaveConnectionInput.IsChecked==true)
             {
                 try
@@ -445,7 +485,8 @@ public partial class MainWindow : Window
                 {
                     // Saving connection history is optional; never block an authenticated
                     // RouterOS session because the local profile file is unavailable.
-                    SidebarRouter.Text += " • لم تحفظ المحفوظات: " + ex.Message;
+                    // Connection is active; optional saved connection failures are non-fatal.
+                    LoginStatus.Text="لم تحفظ بيانات الاتصال محليا: "+ex.Message;
                 }
             }
             PasswordInput.Clear();
@@ -460,6 +501,9 @@ public partial class MainWindow : Window
         }
         finally { _isConnecting = false; ConnectButton.IsEnabled = true; }
     }
+
+    private void SidebarCountdown_Tick(object? sender,EventArgs e) =>
+        UpdateLicenseCountdown();
 
     private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -476,7 +520,7 @@ public partial class MainWindow : Window
         PageSubtitle.Text = page.Subtitle;
         PageHost.Content = page.Key switch
         {
-            "dashboard" => new DashboardView(_gateway, _store, NavigateTo, HostInput.Text.Trim()),
+            "dashboard" => _dashboardPage ??= new DashboardView(_gateway, _store, NavigateTo, HostInput.Text.Trim()),
             "generator" => new VoucherWorkspaceView(_gateway, _store, HostInput.Text.Trim()+":"+PortInput.Text.Trim(),
                 _pendingVoucherService,_pendingVoucherProfile),
             "cards" => new CardsView(_gateway,_store),
@@ -521,6 +565,9 @@ public partial class MainWindow : Window
     private async Task LogoutAsync()
     {
         _licenseMonitor?.Stop();
+        _sidebarCountdown?.Stop();
+        _lastLicenseStatus=null;
+        _dashboardPage=null;
         _activeLicenseMode="";
         NavList.SelectedIndex = -1;
         PageHost.Content = null;
@@ -537,6 +584,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _licenseMonitor?.Stop();
+        _sidebarCountdown?.Stop();
         _session?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         _licenseHttp.Dispose();
         _store.Dispose();
