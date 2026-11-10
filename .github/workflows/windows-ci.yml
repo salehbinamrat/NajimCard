@@ -40,6 +40,12 @@ jobs:
           name: NajmCard-creator-1200x750
           path: out/creator-1200x750.png
           if-no-files-found: error
+      - name: Upload login screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: NajmCard-login-1200x750
+          path: out/login-1200x750.png
+          if-no-files-found: error
       - name: Upload dashboard screenshot
         uses: actions/upload-artifact@v4
         with:
