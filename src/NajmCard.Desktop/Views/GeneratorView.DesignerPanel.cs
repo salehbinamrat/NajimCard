@@ -130,10 +130,12 @@ public partial class GeneratorView
             options.Children.Add(line);
         }
         Option("نوع الخط",_designFontFamily);
-        Option("حجم الخط",_designFontSize);
+        Option("حجم الخط",PageUi.CompactNumberChoice(_designFontSize,
+            "8","10","12","14","16","18","20","22","24","26","28","30","32","36","40"));
         Option("لون الرقم",PaletteButton("تغيير",_designTextColor));
         Option("لون الحدود",PaletteButton("تغيير",_designBorderColor));
-        Option("سمك الحدود",_designBorderWidth);
+        Option("سمك الحدود",PageUi.CompactNumberChoice(_designBorderWidth,
+            "0","0.5","1","1.5","2","3","4","5"));
         Grid.SetColumn(options,1);
         previewRow.Children.Add(options);
         AddPanel(previewRow,2);
