@@ -30,8 +30,8 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         self.assertIn("new GridLength(58,GridUnitType.Star)",self.layout)
         self.assertNotIn("new GridLength(48,GridUnitType.Star)",self.layout)
         self.assertNotIn("new GridLength(52,GridUnitType.Star)",self.layout)
-        self.assertIn("Grid.SetColumn(formatSurface,0)",self.layout)
-        self.assertIn("Grid.SetColumn(routeSurface,1)",self.layout)
+        self.assertIn("Grid.SetColumn(leftColumn,0)",self.layout)
+        self.assertIn("Grid.SetColumn(rightColumn,1)",self.layout)
 
     def test_content_fills_width_without_nested_gutters(self):
         self.assertIn("surface.Margin=new Thickness(1,1,1,2)",self.layout)
