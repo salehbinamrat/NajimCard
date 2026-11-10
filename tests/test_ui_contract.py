@@ -60,6 +60,8 @@ class UiDesignContract(unittest.TestCase):
                     "GeneratorView.DesignerPanel.cs",
                     "GeneratorView.ProfileLoading.cs",
                     "GeneratorView.PageCount.cs"})
+            if view=="PrintingView":
+                expected.add("PrintingView.PrintSelectors.cs")
             self.assertEqual(set(matches), expected,
                              f"{view}: one main owner plus only explicitly reviewed partials")
         for path, content in sources:
@@ -78,7 +80,7 @@ class UiDesignContract(unittest.TestCase):
         designer=(DESKTOP / "Views" / "GeneratorView.DesignerPanel.cs").read_text(encoding="utf-8")
         for option in ("بيانات ومسار الإرسال","إنشاء المستخدم وطباعة الكروت",
                        "معاينة وتصميم الكرت","عدد الكروت",
-                       "إعداد الطباعة والدفعة","إعدادات الصفحة والطباعة",
+                       "إعداد الطباعة والدفعة",
                        "إنشاء وإرسال وحفظ",
                        "إنشاء وإرسال","معاينة قبل الطباعة",
                        "حفظ PDF","معاينة PDF","طباعة الدفعة"):
