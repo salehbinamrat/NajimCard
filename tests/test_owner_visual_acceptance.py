@@ -16,10 +16,10 @@ def source(name):
 class OwnerVisualAcceptance(unittest.TestCase):
     def test_card_editor_matches_two_column_reference_order(self):
         layout = source("GeneratorView.ReferenceLayout.cs")
-        self.assertIn("Grid.SetColumn(rightColumn,1)", layout)
-        self.assertIn("Grid.SetColumn(leftColumn,0)", layout)
-        self.assertIn("rightColumn.Children.Add(designSurface)", layout)
-        self.assertIn("Grid.SetRow(secondary,2)", layout)
+        self.assertIn("Grid.SetRow(routeSurface,0)", layout)
+        self.assertIn("Grid.SetRow(formatSurface,1)", layout)
+        self.assertIn("Grid.SetColumn(designSurface,1)", layout)
+        self.assertIn("Grid.SetRow(lower,2)", layout)
         generator = source("GeneratorView.cs")
         for title in ("بيانات ومسار الإرسال", "إنشاء المستخدم وطباعة الكروت",
                       "عدد الكروت"):
@@ -105,7 +105,7 @@ class OwnerVisualAcceptance(unittest.TestCase):
         ET.fromstring(theme)
         self.assertIn('TargetType="DataGridColumnHeader"', theme)
         self.assertIn('Property="Foreground" Value="{StaticResource TextBrush}"', theme)
-        self.assertIn('Property="RowBackground" Value="{StaticResource SurfaceBrush}"', theme)
+        self.assertIn('Property="RowBackground" Value="#FFF8EC"', theme)
         self.assertIn('TargetType="DataGridRow"', theme)
 
 if __name__ == "__main__":
