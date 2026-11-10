@@ -34,11 +34,11 @@ public partial class GeneratorView
         {
             // A missing/deleted package must never silently switch to another one.
             _profile.SelectedIndex=-1;
-            _status.Text="الباقة المحددة «"+requested+
+            _catalogStatus.Text="الباقة المحددة «"+requested+
                 "» غير موجودة الآن على الراوتر. حدّث الباقات وتحقق قبل الإنشاء.";
             return;
         }
         _profile.SelectedItem=found;
-        _status.Text="تم تحديد الباقة «"+found+"» من الراوتر.";
+        _catalogStatus.Text="تم تحديد الباقة «"+found+"» من الراوتر.";
     }
 }

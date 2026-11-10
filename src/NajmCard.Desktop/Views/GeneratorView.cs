@@ -185,6 +185,32 @@ public partial class GeneratorView : UserControl
         routeInputs.Children.Add(serverBox);
         routeInputs.Children.Add(profileBox);
         servicePanel.Children.Add(routeInputs);
+        var catalogRow=new DockPanel{Margin=new Thickness(0,3,0,0)};
+        var refreshCatalog=PageUi.Button("تحديث الباقات",false);
+        refreshCatalog.MinWidth=0;
+        refreshCatalog.MinHeight=29;
+        refreshCatalog.FontSize=11;
+        refreshCatalog.Padding=new Thickness(8,3,8,3);
+        refreshCatalog.Margin=new Thickness(0,0,5,0);
+        refreshCatalog.Click+=async (_,_) =>
+        {
+            if(!_profile.IsEnabled || _sending || _preparing)return;
+            await LoadProfilesAsync();
+        };
+        DockPanel.SetDock(refreshCatalog,Dock.Right);
+        catalogRow.Children.Add(refreshCatalog);
+        _catalogStatus.Margin=new Thickness(2,1,2,1);
+        _catalogStatus.FontSize=11;
+        _catalogStatus.Text="بانتظار قراءة الباقات";
+        _catalogStatus.TextTrimming=TextTrimming.CharacterEllipsis;
+        _catalogStatus.TextWrapping=TextWrapping.NoWrap;
+        _catalogStatus.VerticalAlignment=VerticalAlignment.Center;
+        _catalogStatus.SetBinding(ToolTipProperty,new System.Windows.Data.Binding(nameof(TextBlock.Text))
+        {
+            Source=_catalogStatus
+        });
+        catalogRow.Children.Add(_catalogStatus);
+        servicePanel.Children.Add(catalogRow);
         if(!embedded)
         {
             servicePanel.Children.Add(PageUi.Label("خدمة الكروت"));
@@ -421,18 +447,22 @@ public partial class GeneratorView : UserControl
             SetPreviewCredentials("");
             _profile.ItemsSource = null;
             _customer.ItemsSource = null;
+            _server.ItemsSource = new[]{"all"};
+            _server.SelectedIndex=0;
             _customerPanel.Visibility = SelectedService == "userman"
                 ? Visibility.Visible : Visibility.Collapsed;
-            await LoadProfilesAsync();
+            if(IsLoaded)await LoadProfilesAsync();
         };
         _profile.SelectionChanged += (_, _) =>
         {
-            if(_restoringPreset)return;
+            if(_restoringPreset || _applyingProfileCatalog)return;
             packageSaveFeedback.Text="";
             packageSaveFeedback.Visibility=Visibility.Collapsed;
             _batch=[];
             BatchChanged?.Invoke();
-            SelectMatchingOwner();
+            _applyingProfileCatalog=true;
+            try{SelectMatchingOwner();}
+            finally{_applyingProfileCatalog=false;}
             RestorePackagePreset();
         };
         _customer.SelectionChanged += (_,_) =>
@@ -445,6 +475,7 @@ public partial class GeneratorView : UserControl
         SubscribeLiveCardPreview();
         SubscribeLiveCardAppearance();
         Loaded += async (_, _) => await LoadProfilesAsync();
+        Unloaded += (_,_)=>_profileRequestVersion++;
     }
 
     private VoucherCardAppearance ReadCurrentAppearance()

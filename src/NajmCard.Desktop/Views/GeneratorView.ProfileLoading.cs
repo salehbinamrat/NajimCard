@@ -9,72 +9,95 @@ namespace NajmCard.Desktop.Views;
 /// editor to keep GUI changes isolated and reviewable.</summary>
 public partial class GeneratorView
 {
+    private readonly SemaphoreSlim _profileReadGate=new(1,1);
+    private readonly TextBlock _catalogStatus=PageUi.Status();
+    private bool _applyingProfileCatalog;
+
     private async Task LoadProfilesAsync()
     {
-        var requestVersion = ++_profileRequestVersion;
-        var service = SelectedService;
-        _profile.IsEnabled = false;
-        _status.Text = "جارٍ تحميل الباقات من الراوتر...";
+        var requestVersion=++_profileRequestVersion;
+        var service=SelectedService;
+        var previousProfile=_profile.SelectedItem?.ToString();
+        var previousServer=_server.SelectedItem?.ToString();
+        var previousOwner=_customer.SelectedItem?.ToString();
+        bool IsCurrent()=>requestVersion==_profileRequestVersion && SelectedService==service;
+        _profile.IsEnabled=_server.IsEnabled=_customer.IsEnabled=false;
+        _catalogStatus.Text="جار تحميل الباقات من الراوتر...";
+
+        // RouterOS commands must drain their replies. Superseded reads are
+        // skipped between commands, without aborting an active API session.
+        await _profileReadGate.WaitAsync();
         try
         {
-            if (service == "hotspot")
+            if(!IsCurrent())return;
+            IReadOnlyList<UserManagerV6Profile> umProfiles=[];
+            string[] servers=["all"];
+            string[] customers=[];
+            string[] names;
+            if(service=="hotspot")
             {
-                var profiles = await _gateway.ReadProfilesAsync();
-                var servers = await _gateway.ReadServersAsync();
-                if (SelectedService != service || requestVersion != _profileRequestVersion) return;
-                _server.ItemsSource=new[]{"all"}.Concat(servers
-                    .Select(x=>x.Name)
-                    .Where(x=>!string.IsNullOrWhiteSpace(x))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)).ToArray();
-                _server.SelectedIndex=0;
-                _umProfiles = [];
-                _profile.ItemsSource = profiles.Select(x => x.Name).ToArray();
-                if (_profile.Items.Count > 0) _profile.SelectedIndex = 0;
-            }
-            else if (service == "userman")
-            {
-                _server.ItemsSource=new[]{"all"};
-                _server.SelectedIndex=0;
-                var profiles = await _gateway.ReadUserManagerV6ProfilesAsync();
-                var customers = await _gateway.ReadUserManagerV6CustomersAsync();
-                if (SelectedService != service || requestVersion != _profileRequestVersion) return;
-                _umProfiles = profiles;
-                _customer.ItemsSource = customers.Select(x => x.Login)
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                var profiles=await _gateway.ReadProfilesAsync();
+                if(!IsCurrent())return;
+                var rows=await _gateway.ReadServersAsync();
+                servers=servers.Concat(rows.Select(row=>row.Name))
+                    .Where(name=>!string.IsNullOrWhiteSpace(name))
                     .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-                _profile.ItemsSource = profiles.Select(x => x.Name).ToArray();
-                if (_profile.Items.Count > 0) _profile.SelectedIndex = 0;
-                if (_customer.Items.Count > 0 && _customer.SelectedIndex < 0)
-                    _customer.SelectedIndex = 0;
-                SelectMatchingOwner();
+                names=profiles.Select(row=>row.Name).ToArray();
             }
-            else if (service == "pppoe")
+            else if(service=="userman")
             {
-                _server.ItemsSource=new[]{"all"};
-                _server.SelectedIndex=0;
-                var inventory = await _gateway.ReadPppInventoryAsync();
-                if (SelectedService != service || requestVersion != _profileRequestVersion) return;
-                _umProfiles = [];
-                _profile.ItemsSource = inventory.Profiles.Select(x => x.Name).ToArray();
-                if (_profile.Items.Count > 0) _profile.SelectedIndex = 0;
+                umProfiles=await _gateway.ReadUserManagerV6ProfilesAsync();
+                if(!IsCurrent())return;
+                var rows=await _gateway.ReadUserManagerV6CustomersAsync();
+                customers=rows.Select(row=>row.Login).Where(name=>!string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                names=umProfiles.Select(row=>row.Name).ToArray();
             }
-            _status.Text = "عدد باقات " +
-                (service == "userman" ? "User Manager v6" :
-                    service == "pppoe" ? "PPPoE" : "Hotspot") +
-                ": " + _profile.Items.Count;
-            ApplyPendingPackageSelection(service);
+            else
+            {
+                var profiles=await _gateway.ReadPppProfilesAsync();
+                names=profiles.Select(row=>row.Name).ToArray();
+            }
+            if(!IsCurrent())return;
+
+            _applyingProfileCatalog=true;
+            try
+            {
+                _umProfiles=umProfiles;
+                _server.ItemsSource=servers;
+                _server.SelectedItem=previousServer??"all";
+                _customer.ItemsSource=customers;
+                _customer.SelectedItem=previousOwner??customers.FirstOrDefault();
+                _profile.ItemsSource=names;
+                _profile.SelectedItem=previousProfile is null?names.FirstOrDefault():previousProfile;
+                _catalogStatus.Text=names.Length==0?"لا توجد باقات لهذه الخدمة.":"عدد الباقات: "+names.Length;
+                ApplyPendingPackageSelection(service);
+                if(previousOwner is null)SelectMatchingOwner();
+            }
+            finally{_applyingProfileCatalog=false;}
+
+            if(!string.Equals(previousProfile,_profile.SelectedItem?.ToString(),StringComparison.Ordinal) ||
+                !string.Equals(previousOwner,_customer.SelectedItem?.ToString(),StringComparison.Ordinal))
+            {
+                _batch=[];
+                BatchChanged?.Invoke();
+                RestorePackagePreset();
+            }
+            UpdateLiveCardPreview();
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
-            if (SelectedService == service && requestVersion == _profileRequestVersion)
+            if(IsCurrent())_catalogStatus.Text="تعذرت قراءة الباقات: "+ex.Message;
+        }
+        finally
+        {
+            _profileReadGate.Release();
+            if(IsCurrent())
             {
-                _profile.ItemsSource = null;
-                _customer.ItemsSource = null;
-                _status.Text = "تعذرت قراءة باقات الخدمة: " + ex.Message;
+                _profile.IsEnabled=true;
+                _server.IsEnabled=service=="hotspot";
+                _customer.IsEnabled=service=="userman";
             }
         }
-        finally { if(requestVersion == _profileRequestVersion) _profile.IsEnabled = true; }
     }
-
-
 }

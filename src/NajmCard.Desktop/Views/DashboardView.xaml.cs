@@ -123,13 +123,13 @@ public partial class DashboardView : UserControl
         try
         {
             var activities=await Task.Run(()=>_store.ReadRecentActivities(6),cancellationToken);
-            if(IsLoaded && !cancellationToken.IsCancellationRequested &&
-                (_displayedActivities is null || !_displayedActivities.SequenceEqual(activities)))
+            if(!IsLoaded || cancellationToken.IsCancellationRequested)return;
+            if(_displayedActivities is null || !_displayedActivities.SequenceEqual(activities))
             {
                 RenderActivity(activities);
                 _displayedActivities=activities;
-                ActivityRows.ClearValue(ToolTipProperty);
             }
+            ActivityRows.ClearValue(ToolTipProperty);
         }
         catch(OperationCanceledException) { }
         catch(Exception ex)

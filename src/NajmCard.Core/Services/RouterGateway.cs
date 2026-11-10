@@ -284,7 +284,7 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
     public async Task<PppInventory> ReadPppInventoryAsync(CancellationToken ct = default)
     {
         var secrets = await client.CommandAsync("/ppp/secret/print", cancellationToken: ct);
-        var profileRows = await client.CommandAsync("/ppp/profile/print", cancellationToken: ct);
+        var profiles = await ReadPppProfilesAsync(ct);
         var activeRows = await client.CommandAsync("/ppp/active/print", cancellationToken: ct);
 
         var active = activeRows.Select(row => new PppActiveSession(
@@ -302,11 +302,15 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
             activeNames.Contains(Get(row, "name")),
             Get(row, "comment"))).ToArray();
 
-        var profiles = profileRows.Select(row => new PppProfile(
-            Get(row, ".id"), Get(row, "name"), Get(row, "rate-limit"),
-            Get(row, "local-address"), Get(row, "remote-address"))).ToArray();
-
         return new PppInventory(accounts, profiles, active);
+    }
+
+    public async Task<IReadOnlyList<PppProfile>> ReadPppProfilesAsync(CancellationToken ct=default)
+    {
+        var rows=await client.CommandAsync("/ppp/profile/print",cancellationToken:ct);
+        return rows.Select(row=>new PppProfile(
+            Get(row,".id"),Get(row,"name"),Get(row,"rate-limit"),
+            Get(row,"local-address"),Get(row,"remote-address"))).ToArray();
     }
 
     public async Task<IReadOnlyList<HotspotSession>> ReadSessionsAsync(CancellationToken ct = default)
