@@ -402,16 +402,7 @@ public partial class GeneratorView : UserControl
         try
         {
             var savedStyle=_store.LoadCardAppearance();
-            _designTitle.Text=savedStyle.NetworkTitle;
-            _designFontFamily.SelectedItem=savedStyle.FontFamily;
-            _designFontSize.Text=savedStyle.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
-            _designBackground.Text=savedStyle.BackgroundColor;
-            _designTextColor.Text=savedStyle.UsernameColor;
-            _designBorderColor.Text=savedStyle.BorderColor;
-            _designBorderWidth.Text=savedStyle.BorderWidth.ToString(CultureInfo.InvariantCulture);
-            _designShowPassword.IsChecked=savedStyle.ShowPassword;
-            _designShowProfile.IsChecked=savedStyle.ShowProfile;
-            ApplyCardAppearance(savedStyle);
+            LoadCardAppearanceFields(savedStyle);
         }
         catch(Exception ex)
         {
@@ -542,16 +533,7 @@ public partial class GeneratorView : UserControl
                 _credentialMode.SelectedIndex=v?.UsernameOnly==false?1:0;
                 _lengthWithPrefix.IsChecked=v?.LengthIncludesPrefix??true;
                 var d=v?.Appearance??new VoucherCardAppearance();
-                _designTitle.Text=d.NetworkTitle;
-                _designFontFamily.SelectedItem=d.FontFamily;
-                _designFontSize.Text=d.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
-                _designBackground.Text=d.BackgroundColor;
-                _designTextColor.Text=d.UsernameColor;
-                _designBorderColor.Text=d.BorderColor;
-                _designBorderWidth.Text=d.BorderWidth.ToString(CultureInfo.InvariantCulture);
-                _designShowPassword.IsChecked=d.ShowPassword;
-                _designShowProfile.IsChecked=d.ShowProfile;
-                ApplyCardAppearance(d);
+                LoadCardAppearanceFields(d);
                 PackagePrintSettingsRestored?.Invoke(v?.Print??new CardPrintOptions());
                 _status.Text=v is null?"لا يوجد قالب محفوظ لهذه الباقة.":
                     "استُعيدت إعدادات التوليد والتصميم والطباعة المحفوظة لهذه الباقة.";

@@ -6,6 +6,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.IO;
 using NajmCard.Core.Models;
+using NajmCard.Desktop.Services;
+using Microsoft.Win32;
 
 namespace NajmCard.Desktop.Views;
 
@@ -250,6 +252,69 @@ public partial class GeneratorView
         _previewElements.Place(_previewPassword,appearance.PasswordPosition??
             CardElementPanel.PasswordBelow(appearance.CredentialsPosition));
         _previewElements.Place(_previewPackageName,appearance.ProfilePosition??CardElementPanel.DefaultProfile);
+    }
+
+    private static string TemplateImageFolder => Path.Combine(Environment.GetFolderPath(
+        Environment.SpecialFolder.LocalApplicationData),"NajmCard","CardTemplates");
+
+    private const string PortableTemplateFilter="قالب نجم كارد (*.najmtemplate)|*.najmtemplate";
+
+    private void ExportPortableTemplate()
+    {
+        var dialog=new SaveFileDialog
+        {
+            Title="تصدير قالب الكرت",Filter=PortableTemplateFilter,
+            DefaultExt=".najmtemplate",AddExtension=true,FileName="قالب_نجم_كارد"
+        };
+        if(dialog.ShowDialog()!=true)return;
+        try
+        {
+            PortableCardTemplate.Export(dialog.FileName,ReadCurrentAppearance());
+            _designStatus.Text="تم تصدير التصميم وصورته في ملف القالب.";
+        }
+        catch(Exception ex) when(ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or
+            NotSupportedException or FormatException or InvalidOperationException or
+            System.Runtime.InteropServices.COMException)
+        {
+            _designStatus.Text="تعذر تصدير القالب: "+ex.Message;
+        }
+    }
+
+    private void ImportPortableTemplate()
+    {
+        var dialog=new OpenFileDialog
+        {
+            Title="استيراد قالب الكرت",Filter=PortableTemplateFilter,CheckFileExists=true
+        };
+        if(dialog.ShowDialog()!=true)return;
+        try
+        {
+            var appearance=PortableCardTemplate.Import(dialog.FileName,TemplateImageFolder);
+            _restoringPreset=true;
+            try{LoadCardAppearanceFields(appearance);}
+            finally{_restoringPreset=false;UpdateLiveCardPreview();}
+            _designStatus.Text="تم استيراد القالب. احفظ إعدادات القالب لهذه الباقة للاحتفاظ به.";
+        }
+        catch(Exception ex) when(ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or
+            NotSupportedException or FormatException or InvalidOperationException or
+            System.Runtime.InteropServices.COMException)
+        {
+            _designStatus.Text="تعذر استيراد القالب: "+ex.Message;
+        }
+    }
+
+    private void LoadCardAppearanceFields(VoucherCardAppearance appearance)
+    {
+        _designTitle.Text=appearance.NetworkTitle;
+        _designFontFamily.SelectedItem=appearance.FontFamily;
+        _designFontSize.Text=appearance.UsernameFontSize.ToString(CultureInfo.InvariantCulture);
+        _designBackground.Text=appearance.BackgroundColor;
+        _designTextColor.Text=appearance.UsernameColor;
+        _designBorderColor.Text=appearance.BorderColor;
+        _designBorderWidth.Text=appearance.BorderWidth.ToString(CultureInfo.InvariantCulture);
+        _designShowPassword.IsChecked=appearance.ShowPassword;
+        _designShowProfile.IsChecked=appearance.ShowProfile;
+        ApplyCardAppearance(appearance);
     }
 
     private void SubscribeLiveCardAppearance()
