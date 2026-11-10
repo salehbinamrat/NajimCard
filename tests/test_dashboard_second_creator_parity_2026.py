@@ -68,6 +68,12 @@ class NewDashboardAndCreatorContract(unittest.TestCase):
         self.assertIn('("عدد الصفحات", _pagesEstimate)',generator)
         self.assertIn("CompactNumberChoice(",printer)
 
+    def test_card_element_checkbox_titles_remain_visible(self):
+        designer=read(V/"GeneratorView.DesignerPanel.cs")
+        self.assertIn("var caption=new TextBlock",designer)
+        self.assertIn("caption.MouseLeftButtonUp+=",designer)
+        self.assertIn("option.Children.Add(caption)",designer)
+
     def test_one_line_route_and_side_by_side_username_kind_and_chars(self):
         generator=read(V/"GeneratorView.cs")
         self.assertIn("routeInputs.Children.Add(_customerPanel)",generator)
