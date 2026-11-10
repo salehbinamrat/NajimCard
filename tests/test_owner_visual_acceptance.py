@@ -21,8 +21,8 @@ class OwnerVisualAcceptance(unittest.TestCase):
         self.assertIn("Grid.SetColumn(designSurface,1)", layout)
         self.assertIn("Grid.SetRow(secondary,1)", layout)
         generator = source("GeneratorView.cs")
-        for title in ("الباقة ومسار الإرسال", "اسم المستخدم وكلمة المرور",
-                      "بيانات التوليد الأساسية"):
+        for title in ("بيانات ومسار الإرسال", "إنشاء المستخدم وطباعة الكروت",
+                      "عدد الكروت"):
             self.assertIn(title, generator)
 
     def test_card_workspace_is_burgundy_gold_and_fields_are_legible(self):
