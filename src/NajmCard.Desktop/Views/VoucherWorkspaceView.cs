@@ -36,8 +36,8 @@ public sealed class VoucherWorkspaceView : UserControl
         CardDropdownStyle.Setters.Add(new Setter(Control.FontWeightProperty,FontWeights.SemiBold));
         CardDropdownStyle.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,29d));
         var CardDropdownItems=new Style(typeof(ComboBoxItem));
-        CardDropdownItems.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#301529")!));
-        CardDropdownItems.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF4E6")!));
+        CardDropdownItems.Setters.Add(new Setter(Control.BackgroundProperty,(Brush)new BrushConverter().ConvertFrom("#FFF5E7")!));
+        CardDropdownItems.Setters.Add(new Setter(Control.ForegroundProperty,(Brush)new BrushConverter().ConvertFrom("#231023")!));
         root.Resources[typeof(ComboBox)]=CardDropdownStyle;
         root.Resources[typeof(ComboBoxItem)]=CardDropdownItems;
         var whiteInput=new Style(typeof(TextBox));
