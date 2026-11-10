@@ -28,7 +28,7 @@ public sealed record VoucherCardAppearance(
     bool ShowPhone = false,
     bool ShowQr = false,
     bool ShowTime = false,
-    bool ShowDate = false,
+    bool ShowDate = true,
     bool ShowSequence = false,
     bool ShowRoute = false,
     string CapacityText = "",
