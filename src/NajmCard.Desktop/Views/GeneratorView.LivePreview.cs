@@ -24,6 +24,7 @@ public partial class GeneratorView
                CultureInfo.InvariantCulture,out passwordLength))
             throw new ArgumentException("أدخل طول كلمة المرور بشكل صحيح.");
 
+        if(!forPreview)RequireRouteSelection();
         var profile=_profile.SelectedItem?.ToString()??"";
         if(forPreview && string.IsNullOrWhiteSpace(profile))
             profile="معاينة محلية فقط";

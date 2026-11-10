@@ -32,10 +32,10 @@ public sealed class VoucherWorkspaceView : UserControl
         creator.RefreshPageCount();
 
         var root=new DockPanel{LastChildFill=true,FlowDirection=FlowDirection.RightToLeft,
-            Background=(Brush)new BrushConverter().ConvertFrom("#1D0B19")!};
+            Background=(Brush)new BrushConverter().ConvertFrom("#FFF4DF")!};
         // Keep the creator's compact dimensions on the shared dark templates.
         var dropdown=new Style(typeof(ComboBox),(Style)Application.Current.FindResource("DarkComboBox"));
-        dropdown.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
+        dropdown.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,26d));
         dropdown.Setters.Add(new Setter(Control.BackgroundProperty,
             (Brush)new BrushConverter().ConvertFrom("#FFFAF0")!));
         dropdown.Setters.Add(new Setter(Control.ForegroundProperty,
@@ -63,8 +63,8 @@ public sealed class VoucherWorkspaceView : UserControl
         dropdown.Setters.Add(new Setter(ItemsControl.ItemTemplateProperty,optionTemplate));
         root.Resources[typeof(ComboBox)]=dropdown;
         var input=new Style(typeof(TextBox),(Style)Application.Current.FindResource(typeof(TextBox)));
-        input.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
-        input.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(6,4,6,4)));
+        input.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,26d));
+        input.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(5,2,5,2)));
         input.Setters.Add(new Setter(Control.BackgroundProperty,
             (Brush)new BrushConverter().ConvertFrom("#FFFAF0")!));
         input.Setters.Add(new Setter(Control.ForegroundProperty,
@@ -86,7 +86,10 @@ public sealed class VoucherWorkspaceView : UserControl
         {
             var service=id;
             var btn=PageUi.Button(title,false);
-            btn.Height=38;
+            btn.Height=31;
+            btn.MinHeight=31;
+            btn.Padding=new Thickness(5,3,5,3);
+            btn.Content=new TextBlock {Text=title,FontWeight=FontWeights.Bold};
             btn.FontSize=14;
             btn.FontWeight=FontWeights.ExtraBold;
             btn.Margin=new Thickness(1);
@@ -108,7 +111,9 @@ public sealed class VoucherWorkspaceView : UserControl
                 btn.Background=(Brush)new BrushConverter().ConvertFrom(palette.Item1)!;
                 btn.Foreground=(Brush)new BrushConverter().ConvertFrom(palette.Item2)!;
                 btn.Opacity=selected?1.0:0.85;
-                btn.FontSize=selected?15:14;
+                var label=(TextBlock)btn.Content;
+                label.Foreground=btn.Foreground;
+                label.FontSize=selected?15:14;
             }
         }
         creator.ServiceChanged+=PaintTabs;
@@ -153,7 +158,7 @@ public sealed class VoucherWorkspaceView : UserControl
             button.Margin=new Thickness(2);
             button.MinWidth=0;
             button.Padding=new Thickness(5,3,5,3);
-            button.Height=43;
+            button.Height=39;
             button.Background=(Brush)new BrushConverter().ConvertFromInvariantString(bg)!;
             button.Foreground=(Brush)new BrushConverter().ConvertFromInvariantString(fg)!;
             button.Content=new TextBlock
@@ -166,11 +171,11 @@ public sealed class VoucherWorkspaceView : UserControl
             return button;
         }
         var actions=new[]{
-            MakeButton("إنشاء وإرسال وحفظ","#720D31","#FFFFFF"),
-            MakeButton("إنشاء وإرسال","#AD7419","#FFFFFF"),
+            MakeButton("إنشاء وإرسال وحفظ","#13653E","#FFF5E6"),
+            MakeButton("إنشاء وإرسال","#EAC477","#49142C"),
             MakeButton("إعادة الإعدادات","#165B65","#FFFFFF"),
             MakeButton("معاينة قبل الطباعة","#1756AE","#FFFFFF"),
-            MakeButton("حفظ PDF","#102A47","#FFFFFF"),
+            MakeButton("حفظ PDF","#641A81","#FFF5E6"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
             MakeButton("طباعة الدفعة","#6532A6","#FFFFFF")
         };

@@ -35,7 +35,7 @@ class CreatorLivePreviewDensity(unittest.TestCase):
 
     def test_content_fills_width_without_nested_gutters(self):
         self.assertIn("panel.Margin=new Thickness(1,1,1,3)",self.layout)
-        self.assertIn("surface.Padding=new Thickness(6)",self.card)
+        self.assertIn("surface.Padding=new Thickness(4)",self.card)
         self.assertIn("surface.Margin=new Thickness(0)",self.card)
         self.assertIn("printPanel.Margin=new Thickness(0)",self.printer)
         self.assertNotIn("fields.Width=1140",self.workspace)

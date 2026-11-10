@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -95,6 +96,11 @@ internal static class Program
             var footerBounds=footer.TransformToAncestor(root).TransformBounds(new Rect(footer.RenderSize));
             if(footer.ActualHeight<=0 || footerBounds.Bottom>height)
                 throw new InvalidDataException("The creator action bar is outside the window.");
+
+            var palette=VisualChildren<UniformGrid>(root).Single(grid=>Equals(grid.Tag,"CardPalette"));
+            var paletteBounds=palette.TransformToAncestor(root).TransformBounds(new Rect(palette.RenderSize));
+            if(paletteBounds.Height<=0 || paletteBounds.Bottom>footerBounds.Top+1)
+                throw new InvalidDataException("The default creator view clips the card color palette.");
 
             VerifyPasswordPreview(root);
             root.UpdateLayout();

@@ -80,7 +80,7 @@ public partial class GeneratorView
         // The card keeps its aspect ratio. Size the row to the artwork and
         // appearance controls so spare viewport height stays outside the panel.
         var designer=new Grid();
-        for(int i=0;i<7;i++)
+        for(int i=0;i<9;i++)
             designer.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
         void AddPanel(UIElement element,int row)
         {
@@ -94,13 +94,16 @@ public partial class GeneratorView
         foreach(var button in new[]{templateImage,advanced})
         {
             button.MinWidth=0;button.Margin=new Thickness(2);
-            button.Padding=new Thickness(4,5,4,5);
+            button.Padding=new Thickness(3,1,3,1);
             button.FontSize=12;button.FontWeight=FontWeights.Bold;
-            button.MinHeight=30;button.Foreground=Brushes.White;
+            button.MinHeight=21;button.Foreground=Brushes.FloralWhite;
             button.Background=(Brush)new BrushConverter().ConvertFrom("#75203E")!;
             toolbar.Children.Add(button);
         }
-        AddPanel(toolbar,1);
+        toolbar.HorizontalAlignment=HorizontalAlignment.Right;
+        toolbar.Width=188;
+        Grid.SetRow(toolbar,0);
+        designer.Children.Add(toolbar);
         templateImage.Click+=(_,_)=>ChooseTemplateImage();
 
         var previewRow=_designPreviewRow;
@@ -248,7 +251,20 @@ public partial class GeneratorView
         designStatus.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
         designStatus.Margin=new Thickness(1,1,1,2);designStatus.FontSize=11;
         if(embedded)designStatus.Margin=new Thickness(1,0,1,1);
-        AddPanel(designStatus,6);
+        AddPanel(ReferenceHeader("شريط الألوان (لون الكرت)"),6);
+        var swatches=new UniformGrid{Rows=1,Tag="CardPalette",Margin=new Thickness(2,1,2,1)};
+        foreach(var hex in new[]{"#571474","#AB1472","#3938BE","#147BB8","#238235",
+            "#B3CE12","#F8CD24","#E68A18","#B91C24","#7B275A","#F299BF","#FFF4DF","#171118"})
+        {
+            var color=(Brush)new BrushConverter().ConvertFrom(hex)!;
+            var swatch=new Button{Background=color,Height=19,Margin=new Thickness(2,0,2,0),
+                BorderThickness=new Thickness(1),ToolTip=hex};
+            System.Windows.Automation.AutomationProperties.SetName(swatch,"لون خلفية الكرت "+hex);
+            swatch.Click+=(_,_)=>_designBackground.Text=hex;
+            swatches.Children.Add(swatch);
+        }
+        AddPanel(swatches,7);
+        AddPanel(designStatus,8);
         var designSurface=embedded?CompactSurface(designer,"#75203E")
             :PageUi.Surface(designer,"#75203E");
 

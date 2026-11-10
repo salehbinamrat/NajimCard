@@ -14,6 +14,14 @@ public partial class GeneratorView
     private readonly TextBlock _catalogStatus=PageUi.Status();
     private bool _applyingProfileCatalog;
 
+    private void RequireRouteSelection()
+    {
+        if(!_profile.IsEnabled || _profile.SelectedIndex<0)
+            throw new ArgumentException("اختر باقة محملة من الراوتر.");
+        if(SelectedService=="userman" && (!_customer.IsEnabled || _customer.SelectedIndex<0))
+            throw new ArgumentException("اختر حساب مدير User Manager.");
+    }
+
     private async Task LoadProfilesAsync()
     {
         var requestVersion=++_profileRequestVersion;
@@ -23,6 +31,7 @@ public partial class GeneratorView
         var previousOwner=_customer.SelectedItem?.ToString();
         bool IsCurrent()=>requestVersion==_profileRequestVersion && SelectedService==service;
         _profile.IsEnabled=_server.IsEnabled=_customer.IsEnabled=false;
+        bool hasProfiles=false, hasCustomers=false;
         _catalogStatus.Text="جار تحميل الباقات من الراوتر...";
         _applyingProfileCatalog=true;
         try
@@ -91,6 +100,8 @@ public partial class GeneratorView
             _applyingProfileCatalog=true;
             try
             {
+                hasProfiles=names.Length>0;
+                hasCustomers=customers.Length>0;
                 _umProfiles=umProfiles;
                 _server.ItemsSource=servers;
                 _server.SelectedItem=servers.Contains(previousServer) ? previousServer : "all";
@@ -144,12 +155,9 @@ public partial class GeneratorView
             _profileReadGate.Release();
             if(IsCurrent())
             {
-                _profile.IsEnabled=_profile.ItemsSource is string[] ps &&
-                    ps.Length>0 && !ps[0].Contains("تحديث",StringComparison.Ordinal);
+                _profile.IsEnabled=hasProfiles;
                 _server.IsEnabled=service=="hotspot";
-                _customer.IsEnabled=service=="userman" &&
-                    _customer.ItemsSource is string[] cs && cs.Length>0 &&
-                    !cs[0].Contains("تحديث",StringComparison.Ordinal);
+                _customer.IsEnabled=service=="userman" && hasCustomers;
             }
         }
     }
