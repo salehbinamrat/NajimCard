@@ -488,23 +488,23 @@ public partial class DashboardView : UserControl
         if(activities.Count==0)
         {
             ActivityRows.Children.Add(new TextBlock{
-                Text="لا توجد عمليات مسجلة بعد.",Foreground=Brushes.LightGray,
+                Text="لا توجد عمليات مسجلة بعد.",Foreground=new SolidColorBrush(Color.FromRgb(86,37,57)),
                 Margin=new Thickness(8,12,8,10)});
             return;
         }
         foreach(var item in activities.Take(6))
         {
             var line=new Grid{
-                Background=(Brush)FindResource("CanvasBrush"),
+                Background=(Brush)new BrushConverter().ConvertFrom("#F5E6DB")!,
                 Height=25,Margin=new Thickness(0,0,0,1)
             };
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
             line.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(0.85,GridUnitType.Star)});
             var color=item.Status switch{
-                "SUCCESS"=>Brushes.LightGreen,
-                "ERROR"=>Brushes.LightCoral,
-                "PARTIAL"=>Brushes.Khaki,
-                _=>Brushes.LightSkyBlue};
+                "SUCCESS"=>(Brush)new BrushConverter().ConvertFrom("#176D4F")!,
+                "ERROR"=>(Brush)new BrushConverter().ConvertFrom("#96243F")!,
+                "PARTIAL"=>(Brush)new BrushConverter().ConvertFrom("#A16618")!,
+                _=>(Brush)new BrushConverter().ConvertFrom("#285E9C")!};
             line.Children.Add(new TextBlock{
                 Text="● "+item.Action,Foreground=color,FontSize=12,
                 FontWeight=FontWeights.SemiBold,VerticalAlignment=VerticalAlignment.Center,
@@ -513,7 +513,8 @@ public partial class DashboardView : UserControl
             var stamp=DateTimeOffset.TryParse(item.Timestamp,out var t)
                 ?t.ToLocalTime().ToString("HH:mm",CultureInfo.InvariantCulture):"—";
             var detail=new TextBlock{
-                Text=stamp+"  "+item.Detail,ToolTip=item.Detail,Foreground=Brushes.White,FontSize=11,
+                Text=stamp+"  "+item.Detail,ToolTip=item.Detail,
+                Foreground=(Brush)new BrushConverter().ConvertFrom("#4B1B32")!,FontSize=11,
                 VerticalAlignment=VerticalAlignment.Center,TextTrimming=TextTrimming.CharacterEllipsis,
                 Margin=new Thickness(6,0,6,0)};
             Grid.SetColumn(detail,1);line.Children.Add(detail);
