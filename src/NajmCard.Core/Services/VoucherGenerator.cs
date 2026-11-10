@@ -11,8 +11,13 @@ public static class VoucherGenerator
     public const string UppercaseLetters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
     public const string Mixed = Digits + UppercaseLetters;
 
-    public static IReadOnlyList<Voucher> Generate(VoucherGenerationOptions options,
-        IReadOnlySet<string>? reserved = null)
+    // One validation path for both live artwork samples and actual voucher batches.
+    // Preview intentionally returns plain text, never an issuable Voucher entity.
+    private sealed record PreparedGeneration(
+        string Prefix, string Characters, int SuffixLength,
+        string PasswordCharacters, int PasswordLength);
+
+    private static PreparedGeneration Prepare(VoucherGenerationOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         if(options.Count is < 1 or > 10000)
@@ -24,38 +29,58 @@ public static class VoucherGenerator
             throw new ArgumentException("بادئة الكرت يجب أن تتكون من أحرف إنجليزية وأرقام أو - و _.");
         if(string.IsNullOrWhiteSpace(options.Profile))
             throw new ArgumentException("اختر الباقة أولاً.");
-        string chars = Alphabet(options.Characters,"أحرف اسم المستخدم",minimum:2);
+        var chars=Alphabet(options.Characters,"أحرف اسم المستخدم",minimum:2);
         var suffixLength=options.LengthIncludesPrefix ? options.Length-prefix.Length : options.Length;
         if(suffixLength < 0)
             throw new ArgumentException("بادئة الكرت أطول من طول الرقم المطلوب.");
         if(options.LengthIncludesPrefix && suffixLength == 0 && options.Count != 1)
             throw new ArgumentException("البادئة تشغل رقم الكرت كاملا؛ لا يمكن إنشاء عدة كروت مختلفة.");
-        int passwordLength=options.PasswordLength==0 && options.PasswordCharacters is null
+        var passwordLength=options.PasswordLength==0 && options.PasswordCharacters is null
             ? options.Length : options.PasswordLength;
-        string passwordChars=options.PasswordCharacters is null ? chars
+        var passwordChars=options.PasswordCharacters is null ? chars
             : Alphabet(options.PasswordCharacters,"أحرف كلمة المرور",minimum:1);
         if(!options.PasswordEqualsUsername &&
             passwordLength is < 1 or > 64)
             throw new ArgumentException("طول كلمة المرور يجب أن يكون من 1 إلى 64.");
-        var possibilities=BigInteger.Pow(chars.Length,suffixLength);
-        if(possibilities < options.Count)
+        if(BigInteger.Pow(chars.Length,suffixLength)<options.Count)
             throw new ArgumentException(
                 "مساحة أرقام الكروت لا تكفي للعدد المطلوب؛ زد الطول أو مجموعة الأحرف.");
-        var used = new HashSet<string>(
-            reserved ?? new HashSet<string>(), StringComparer.OrdinalIgnoreCase);
+        return new PreparedGeneration(prefix,chars,suffixLength,passwordChars,passwordLength);
+    }
+
+    /// <summary>
+    /// Create an ephemeral preview of the precise generation configuration.
+    /// No database, RouterOS connection, batch identifier or Voucher record is created.
+    /// </summary>
+    public static (string Username, string Password) PreviewSample(
+        VoucherGenerationOptions options)
+    {
+        var p=Prepare(options);
+        var username=p.Prefix+NextToken(p.Characters,p.SuffixLength);
+        var password=options.PasswordEqualsUsername ? username
+            : DifferentPassword(p.PasswordCharacters,p.PasswordLength,username);
+        return (username,password);
+    }
+
+    public static IReadOnlyList<Voucher> Generate(VoucherGenerationOptions options,
+        IReadOnlySet<string>? reserved = null)
+    {
+        var p=Prepare(options);
+        var used=new HashSet<string>(
+            reserved ?? new HashSet<string>(),StringComparer.OrdinalIgnoreCase);
         var results=new List<Voucher>(options.Count);
         string batch=DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")+"-"+
             Guid.NewGuid().ToString("N")[..8];
         long budget=Math.Max((long)options.Count*65,200);
-        while(results.Count < options.Count && budget-- > 0)
+        while(results.Count<options.Count && budget-- > 0)
         {
-            string username=prefix+NextToken(chars,suffixLength);
+            string username=p.Prefix+NextToken(p.Characters,p.SuffixLength);
             if(!used.Add(username))continue;
             string password=options.PasswordEqualsUsername ? username
-                : DifferentPassword(passwordChars,passwordLength,username);
+                : DifferentPassword(p.PasswordCharacters,p.PasswordLength,username);
             results.Add(new Voucher(username,password,options.Profile,batch,DateTimeOffset.UtcNow));
         }
-        if(results.Count != options.Count)
+        if(results.Count!=options.Count)
             throw new InvalidOperationException(
                 "تعذر توليد عدد الكروت المطلوبة دون تكرار؛ غيّر الأحرف أو طول الرقم.");
         return results;
