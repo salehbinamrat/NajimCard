@@ -10,8 +10,36 @@ namespace NajmCard.Desktop.Services;
 /// delivery subset. DPAPI decrypts only the returned rows. Also shares a single
 /// mapper with the legacy GetVouchers API to prevent contract drift.
 /// </summary>
+public sealed record PrintableBatchSummary(string Service,string BatchId,string Profile,int Count)
+{
+    public string DisplayName => $"{BatchId} · {Profile} · {Count} كرت";
+}
+
+/// <summary>Metadata only; no decrypting card passwords for the dropdown.</summary>
 public sealed partial class VoucherStore
 {
+    public IReadOnlyList<PrintableBatchSummary> ListPrintableBatches(int limit=40)
+    {
+        if(limit is <1 or >100)
+            throw new ArgumentOutOfRangeException(nameof(limit));
+        using var db=Open();
+        using var cmd=db.CreateCommand();
+        cmd.CommandText="""
+            SELECT service,batch_id,MIN(profile),COUNT(*)
+            FROM vouchers
+            WHERE sent=1 AND delivery_status='SENT'
+            GROUP BY service,batch_id
+            ORDER BY MAX(created_at) DESC LIMIT $limit
+            """;
+        cmd.Parameters.AddWithValue("$limit",limit);
+        using var reader=cmd.ExecuteReader();
+        var result=new List<PrintableBatchSummary>();
+        while(reader.Read())
+            result.Add(new PrintableBatchSummary(reader.GetString(0),reader.GetString(1),
+                reader.GetString(2),checked((int)reader.GetInt64(3))));
+        return result;
+    }
+
     public IReadOnlyList<Voucher> GetBatchVouchers(string service,string batchId)
     {
         if(service is not ("hotspot" or "userman" or "pppoe"))
