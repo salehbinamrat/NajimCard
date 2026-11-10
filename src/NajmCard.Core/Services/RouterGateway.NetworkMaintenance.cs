@@ -10,6 +10,11 @@ namespace NajmCard.Core.Services;
 /// </summary>
 public sealed partial class RouterGateway
 {
+    public async Task RebootAsync(CancellationToken ct = default)
+    {
+        await client.CommandAsync("/system/reboot", cancellationToken: ct);
+    }
+
     public async Task<IReadOnlyList<RouterNeighborDetail>> ReadNearbyDevicesAsync(
         CancellationToken ct = default)
     {

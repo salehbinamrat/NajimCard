@@ -18,7 +18,7 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn('_store.SavePackagePreset(saved)',s)
         self.assertIn('PrintOptionsProvider?.Invoke()',s)
         self.assertIn('ReadCurrentAppearance()',s)
-        self.assertIn('servicePanel.Children.Add(packageSaveFeedback)',s)
+        self.assertIn('ShowCreatorToast(quickSaveButton',s)
 
     def test_username_only_is_default_even_for_new_unsaved_package(self):
         s=self.g
@@ -29,7 +29,7 @@ class HadramoutQuickSaveUi(unittest.TestCase):
 
     def test_save_feedback_resets_for_service_profile_and_customer(self):
         s=self.g
-        self.assertGreaterEqual(s.count('packageSaveFeedback.Visibility=Visibility.Collapsed'),4)
+        self.assertGreaterEqual(s.count('_creatorToast.IsOpen=false'),4)
         self.assertIn('if(_sending||_preparing||_restoringPreset)',s)
 
     def test_failed_preview_does_not_claim_success(self):

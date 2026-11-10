@@ -1,4 +1,4 @@
-"""Regression requirements for the 1200x750 fixed screen and print settings."""
+"""Regression requirements for the 1200x730 fixed screen and print settings."""
 from pathlib import Path
 import unittest
 import xml.etree.ElementTree as ET
@@ -12,13 +12,13 @@ XNS="{http://schemas.microsoft.com/winfx/2006/xaml}"
 def read(file):return file.read_text(encoding="utf-8")
 
 class FixedScreenPrintAcceptance(unittest.TestCase):
-    def test_fixed_1200x750_no_maximize_and_preserve_footer(self):
+    def test_fixed_1200x730_no_maximize_and_preserve_footer(self):
         window=ET.parse(DESKTOP/"MainWindow.xaml").getroot()
         self.assertEqual(window.attrib["Width"],"1200")
-        self.assertEqual(window.attrib["Height"],"750")
+        self.assertEqual(window.attrib["Height"],"730")
         self.assertEqual(window.attrib["ResizeMode"],"NoResize")
         self.assertEqual(window.attrib["MaxWidth"],"1200")
-        self.assertEqual(window.attrib["MaxHeight"],"750")
+        self.assertEqual(window.attrib["MaxHeight"],"730")
         host=read(V/"VoucherWorkspaceView.cs")
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",host)
         self.assertIn('MakeButton("طباعة الدفعة"',host)
@@ -46,7 +46,7 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
         printer=read(V/"PrintingView.cs")
         selectors=read(V/"PrintingView.PrintSelectors.cs")
         host=read(V/"VoucherWorkspaceView.cs")
-        self.assertIn('ReferenceHeader("إعداد الطباعة والدفعة")',printer)
+        self.assertIn('ReferenceHeader("إعدادات الصفحة والطباعة")',printer)
         self.assertIn('"الأعمدة"',printer)
         self.assertIn('"الصفوف"',printer)
         self.assertIn('"الورق"',printer)

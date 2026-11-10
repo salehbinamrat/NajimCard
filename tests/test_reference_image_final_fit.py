@@ -39,14 +39,14 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",self.workspace)
 
     def test_top_grid_balances_credential_and_profile_without_blank_side_columns(self):
-        self.assertIn("Width=new GridLength(42,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(58,GridUnitType.Star)",self.layout)
-        self.assertIn("surface.VerticalAlignment=VerticalAlignment.Stretch",self.layout)
-        self.assertIn("leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto})",self.layout)
-        self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
-        self.assertIn("Grid.SetRow(secondary,2)",self.layout)
+        self.assertIn("Width = new GridLength(36, GridUnitType.Star)",self.layout)
+        self.assertIn("Width = new GridLength(64, GridUnitType.Star)",self.layout)
+        self.assertIn("surface.VerticalAlignment = VerticalAlignment.Top",self.layout)
+        self.assertIn("Grid.SetColumnSpan(formatSurface, 2)",self.layout)
+        self.assertIn("Grid.SetColumnSpan(routeSurface, 2)",self.layout)
+        self.assertIn("Grid.SetRow(formatSurface, 1)",self.layout)
+        self.assertIn("Grid.SetRow(designSurface, 2)",self.layout)
+        self.assertIn("Grid.SetRow(printColumn, 2)",self.layout)
     def test_photo_card_preview_is_responsive_without_cutting_actual_artwork(self):
         self.assertIn("new Viewbox",self.creator)
         self.assertIn("Stretch=Stretch.Uniform",self.creator)
@@ -54,10 +54,10 @@ class ReferenceImageFinalFit(unittest.TestCase):
         self.assertIn("ClipToBounds=true",self.card)
         self.assertIn("TemplateImagePath",self.printing)
         self.assertIn("ChooseTemplateImage()",self.design)
-    def test_basic_generation_has_five_working_columns_and_page_count_in_sync(self):
-        self.assertIn("Columns = 5",self.creator)
+    def test_basic_generation_and_page_count_in_sync(self):
+        self.assertIn("Columns = 3",self.creator)
         self.assertIn('("عدد الصفحات", _pagesEstimate)',self.creator)
-        self.assertIn('("طول كلمة المرور", _passwordLength)',self.creator)
+        self.assertIn('CompactNumberChoice(_passwordLength,lengths)',self.creator)
         page_sync=(VIEW/"GeneratorView.PageCount.cs").read_text(encoding="utf-8")
         self.assertIn("public void RefreshPageCount()",page_sync)
         self.assertIn("CardBatchQuantityPlanner.CardsForSheets",page_sync)

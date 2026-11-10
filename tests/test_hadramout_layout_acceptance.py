@@ -19,12 +19,12 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
     def test_two_exactly_aligned_columns_without_side_gutters(self):
         self.assertIn("CreateReferenceLayout(", self.g)
         self.assertNotIn("left.Margin=new Thickness(0,0,9,0)",self.g)
-        self.assertIn("Grid.SetRow(routeSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(formatSurface,0)",self.layout)
-        self.assertIn("Grid.SetRow(designSurface,1)",self.layout)
-        self.assertIn("Grid.SetRow(secondary,2)",self.layout)
-        self.assertIn("Width=new GridLength(42,GridUnitType.Star)",self.layout)
-        self.assertIn("Width=new GridLength(58,GridUnitType.Star)",self.layout)
+        self.assertIn("Grid.SetColumnSpan(routeSurface, 2)",self.layout)
+        self.assertIn("Grid.SetRow(formatSurface, 1)",self.layout)
+        self.assertIn("Grid.SetRow(designSurface, 2)",self.layout)
+        self.assertIn("Grid.SetRow(printColumn, 2)",self.layout)
+        self.assertIn("Width = new GridLength(36, GridUnitType.Star)",self.layout)
+        self.assertIn("Width = new GridLength(64, GridUnitType.Star)",self.layout)
         self.assertNotIn("Viewbox",self.creator)
     def test_cropped_in_place_editor_controls_are_moved_to_modal(self):
         self.assertIn("تعديلات متقدمة",self.editor)
@@ -57,7 +57,7 @@ class HadramoutLayoutAcceptance(unittest.TestCase):
         self.assertIn("عرض النشطة",self.dash)
         self.assertIn("عرض المنتهية",self.dash)
     def test_dashboard_balanced_cards_and_buttons(self):
-        self.assertIn('Text="●  متصل"',self.dash)
+        self.assertIn('x:Name="RouterConnectionStatus"',self.dash)
         self.assertIn("تعطيل الهوتسبوت",self.dash)
         self.assertIn("إعادة بناء / تحسين",self.dash)
         self.assertIn('Text="الرئيسية"',self.dash)

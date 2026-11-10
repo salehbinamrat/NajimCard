@@ -198,7 +198,7 @@ public partial class PrintingView : UserControl
             else part.Children.Add(control);
             host.Children.Add(part);
         }
-        stack.Children.Add(ReferenceHeader("إعداد الطباعة والدفعة"));
+        stack.Children.Add(ReferenceHeader("إعدادات الصفحة والطباعة"));
         Field(basicPrintFields,"الأعمدة",cols);
         Field(basicPrintFields,"الصفوف",rows);
         Field(basicPrintFields,"الاتجاه",orientation);
@@ -271,7 +271,7 @@ public partial class PrintingView : UserControl
         var printPanel=PageUi.Surface(stack,"#A97A48");
         if(embedded)
         {
-            printPanel.Padding=new Thickness(6);
+            printPanel.Padding=new Thickness(4);
             printPanel.CornerRadius=new CornerRadius(9);
             printPanel.Margin=new Thickness(0);
             // Size to the last working control; never fill the left column

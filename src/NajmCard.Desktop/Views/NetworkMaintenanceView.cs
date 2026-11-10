@@ -10,7 +10,7 @@ namespace NajmCard.Desktop.Views;
 /// the established Hotspot FTP/template and read-only network tools.</summary>
 public sealed class NetworkMaintenanceView : UserControl
 {
-    public NetworkMaintenanceView(RouterGateway gateway,string routerHost="")
+    public NetworkMaintenanceView(RouterGateway gateway,string routerHost="",bool openHotspot=false)
     {
         var root=PageUi.Column();
         // The shared top bar provides the only primary page title.
@@ -21,6 +21,7 @@ public sealed class NetworkMaintenanceView : UserControl
             var tab=new TabItem{Header=name,Content=new ScrollViewer
             {
                 VerticalScrollBarVisibility=ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
                 Content=element
             }};
             tabs.Items.Add(tab);return tab;
@@ -151,15 +152,18 @@ public sealed class NetworkMaintenanceView : UserControl
         serverGrid.IsReadOnly=true;serverGrid.EnableRowVirtualization=true;
         var serverButtons=new WrapPanel();
         var readServers=PageUi.Button("تحديث السيرفرات");
-        var enable=PageUi.Button("تفعيل المحدد",false);
+        var enable=PageUi.Button("استعادة / تفعيل المحدد",false);
         var disable=PageUi.Button("تعطيل المحدد",false);
+        enable.Background=new SolidColorBrush(Color.FromRgb(22,102,67));
+        disable.Background=new SolidColorBrush(Color.FromRgb(124,22,44));
+        enable.Foreground=disable.Foreground=Brushes.FloralWhite;
         serverButtons.Children.Add(readServers);serverButtons.Children.Add(enable);
         serverButtons.Children.Add(disable);
         var serverStatus=PageUi.Status();
         serversPanel.Children.Add(serverButtons);
         serversPanel.Children.Add(serverGrid);
         serversPanel.Children.Add(serverStatus);
-        Add("سيرفرات الهوتسبوت",PageUi.Surface(serversPanel,"#9D5F70"));
+        var hotspotTab=Add("سيرفرات الهوتسبوت",PageUi.Surface(serversPanel,"#9D5F70"));
         bool serverBusy=false;
         async Task LoadServers()
         {
@@ -200,7 +204,18 @@ public sealed class NetworkMaintenanceView : UserControl
 
         // Existing FTP, Hotspot template, full interface/inventory tools remain accessible.
         Add("أدوات إضافية",new ToolsView(gateway,routerHost));
-        tabs.SelectedIndex=0;
+        if(openHotspot)
+        {
+            tabs.SelectedItem=hotspotTab;
+            RoutedEventHandler onLoad=null!;
+            onLoad=async(_,_) =>
+            {
+                Loaded-=onLoad;
+                await LoadServers();
+            };
+            Loaded+=onLoad;
+        }
+        else tabs.SelectedIndex=0;
         Content=PageUi.Wrap("التحكم بالشبكة والصيانة",
             "تبويبات مطابقة للمراجع مع الحفاظ على أدوات نجم كارد الموجودة.",
             PageUi.Surface(root,"#9C7859"));

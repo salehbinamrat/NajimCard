@@ -19,7 +19,7 @@ public partial class GeneratorView
     {
         var surface=PageUi.Surface(content,accent);
         // Hadramout reference geometry with NajmCard burgundy/gold surfaces.
-        surface.Padding=new Thickness(6);
+        surface.Padding=new Thickness(4);
         surface.Margin=new Thickness(0);
         surface.CornerRadius=new CornerRadius(9);
         surface.Background=(Brush)new BrushConverter().ConvertFrom("#FFF4DF")!;
@@ -39,8 +39,8 @@ public partial class GeneratorView
             label.FontWeight=FontWeights.SemiBold;
             // PageUi.Label has 12pt top padding for spacious pages; inside the
             // single Hadramout-style voucher editor this creates tall empty gaps.
-            label.Margin=new Thickness(1,2,1,2);
-            label.FontSize=Math.Min(label.FontSize,13);
+            label.Margin=new Thickness(1,1,1,1);
+            label.FontSize=Math.Min(label.FontSize,12);
         }
         if(node is CheckBox checkbox)
             checkbox.Foreground=(Brush)new BrushConverter().ConvertFrom("#48192A")!;
@@ -61,6 +61,13 @@ public partial class GeneratorView
     private readonly TextBlock _previewNetworkName=new();
     private readonly TextBlock _previewPackageName=new();
     private readonly List<UIElement> _sampleArtwork=[];
+    private readonly TextBlock _sampleDetails=new()
+    {
+        Text="2 جيجا\n1 يوم", FontFamily=new FontFamily("Arial"),
+        FontSize=24, FontWeight=FontWeights.Bold, Foreground=Brushes.FloralWhite,
+        TextAlignment=TextAlignment.Center, VerticalAlignment=VerticalAlignment.Center
+    };
+    private bool _showDemoArtwork;
     private Border? _previewUsernamePlate;
     private Border? _previewPasswordPlate;
     private Grid? _previewCardCanvas;
@@ -139,7 +146,7 @@ public partial class GeneratorView
         };
         var discContent=new StackPanel{VerticalAlignment=VerticalAlignment.Center};
         discContent.Children.Add(new TextBlock{
-            Text="نجم",FontFamily=new FontFamily("Arial"),
+            Text="200\nريال",FontFamily=new FontFamily("Arial"),
             Foreground=Brushes.White,FontSize=25,FontWeight=FontWeights.ExtraBold,
             TextAlignment=TextAlignment.Center});
         _previewPackageName.FontFamily=new FontFamily("Arial");
@@ -159,6 +166,7 @@ public partial class GeneratorView
                 (Color)ColorConverter.ConvertFromString("#D4A8FF")!,
                 (Color)ColorConverter.ConvertFromString("#8B40E2")!,70)
         };
+        rightAccent.Child=_sampleDetails;
         artwork.Children.Add(rightAccent);_sampleArtwork.Add(rightAccent);
         card.Children.Add(new Viewbox {Child=artwork,Stretch=Stretch.Fill});
 
@@ -441,16 +449,21 @@ public partial class GeneratorView
         _currentAppearance=appearance;
         if(changed)CardAppearanceChanged?.Invoke();
         PlacePreviewElements(appearance);
-        _previewNetworkName.Text=appearance.NetworkTitle;
+        _showDemoArtwork=string.IsNullOrEmpty(appearance.TemplateImagePath) &&
+            appearance.BackgroundColor==new VoucherCardAppearance().BackgroundColor &&
+            string.IsNullOrEmpty(appearance.CapacityText) && string.IsNullOrEmpty(appearance.PhoneText) &&
+            appearance.NetworkTitle==new VoucherCardAppearance().NetworkTitle;
+        _previewNetworkName.Text=_showDemoArtwork?"نجم نت ★":appearance.NetworkTitle;
         _previewNetworkName.Visibility=appearance.ShowTitle?Visibility.Visible:Visibility.Collapsed;
         _previewCapacity.Text=appearance.CapacityText;
-        _previewPhone.Text=appearance.PhoneText;
+        _previewPhone.Text=_showDemoArtwork?"780757658 · 775321455":appearance.PhoneText;
         _previewTime.Text=DateTime.Now.ToString("HH:mm",CultureInfo.InvariantCulture);
         _previewDate.Text=DateTime.Now.ToString("yyyy-MM-dd",CultureInfo.InvariantCulture);
         _previewSequence.Text="0001";
         _previewRoute.Text=SelectedService;
         _previewCapacity.Visibility=appearance.ShowCapacity && appearance.CapacityText.Length>0?Visibility.Visible:Visibility.Collapsed;
-        _previewPhone.Visibility=appearance.ShowPhone && appearance.PhoneText.Length>0?Visibility.Visible:Visibility.Collapsed;
+        _previewPhone.Visibility=_showDemoArtwork || (appearance.ShowPhone && appearance.PhoneText.Length>0)
+            ?Visibility.Visible:Visibility.Collapsed;
         _previewTime.Visibility=appearance.ShowTime?Visibility.Visible:Visibility.Collapsed;
         _previewDate.Visibility=appearance.ShowDate?Visibility.Visible:Visibility.Collapsed;
         _previewSequence.Visibility=appearance.ShowSequence?Visibility.Visible:Visibility.Collapsed;
@@ -459,7 +472,7 @@ public partial class GeneratorView
         _previewQr.Visibility=appearance.ShowQr?Visibility.Visible:Visibility.Collapsed;
         RefreshQrPreview(_cardPreview.Text);
         _previewPackageName.Text=(_profile.SelectedItem?.ToString()??"الباقة")+" · "+SelectedService;
-        _previewPackageName.Visibility=appearance.ShowProfile?Visibility.Visible:Visibility.Collapsed;
+        _previewPackageName.Visibility=appearance.ShowProfile && !_showDemoArtwork?Visibility.Visible:Visibility.Collapsed;
         var hasPicture=!string.IsNullOrWhiteSpace(appearance.TemplateImagePath);
         var ink=(Brush)new BrushConverter().ConvertFromInvariantString(appearance.UsernameColor)!;
         var backing=new SolidColorBrush(PrintingView.ChooseArtworkTextBacking(appearance.UsernameColor));
@@ -467,10 +480,9 @@ public partial class GeneratorView
         _previewNetworkName.Background=Brushes.Transparent;
         _previewPackageName.Foreground=ink;
         _previewPackageName.Background=Brushes.Transparent;
-        // Default print output is a plain background; never display decorative
-        // shapes that are missing from the actual PDF.
+        // Sample artwork and contact numbers appear only on the local demo.
         foreach(var shape in _sampleArtwork)
-            shape.Visibility=Visibility.Collapsed;
+            shape.Visibility=_showDemoArtwork?Visibility.Visible:Visibility.Collapsed;
         _cardPreview.FontFamily=new FontFamily(appearance.FontFamily);
         _previewNetworkName.FontSize=10*appearance.TitleScale;
         _previewPassword.FontSize=10*appearance.PasswordScale;

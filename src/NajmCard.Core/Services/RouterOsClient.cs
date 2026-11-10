@@ -33,6 +33,7 @@ public sealed class RouterOsClient : IAsyncDisposable, IRouterReceiptClient, IRo
     private readonly Stream _stream;
     private readonly SemaphoreSlim _lock = new(1, 1);
     private bool _disposed;
+    internal bool IsUsable => !_disposed;
 
     private RouterOsClient(TcpClient tcp, Stream stream) { _tcp = tcp; _stream = stream; }
 
@@ -142,7 +143,7 @@ public sealed class RouterOsClient : IAsyncDisposable, IRouterReceiptClient, IRo
         catch (Exception ex) when (
             ex is OperationCanceledException ||
             (ex is IOException && ex is not RouterOsTrapException) ||
-            ex is SocketException || ex is ObjectDisposedException)
+            ex is SocketException or InvalidDataException or ObjectDisposedException)
         {
             // An incomplete reply leaves arbitrary sentences on the TCP stream.
             // Fail closed: the next call must reconnect rather than consume stale data.

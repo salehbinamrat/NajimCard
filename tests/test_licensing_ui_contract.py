@@ -28,7 +28,7 @@ class LicensingUiContract(unittest.TestCase):
             self.assertIn(value,xaml)
         for value in ("OnSuccessfulRouterLogin()","ActivateAsync(",
                       "VerifyAsync(","LicenseGate",
-                      "RouterOsClient.ConnectAsync("):
+                      "RouterSessionService.OpenAsync("):
             self.assertIn(value,code)
         self.assertIn("await session.DisposeAsync()",code)
         trial=(APP/"Services/Licensing/LocalTrialService.cs").read_text(encoding="utf-8")

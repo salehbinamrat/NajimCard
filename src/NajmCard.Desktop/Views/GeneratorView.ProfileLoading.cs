@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using NajmCard.Core.Models;
 using NajmCard.Core.Services;
 
@@ -22,7 +23,18 @@ public partial class GeneratorView
         var previousOwner=_customer.SelectedItem?.ToString();
         bool IsCurrent()=>requestVersion==_profileRequestVersion && SelectedService==service;
         _profile.IsEnabled=_server.IsEnabled=_customer.IsEnabled=false;
+        _catalogStatus.Foreground=PageUi.Muted;
         _catalogStatus.Text="جار تحميل الباقات من الراوتر...";
+        var failures=new List<string>();
+        async Task<IReadOnlyList<T>> Read<T>(string label,Func<Task<IReadOnlyList<T>>> read)
+        {
+            try { return await read(); }
+            catch(Exception ex)
+            {
+                failures.Add(label+": "+ex.Message);
+                return [];
+            }
+        }
 
         // RouterOS commands must drain their replies. Superseded reads are
         // skipped between commands, without aborting an active API session.
@@ -36,9 +48,9 @@ public partial class GeneratorView
             string[] names;
             if(service=="hotspot")
             {
-                var profiles=await _gateway.ReadProfilesAsync();
+                var profiles=await Read("الباقات",()=>_gateway.ReadProfilesAsync());
                 if(!IsCurrent())return;
-                var rows=await _gateway.ReadServersAsync();
+                var rows=await Read("السيرفرات",()=>_gateway.ReadServersAsync());
                 servers=servers.Concat(rows.Select(row=>row.Name))
                     .Where(name=>!string.IsNullOrWhiteSpace(name))
                     .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -46,16 +58,16 @@ public partial class GeneratorView
             }
             else if(service=="userman")
             {
-                umProfiles=await _gateway.ReadUserManagerV6ProfilesAsync();
+                umProfiles=await Read("الباقات",()=>_gateway.ReadUserManagerV6ProfilesAsync());
                 if(!IsCurrent())return;
-                var rows=await _gateway.ReadUserManagerV6CustomersAsync();
+                var rows=await Read("حساب المدير",()=>_gateway.ReadUserManagerV6CustomersAsync());
                 customers=rows.Select(row=>row.Login).Where(name=>!string.IsNullOrWhiteSpace(name))
                     .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
                 names=umProfiles.Select(row=>row.Name).ToArray();
             }
             else
             {
-                var profiles=await _gateway.ReadPppProfilesAsync();
+                var profiles=await Read("الباقات",()=>_gateway.ReadPppProfilesAsync());
                 names=profiles.Select(row=>row.Name).ToArray();
             }
             if(!IsCurrent())return;
@@ -69,10 +81,17 @@ public partial class GeneratorView
                 _customer.ItemsSource=customers;
                 _customer.SelectedItem=previousOwner??customers.FirstOrDefault();
                 _profile.ItemsSource=names;
-                _profile.SelectedItem=previousProfile is null?names.FirstOrDefault():previousProfile;
+                _profile.SelectedItem=previousProfile??names.FirstOrDefault();
                 _catalogStatus.Text=names.Length==0?"لا توجد باقات لهذه الخدمة.":"عدد الباقات: "+names.Length;
+                if(service=="userman" && customers.Length==0)
+                    _catalogStatus.Text+=" | لا توجد حسابات مدير متاحة.";
                 ApplyPendingPackageSelection(service);
                 if(previousOwner is null)SelectMatchingOwner();
+                if(failures.Count>0)
+                {
+                    _catalogStatus.Foreground=new SolidColorBrush(Color.FromRgb(135, 23, 47));
+                    _catalogStatus.Text="تعذر التحميل من الراوتر. "+string.Join(" | ",failures);
+                }
             }
             finally{_applyingProfileCatalog=false;}
 
@@ -87,7 +106,11 @@ public partial class GeneratorView
         }
         catch(Exception ex)
         {
-            if(IsCurrent())_catalogStatus.Text="تعذرت قراءة الباقات: "+ex.Message;
+            if(IsCurrent())
+            {
+                _catalogStatus.Foreground=new SolidColorBrush(Color.FromRgb(135, 23, 47));
+                _catalogStatus.Text="تعذرت قراءة الباقات: "+ex.Message;
+            }
         }
         finally
         {

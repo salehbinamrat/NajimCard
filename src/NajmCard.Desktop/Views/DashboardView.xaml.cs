@@ -23,6 +23,7 @@ public partial class DashboardView : UserControl
     private CancellationTokenSource? _lifecycleToken;
     private readonly DispatcherTimer _telemetryTimer=new() {Interval=TimeSpan.FromSeconds(1)};
     private bool _initialSnapshotLoaded;
+    private DateTimeOffset _nextSnapshotAttempt;
     private bool _initialLifecycleAttempted;
     private bool _liveTelemetryRunning;
     private CancellationTokenSource? _telemetryToken;
@@ -41,10 +42,7 @@ public partial class DashboardView : UserControl
         {
             _telemetryTimer.Start();
             if(!_initialSnapshotLoaded)
-            {
-                _initialSnapshotLoaded=true;
                 _=RefreshAsync();
-            }
             if(!_initialLifecycleAttempted)
                 _=ScheduleInitialLifecycleAsync();
         };
@@ -65,6 +63,29 @@ public partial class DashboardView : UserControl
         // their owning page: never disable services from a dashboard shortcut.
         _navigate("tools");
     }
+    private void HotspotMaintenance_Click(object sender, RoutedEventArgs e) => _navigate("tools-hotspot");
+
+    private async void Reboot_Click(object sender, RoutedEventArgs e)
+    {
+        if (!PageUi.Confirm("إعادة تشغيل الراوتر الآن؟ سينقطع اتصال المشتركين مؤقتا.")) return;
+        RebootButton.IsEnabled = false;
+        try
+        {
+            await _gateway.RebootAsync();
+            ErrorStatus.Text = "أُرسل أمر إعادة التشغيل. حدّث اللوحة بعد عودة الراوتر.";
+        }
+        catch (RouterOsTrapException ex)
+        {
+            ErrorStatus.Text = "تعذر تأكيد إعادة التشغيل من الراوتر: " + ex.Message;
+        }
+        catch (Exception ex)
+        {
+            ErrorStatus.Text = "تعذر تأكيد إعادة التشغيل. تحقق من حالة الراوتر قبل تكرار الأمر.";
+            ErrorStatus.ToolTip = ex.Message;
+        }
+        finally { RebootButton.IsEnabled = true; }
+    }
+
     private void ManageCards_Click(object sender, RoutedEventArgs e) => _navigate("cards");
     private void Reports_Click(object sender, RoutedEventArgs e) => _navigate("reports");
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
@@ -74,6 +95,13 @@ public partial class DashboardView : UserControl
     private async Task RefreshLiveTelemetryAsync()
     {
         if(!IsLoaded || _liveTelemetryRunning || _refreshing)return;
+        // Give an unsuccessful initial snapshot time to reconnect before retrying
+        // the full totals, instead of polling only the online counts forever.
+        if(!_initialSnapshotLoaded)
+        {
+            if(DateTimeOffset.UtcNow >= _nextSnapshotAttempt) await RefreshAsync();
+            return;
+        }
         _liveTelemetryRunning=true;
         using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(4));
         _telemetryToken=timeout;
@@ -100,9 +128,17 @@ public partial class DashboardView : UserControl
                 " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
                 (live.IsPartial?" | قراءة جزئية":"");
             RefreshHistory.Text=DateTime.Now.ToString("HH:mm:ss")+" · المتصلون وأداء الراوتر (مباشر)";
+            RouterConnectionStatus.Text="●  متصل";
+            if(ErrorStatus.Text.StartsWith("تعذر تحديث الاتصال المباشر:",StringComparison.Ordinal))
+                ErrorStatus.Text="";
         }
         catch(OperationCanceledException) { /* Next timer tick retries; no zero substitutes. */ }
-        catch(Exception ex) {if(IsLoaded)ErrorStatus.Text="تعذر تحديث الاتصال المباشر: "+ex.Message;}
+        catch(Exception ex)
+        {
+            if(!IsLoaded)return;
+            RouterConnectionStatus.Text="●  تعذرت القراءة";
+            ErrorStatus.Text="تعذر تحديث الاتصال المباشر: "+ex.Message;
+        }
         finally
         {
             if(ReferenceEquals(_telemetryToken,timeout))_telemetryToken=null;
@@ -151,6 +187,8 @@ public partial class DashboardView : UserControl
             OnlineBreakdown.Text="Hotspot "+(live.HotspotOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
                 " + PPPoE "+(live.PppOnline?.ToString("N0",CultureInfo.InvariantCulture)??"—")+
                 (live.IsPartial?" | قراءة جزئية":"");
+            RouterConnectionStatus.Text="●  متصل";
+            _initialSnapshotLoaded=true;
             var stamp=DateTime.Now.ToString("HH:mm:ss");
             RefreshHistory.Text=stamp+" · تحديث مباشر للعدادات، دون جلب قوائم مستخدمين كاملة";
             ErrorStatus.Text=(live.IsPartial?"توجد عدادات متصلين غير متاحة. ":"")+
@@ -163,12 +201,15 @@ public partial class DashboardView : UserControl
         }
         catch(Exception ex)
         {
-            if(IsLoaded)ErrorStatus.Text="تعذر التحديث؛ لم تُستبدل الأعداد ببيانات مزيفة: "+ex.Message;
+            if(!IsLoaded)return;
+            RouterConnectionStatus.Text="●  تعذرت القراءة";
+            ErrorStatus.Text="تعذر تحديث بيانات الراوتر: "+ex.Message;
         }
         finally
         {
             await refreshActivity;
             if(ReferenceEquals(_refreshToken,timeout))_refreshToken=null;
+            _nextSnapshotAttempt=DateTimeOffset.UtcNow.AddSeconds(10);
             _refreshing=false;
             RefreshButton.IsEnabled=true;
         }

@@ -16,7 +16,9 @@ public sealed record NavEntry(string Key, Geometry Glyph, Brush Accent,
 
 public partial class MainWindow : Window
 {
-    private RouterOsClient? _session;
+    private IRouterSessionService? _session;
+    private bool _closed;
+    private bool _openHotspotMaintenance;
     private RouterGateway? _gateway;
     private readonly VoucherStore _store = new();
     private readonly HttpClient _licenseHttp = new();
@@ -451,9 +453,13 @@ public partial class MainWindow : Window
                 UserInput.Text.Trim(), CurrentPassword, TlsInput.IsChecked == true);
             if(ActiveConnectionMode=="remote" && string.IsNullOrWhiteSpace(endpoint.Host))
                 throw new ArgumentException("أدخل عنوان الراوتر عبر اتصال VPN القائم أولا.");
-            var session = await RouterOsClient.ConnectAsync(endpoint);
+            var session = await RouterSessionService.OpenAsync(endpoint);
             var gateway = new RouterGateway(session);
-            try { await gateway.ReadResourceAsync(); }
+            try
+            {
+                await gateway.ReadResourceAsync();
+                if (_closed) throw new OperationCanceledException();
+            }
             catch { await session.DisposeAsync(); throw; }
             LicenseCheck entitlement;
             try
@@ -542,7 +548,7 @@ public partial class MainWindow : Window
             "servers" => new ServersView(_gateway),
             "reports" => new ReportsView(_store),
             "activity" => new ActivityView(_store),
-            "tools" => new NetworkMaintenanceView(_gateway, HostInput.Text.Trim()),
+            "tools" => new NetworkMaintenanceView(_gateway, HostInput.Text.Trim(), _openHotspotMaintenance),
             "settings" => new SettingsView(_store),
             _ => null
         };
@@ -566,8 +572,13 @@ public partial class MainWindow : Window
 
     private void NavigateTo(string key)
     {
-        var entry = _pages.FirstOrDefault(x => x.Key == key);
-        if (entry is not null) NavList.SelectedItem = entry;
+        _openHotspotMaintenance = key == "tools-hotspot";
+        try
+        {
+            var entry = _pages.FirstOrDefault(x => x.Key == (_openHotspotMaintenance ? "tools" : key));
+            if (entry is not null) NavList.SelectedItem = entry;
+        }
+        finally { _openHotspotMaintenance = false; }
     }
 
     private async void Logout_Click(object sender, RoutedEventArgs e)
@@ -594,13 +605,18 @@ public partial class MainWindow : Window
         if (previous is not null) await previous.DisposeAsync();
     }
 
-    protected override void OnClosed(EventArgs e)
+    protected override async void OnClosed(EventArgs e)
     {
+        _closed = true;
         _licenseMonitor?.Stop();
         _sidebarCountdown?.Stop();
-        _session?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        var session = _session;
+        _session = null;
+        _gateway = null;
+        var disposal = session?.DisposeAsync();
         _licenseHttp.Dispose();
         _store.Dispose();
         base.OnClosed(e);
+        if (disposal is { } pending) await pending;
     }
 }

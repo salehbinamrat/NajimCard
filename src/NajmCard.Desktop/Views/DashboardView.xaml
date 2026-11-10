@@ -6,7 +6,7 @@
     <SolidColorBrush x:Key="DashboardCream" Color="#FFF3DF"/>
     <SolidColorBrush x:Key="DashboardMaroon" Color="#72203A"/>
     <Style x:Key="DashboardPanel" TargetType="Border" BasedOn="{StaticResource CardPanel}">
-      <Setter Property="Padding" Value="12"/>
+      <Setter Property="Padding" Value="8"/>
       <Setter Property="CornerRadius" Value="10"/>
       <Setter Property="Margin" Value="0"/>
       <Setter Property="Background" Value="{StaticResource DashboardCream}"/>
@@ -30,7 +30,7 @@
     </Style>
     <Style x:Key="QuickButton" TargetType="Button" BasedOn="{StaticResource OutlineButton}">
       <Setter Property="Padding" Value="5,6"/><Setter Property="Margin" Value="2"/>
-      <Setter Property="MinHeight" Value="38"/><Setter Property="MinWidth" Value="0"/>
+      <Setter Property="MinHeight" Value="31"/><Setter Property="MinWidth" Value="0"/>
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Foreground" Value="White"/>
       <Setter Property="Background" Value="#6A2344"/>
@@ -41,7 +41,7 @@
   <Grid x:Name="DashboardLayout" ClipToBounds="True" UseLayoutRounding="True">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
-      <RowDefinition Height="120"/>
+      <RowDefinition Height="108"/>
       <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
@@ -58,7 +58,7 @@
                   Padding="12,6" Margin="3,0" Click="Refresh_Click"/>
           <Border Background="{StaticResource SurfaceRaisedBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1"
                   CornerRadius="7" Padding="11,6" Margin="7,0">
-            <TextBlock Text="●  متصل" Foreground="#AFFFE0" FontSize="12"
+            <TextBlock x:Name="RouterConnectionStatus" Text="●  جار التحقق" Foreground="#FFF5E8" FontSize="12"
                        FontWeight="ExtraBold"/>
           </Border>
         </StackPanel>
@@ -234,7 +234,7 @@
         <ColumnDefinition Width="*"/><ColumnDefinition Width="8"/>
         <ColumnDefinition Width="*"/>
       </Grid.ColumnDefinitions>
-      <Border Grid.Column="0" Style="{StaticResource DashboardPanel}">
+      <Border Grid.Column="4" Style="{StaticResource DashboardPanel}">
         <StackPanel>
           <TextBlock Text="بيانات الراوتر" Style="{StaticResource HeaderLabel}" Margin="0,0,0,7"/>
           <TextBlock x:Name="RouterName" Text="—" FontSize="16" FontWeight="Bold"
@@ -279,16 +279,21 @@
           </UniformGrid>
         </StackPanel>
       </Border>
-      <Border Grid.Column="4" Style="{StaticResource DashboardPanel}">
+      <Border Grid.Column="0" Style="{StaticResource DashboardPanel}">
          <StackPanel>
            <TextBlock Text="التحكم بالشبكة والصيانة" Style="{StaticResource HeaderLabel}" Margin="0,0,0,8"/>
            <UniformGrid Columns="2" Margin="0,0,0,4">
-             <Button Content="⏻ تعطيل الهوتسبوت" Click="Maintenance_Click"
+             <Button Content="تعطيل الهوتسبوت" Click="HotspotMaintenance_Click"
                      Style="{StaticResource QuickButton}"
                      Foreground="White" Background="#9C2947" ToolTip="افتح أدوات الصيانة، ثم اختر السيرفر وأكد التعطيل"/>
-             <Button Content="⚙ إعادة بناء / تحسين" Click="Maintenance_Click"
+             <Button Content="إعادة بناء / تحسين" Click="Maintenance_Click"
                      Style="{StaticResource QuickButton}"
-                     Foreground="White" Background="#276D83" ToolTip="افتح أدوات تحسين وصيانة الراوتر مع التأكيد"/>
+                     Foreground="#FFF5E8" Background="#276D83" ToolTip="افتح أدوات تحسين وصيانة الراوتر مع التأكيد"/>
+             <Button Content="استعادة الهوتسبوت" Click="HotspotMaintenance_Click"
+                     Style="{StaticResource QuickButton}" Foreground="#FFF5E8" Background="#166643"
+                     ToolTip="اختر السيرفر المعطل ثم اضغط استعادة / تفعيل المحدد"/>
+             <Button x:Name="RebootButton" Content="إعادة تشغيل الراوتر" Click="Reboot_Click"
+                     Style="{StaticResource QuickButton}" Foreground="#FFF5E8" Background="#7C162C"/>
            </UniformGrid>
            <TextBlock Text="سجل تحديث لوحة التحكم" Style="{StaticResource HeaderLabel}"
                       FontSize="13" Margin="0,2,0,5"/>

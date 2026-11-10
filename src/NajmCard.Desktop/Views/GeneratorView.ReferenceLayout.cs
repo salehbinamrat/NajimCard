@@ -10,80 +10,124 @@ namespace NajmCard.Desktop.Views;
 
 public partial class GeneratorView
 {
-    private static Border ReferenceHeader(string title)=>new()
+    private static Border ReferenceHeader(string title, string icon = "IconPackages")
     {
-        Background=(Brush)new BrushConverter().ConvertFrom(
-            title=="بيانات ومسار الإرسال"?"#791B37":"#63223C")!,
-        BorderBrush=(Brush)new BrushConverter().ConvertFrom("#9C4C60")!,
-        BorderThickness=new Thickness(0,0,0,1),
-        CornerRadius=new CornerRadius(5,5,0,0),
-        Padding=new Thickness(8,4,8,4),
-        Margin=new Thickness(0,0,0,2),
-        Child=new TextBlock
+        var cream = new SolidColorBrush(Color.FromRgb(255, 245, 230));
+        var heading = new DockPanel { FlowDirection = FlowDirection.RightToLeft };
+        var glyph = new System.Windows.Shapes.Path
         {
-            Text=title,Tag="SectionTitle",FontFamily=new FontFamily("Arial"),FontSize=15,
-            FontWeight=FontWeights.ExtraBold,Foreground=Brushes.White,
-            TextAlignment=TextAlignment.Right
-        }
-    };
-
-    private Grid CreateReferenceLayout(Border routeSurface,Border formatSurface,
-        Border basicsSurface,Border designSurface)
-    {
-        // Hadramout's original ui/network.py uses two INDEPENDENT columns
-        // (42% left, 58% right). A shared 2x2 grid forced the short routing
-        // panel to occupy the credentials panel's much taller first row.
-        // Separate column row-heights eliminate that genuine blank panel.
-        var split=new Grid{FlowDirection=FlowDirection.LeftToRight};
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(42,GridUnitType.Star)});
-        split.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(58,GridUnitType.Star)});
-        split.RowDefinitions.Add(new RowDefinition{Height=new GridLength(1,GridUnitType.Star)});
-
-        var leftColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        leftColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        var rightColumn=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        rightColumn.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-
-        routeSurface.FlowDirection=formatSurface.FlowDirection=
-            basicsSurface.FlowDirection=designSurface.FlowDirection=FlowDirection.RightToLeft;
-        foreach(var surface in new[]{routeSurface,formatSurface,basicsSurface,designSurface})
+            Data = (Geometry)Application.Current.FindResource(icon),
+            Stroke = cream, StrokeThickness = 1.7, Stretch = Stretch.Uniform,
+            Width = 15, Height = 15, Margin = new Thickness(6, 0, 0, 0)
+        };
+        DockPanel.SetDock(glyph, Dock.Left);
+        heading.Children.Add(glyph);
+        heading.Children.Add(new TextBlock
         {
-            surface.Margin=new Thickness(1,1,1,2);
-            surface.HorizontalAlignment=HorizontalAlignment.Stretch;
-            surface.VerticalAlignment=VerticalAlignment.Stretch;
-        }
-        Grid.SetRow(routeSurface,0);
-        Grid.SetRow(formatSurface,0);
-        Grid.SetRow(designSurface,1);
-
-        var secondary=new Grid{FlowDirection=FlowDirection.RightToLeft};
-        secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        secondary.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
-        _embeddedPrintHost=new Grid{Margin=new Thickness(1,1,1,0)};
-        Grid.SetRow(_embeddedPrintHost,0);
-        secondary.Children.Add(_embeddedPrintHost);
-        _status.FontSize=12;
-        _status.Margin=new Thickness(2,0,2,1);
-        _status.Foreground=(Brush)new BrushConverter().ConvertFrom("#542037")!;
-        Grid.SetRow(_status,1);
-        secondary.Children.Add(_status);
-        Grid.SetRow(basicsSurface,1);
-        Grid.SetRow(secondary,2);
-
-        leftColumn.Children.Add(formatSurface);
-        leftColumn.Children.Add(basicsSurface);
-        leftColumn.Children.Add(secondary);
-        rightColumn.Children.Add(routeSurface);
-        rightColumn.Children.Add(designSurface);
-        Grid.SetColumn(leftColumn,0);
-        Grid.SetColumn(rightColumn,1);
-        split.Children.Add(leftColumn);
-        split.Children.Add(rightColumn);
-        return split;
+            Text = title, Tag = "SectionTitle", FontFamily = new FontFamily("Arial"),
+            FontSize = 14, FontWeight = FontWeights.Bold, Foreground = cream,
+            TextAlignment = TextAlignment.Right
+        });
+        return new Border
+        {
+            Background = new LinearGradientBrush(
+                Color.FromRgb(132, 15, 55), Color.FromRgb(69, 9, 27), 90),
+            CornerRadius = new CornerRadius(5, 5, 0, 0),
+            Padding = new Thickness(7, 3, 7, 3),
+            Margin = new Thickness(0, 0, 0, 2),
+            Child = heading
+        };
     }
+
+    private Grid CreateReferenceLayout(Border routeSurface, Border formatSurface,
+        Border basicsSurface, Border designSurface)
+    {
+        var layout = new Grid { FlowDirection = FlowDirection.LeftToRight };
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36, GridUnitType.Star) });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(64, GridUnitType.Star) });
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        foreach (var surface in new[] { routeSurface, formatSurface, basicsSurface, designSurface })
+        {
+            surface.FlowDirection = FlowDirection.RightToLeft;
+            surface.Margin = new Thickness(1, 1, 1, 3);
+            surface.VerticalAlignment = VerticalAlignment.Top;
+        }
+        Grid.SetColumnSpan(routeSurface, 2);
+        Grid.SetRow(routeSurface, 0);
+        Grid.SetColumnSpan(formatSurface, 2);
+        Grid.SetRow(formatSurface, 1);
+        layout.Children.Add(routeSurface);
+        layout.Children.Add(formatSurface);
+
+        var printColumn = PageUi.Column();
+        printColumn.FlowDirection = FlowDirection.RightToLeft;
+        printColumn.Children.Add(basicsSurface);
+        _embeddedPrintHost = new Grid { Margin = new Thickness(1, 0, 1, 0) };
+        printColumn.Children.Add(_embeddedPrintHost);
+        _status.FontSize = 11;
+        _status.Margin = new Thickness(3, 2, 3, 0);
+        _status.Foreground = new SolidColorBrush(Color.FromRgb(84, 32, 55));
+        printColumn.Children.Add(_status);
+        Grid.SetColumn(printColumn, 0);
+        Grid.SetRow(printColumn, 2);
+        layout.Children.Add(printColumn);
+
+        Grid.SetColumn(designSurface, 1);
+        Grid.SetRow(designSurface, 2);
+        layout.Children.Add(designSurface);
+        return layout;
+    }
+
+    private static Grid WithPlaceholder(ComboBox selector, string prompt)
+    {
+        var host = new Grid();
+        var label = new TextBlock
+        {
+            Text = prompt, FontSize = 11, IsHitTestVisible = false,
+            Margin = new Thickness(8, 0, 25, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        void Update() => label.Visibility = selector.SelectedIndex < 0
+            ? Visibility.Visible : Visibility.Collapsed;
+        selector.SelectionChanged += (_, _) => Update();
+        System.Windows.Automation.AutomationProperties.SetName(selector, prompt);
+        host.Children.Add(selector);
+        host.Children.Add(label);
+        Update();
+        return host;
+    }
+
+    private void ShowCreatorToast(UIElement anchor, string message, string color)
+    {
+        _creatorToast?.SetCurrentValue(Popup.IsOpenProperty, false);
+        var popup = new Popup
+        {
+            PlacementTarget = anchor, Placement = PlacementMode.Bottom,
+            AllowsTransparency = true, IsHitTestVisible = false,
+            Child = new Border
+            {
+                Background = (Brush)new BrushConverter().ConvertFrom(color)!,
+                CornerRadius = new CornerRadius(7), Padding = new Thickness(12, 8, 12, 8),
+                Child = new TextBlock
+                {
+                    Text = message, Foreground = Brushes.FloralWhite,
+                    FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap,
+                    MaxWidth = 320, FlowDirection = FlowDirection.RightToLeft
+                }
+            }
+        };
+        _creatorToast = popup;
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        timer.Tick += (_, _) => popup.IsOpen = false;
+        popup.Closed += (_, _) => timer.Stop();
+        popup.IsOpen = true;
+        timer.Start();
+    }
+
+    private Popup? _creatorToast;
 
     private void ChooseTemplateImage()
     {
