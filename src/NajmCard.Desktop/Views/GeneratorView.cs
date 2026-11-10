@@ -100,6 +100,20 @@ public partial class GeneratorView : UserControl
         Content="إظهار اسم الباقة على الكرت",IsChecked=true
     };
 
+    // The reference artwork includes independent, draggable optional card fields.
+    // Capacity and phone come from operator-entered template data, not guessed RouterOS values.
+    private readonly CheckBox _designShowCapacity = new() {Content="السعة"};
+    private readonly CheckBox _designShowPhone = new() {Content="الهاتف"};
+    private readonly CheckBox _designShowQr = new() {Content="QR"};
+    private readonly CheckBox _designShowTime = new() {Content="الوقت"};
+    private readonly CheckBox _designShowDate = new() {Content="التاريخ"};
+    private readonly CheckBox _designShowTitle = new() {Content="العنوان",IsChecked=true};
+    private readonly CheckBox _designShowSequence = new() {Content="التسلسل"};
+    private readonly CheckBox _designShowRoute = new() {Content="المسار"};
+    private readonly TextBox _designCapacityText = PageUi.Input("");
+    private readonly TextBox _designPhoneText = PageUi.Input("");
+    private readonly TextBox _designQrSize = PageUi.Input("24");
+
     private readonly Button _generateButton = PageUi.Button("إنشاء وحفظ الدفعة");
     private readonly Button _previewButton = PageUi.Button("معاينة قبل الإنشاء", false);
     private readonly CheckBox _lengthWithPrefix = new()
@@ -493,6 +507,17 @@ public partial class GeneratorView : UserControl
             BorderWidth=Number(_designBorderWidth.Text),
             ShowPassword=_designShowPassword.IsChecked==true,
             ShowProfile=_designShowProfile.IsChecked==true,
+            ShowCapacity=_designShowCapacity.IsChecked==true,
+            ShowPhone=_designShowPhone.IsChecked==true,
+            ShowQr=_designShowQr.IsChecked==true,
+            ShowTime=_designShowTime.IsChecked==true,
+            ShowDate=_designShowDate.IsChecked==true,
+            ShowTitle=_designShowTitle.IsChecked==true,
+            ShowSequence=_designShowSequence.IsChecked==true,
+            ShowRoute=_designShowRoute.IsChecked==true,
+            CapacityText=_designCapacityText.Text.Trim(),
+            PhoneText=_designPhoneText.Text.Trim(),
+            QrSize=Number(_designQrSize.Text),
             TemplateImagePath=_templateImagePath
         }).Validate();
     }
