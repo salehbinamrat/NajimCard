@@ -550,6 +550,7 @@ public partial class PrintingView : UserControl
             if(prepared is null&&!Prepare())return;
             if(!PageUi.Confirm("إرسال "+preparedCount+
                 " كرتا مؤكدا إرساله إلى الطابعة؛ هل مقاس الورق والاتجاه صحيحان؟"))return;
+            LocalPrintServer? chosenServer=null;
             try
             {
                 var dlg=new PrintDialog();
@@ -557,8 +558,8 @@ public partial class PrintingView : UserControl
                 if(!string.IsNullOrWhiteSpace(printerName) &&
                     printerName!="الافتراضية")
                 {
-                    using var server=new LocalPrintServer();
-                    dlg.PrintQueue=server.GetPrintQueue(printerName);
+                    chosenServer=new LocalPrintServer();
+                    dlg.PrintQueue=chosenServer.GetPrintQueue(printerName);
                 }
                 var physical=Options();
                 var ticket=dlg.PrintTicket??new PrintTicket();
@@ -572,6 +573,7 @@ public partial class PrintingView : UserControl
                 _status.Text="أُرسلت المهمة للطابعة؛ راجع محاذاة الورق على نسخة اختبار.";
             }
             catch(Exception ex){_status.Text="تعذرت الطباعة: "+ex.Message;}
+            finally{chosenServer?.Dispose();}
         }
         async Task<bool> Export(string path)
         {
