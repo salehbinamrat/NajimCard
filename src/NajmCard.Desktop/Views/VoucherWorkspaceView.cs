@@ -22,6 +22,7 @@ public sealed class VoucherWorkspaceView : UserControl
         creator.ApplyPrintOptions=printer.ApplyOptions;
         creator.PackagePrintSettingsRestored+=printer.ApplyOptions;
         printer.LayoutSettingsChanged+=creator.RefreshPageCount;
+        printer.LayoutSettingsChanged+=creator.RefreshInlineCardDimensions;
         creator.BatchChanged+=printer.Invalidate;
         creator.CardAppearanceChanged+=printer.Invalidate;
         creator.AttachPrintingSection(printer);
@@ -32,10 +33,22 @@ public sealed class VoucherWorkspaceView : UserControl
         // Keep the creator's compact dimensions on the shared dark templates.
         var dropdown=new Style(typeof(ComboBox),(Style)Application.Current.FindResource("DarkComboBox"));
         dropdown.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
+        dropdown.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#FFFAF0")!));
+        dropdown.Setters.Add(new Setter(Control.ForegroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#471A30")!));
+        dropdown.Setters.Add(new Setter(Control.BorderBrushProperty,
+            (Brush)new BrushConverter().ConvertFrom("#75203E")!));
         root.Resources[typeof(ComboBox)]=dropdown;
         var input=new Style(typeof(TextBox),(Style)Application.Current.FindResource(typeof(TextBox)));
         input.Setters.Add(new Setter(FrameworkElement.MinHeightProperty,30d));
         input.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(6,4,6,4)));
+        input.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#FFFAF0")!));
+        input.Setters.Add(new Setter(Control.ForegroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#471A30")!));
+        input.Setters.Add(new Setter(Control.BorderBrushProperty,
+            (Brush)new BrushConverter().ConvertFrom("#75203E")!));
         root.Resources[typeof(TextBox)]=input;
         var fields=new Grid{ClipToBounds=true,UseLayoutRounding=true};
         fields.RowDefinitions.Add(new RowDefinition{Height=GridLength.Auto});
