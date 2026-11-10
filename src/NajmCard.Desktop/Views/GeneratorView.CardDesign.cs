@@ -59,7 +59,7 @@ public partial class GeneratorView
     private Border? _previewUsernamePlate;
     private readonly TextBlock _previewPassword=new()
     {
-        FontFamily=new FontFamily("Consolas"),FontSize=13,FontWeight=FontWeights.Bold,
+        Name="CardPasswordPreview",FontFamily=new FontFamily("Consolas"),FontSize=13,FontWeight=FontWeights.Bold,
         FlowDirection=FlowDirection.LeftToRight,TextAlignment=TextAlignment.Center,
         MaxWidth=280,TextTrimming=TextTrimming.CharacterEllipsis,Visibility=Visibility.Collapsed
     };
