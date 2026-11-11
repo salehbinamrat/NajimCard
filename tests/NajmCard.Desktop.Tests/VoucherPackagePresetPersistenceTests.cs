@@ -127,7 +127,7 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         Assert.Equal("الافتراضية",b.Output!.PrinterName);
         Assert.False(b.Output.AdditionalExport);
         Assert.ThrowsAny<ArgumentException>(()=>opened.SavePackagePreset(
-            a with {Output=new VoucherOutputPreferences("\\n")}));
+            a with {Output=new VoucherOutputPreferences("Bad" + (char)10)}));
         Assert.Equal("HP LaserJet",opened.LoadPackagePreset(
             "192.168.1.1:8728","hotspot","100RY")!.Output!.PrinterName);
     }
