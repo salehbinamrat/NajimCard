@@ -258,7 +258,7 @@ public sealed class VoucherWorkspaceView : UserControl
             var sent=await creator.CreateAndSendAsync(singleCard:true);
             status.Text=sent
                 ?"أُرسل كرت واحد وحُفظت حالته."
-                :"لم يتأكد إرسال الكرت. راجع حالة الدفعة قبل إعادة المحاولة.";
+                :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
             if(sent)await ExportAdditionalAsync();
         });
         actions[1].Click+=async(_,_)=>await Execute(async()=>
@@ -284,8 +284,8 @@ public sealed class VoucherWorkspaceView : UserControl
             if(!sent)
             {
                 status.Text=archivedCount>0
-                    ?"حُفظت الدفعة ولم يتأكد إرسالها. راجع «سجل الدفعات». مجلد الحفظ: "+folder
-                    :"تعذر إنشاء الدفعة. راجع إعدادات الباقة.";
+                    ?"حُفظت الدفعة ولم يتأكد إرسالها: "+creator.LastOperationMessage+" | سجل الدفعات: "+folder
+                    :"تعذر إنشاء الدفعة: "+creator.LastOperationMessage;
                 return;
             }
             var confirmed=creator.ConfirmedBatch().ToArray();
