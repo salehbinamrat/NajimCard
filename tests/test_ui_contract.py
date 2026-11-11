@@ -82,9 +82,9 @@ class UiDesignContract(unittest.TestCase):
         for option in ("باقة وسيرفر الإرسال","اسم المستخدم وكلمة المرور",
                        "معاينة وتصميم الكرت","عدد الكروت",
                        "إعداد الطباعة والدفعة",
-                       "إنشاء وإرسال واحد",
-                       "إنشاء وإرسال","معاينة قبل الإنشاء",
-                       "ملف PDF","معاينة PDF","طباعة دفعة"):
+                       "إنشاء وإرسال وحفظ",
+                       "إنشاء وإرسال فقط","معاينة قبل الإنشاء",
+                       "ملف PDF","معاينة PDF","طباعة الدفعة"):
             self.assertIn(option,combined+creator+printer+designer)
         self.assertIn("CreateAndSendAsync",combined)
         self.assertIn("Execute(PreviewDraftPdf)",combined)
