@@ -55,9 +55,24 @@ public static class PortableCardTemplate
     {
         ValidateImage(image);
         Directory.CreateDirectory(imageFolder);
-        var path=Path.GetFullPath(Path.Combine(imageFolder,Convert.ToHexString(SHA256.HashData(image))+".img"));
-        if(!File.Exists(path))WriteAtomically(path,stream=>stream.Write(image));
+        var hash=Convert.ToHexString(SHA256.HashData(image));
+        var path=Path.GetFullPath(Path.Combine(imageFolder,hash+".img"));
+        // The file name alone does not prove that this stored image is intact.
+        if(!CachedImageMatches(path,hash))
+            WriteAtomically(path,stream=>stream.Write(image));
+        if(!CachedImageMatches(path,hash))
+            throw new InvalidDataException(
+                "تعذر التحقق من صورة القالب المستورد بعد حفظها.");
         return path;
+    }
+
+    private static bool CachedImageMatches(string path,string expectedHash)
+    {
+        if(!File.Exists(path))return false;
+        using var existing=File.OpenRead(path);
+        if(existing.Length is <1 or >MaxImageBytes)return false;
+        return string.Equals(Convert.ToHexString(SHA256.HashData(existing)),
+            expectedHash,StringComparison.OrdinalIgnoreCase);
     }
 
     private static void ValidateImage(byte[] image)
