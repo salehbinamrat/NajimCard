@@ -9,13 +9,38 @@ public partial class PrintingView
 {
     private VoucherBatchPrintSnapshot? _selectedArchiveTemplate;
     private bool _archiveTemplateReadFailed;
+    private bool _viewingArchive;
+    private CardPrintOptions? _currentEditorPrint;
+    private VoucherOutputPreferences? _currentEditorOutput;
 
     private void RestoreArchivePrintTemplate(PrintableBatchSummary? selected,
-        VoucherStore store,Action<CardPrintOptions> applyPrint)
+        VoucherStore store,Action<CardPrintOptions> applyPrint,
+        Func<CardPrintOptions> readCurrentPrint)
     {
         _selectedArchiveTemplate=null;
         _archiveTemplateReadFailed=false;
-        if(selected is null)return;
+        if(selected is null)
+        {
+            if(_viewingArchive)
+            {
+                // Switching back must not leave an archived package's
+                // physical paper or printer attached to the active editor.
+                if(_currentEditorPrint is not null)applyPrint(_currentEditorPrint);
+                if(_currentEditorOutput is not null)
+                    ApplyOutputPreferences(_currentEditorOutput);
+            }
+            _viewingArchive=false;
+            _currentEditorPrint=null;
+            _currentEditorOutput=null;
+            return;
+        }
+        if(!_viewingArchive)
+        {
+            try {_currentEditorPrint=readCurrentPrint();}
+            catch(ArgumentException) {_currentEditorPrint=null;}
+            _currentEditorOutput=GetOutputPreferences();
+        }
+        _viewingArchive=true;
         try
         {
             var snapshot=store.LoadBatchPrintSnapshot(selected.Service,selected.BatchId);
