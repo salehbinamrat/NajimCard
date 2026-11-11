@@ -37,21 +37,48 @@ public sealed partial class VoucherStore
         var folder=Path.Combine(DirectoryPath,"CardArtwork");
         Directory.CreateDirectory(folder);
         var destination=Path.Combine(folder,hash+ext);
-        if(!File.Exists(destination))
+        // Images already in our private cache must retain their original
+        // content-addressed name. If a cached file was tampered with, do not
+        // silently treat its modified contents as a new design.
+        if(string.Equals(Path.GetDirectoryName(Path.GetFullPath(source)),
+            Path.GetFullPath(folder),StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(Path.GetFileName(source),hash+ext,
+                StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException(
+                "تغير محتوى صورة القالب المحفوظة؛ استعد الصورة الأصلية قبل إعادة الحفظ.");
+
+        static bool HasExpectedHash(string path,string expected)
         {
+            if(!File.Exists(path))return false;
+            using var stream=File.OpenRead(path);
+            if(stream.Length==0 || stream.Length>15L*1024*1024)return false;
+            return string.Equals(
+                Convert.ToHexString(SHA256.HashData(stream)),expected,
+                StringComparison.OrdinalIgnoreCase);
+        }
+        if(!HasExpectedHash(destination,hash))
+        {
+            // A previous copy may have been truncated or tampered with.
+            // Repair only from verified source bytes and publish atomically.
             var temporary=Path.Combine(folder,hash+"-"+Guid.NewGuid().ToString("N")+".tmp");
             try
             {
                 File.WriteAllBytes(temporary,bytes);
-                // Concurrent saves of identical templates may finish in any
-                // order; the SHA-256 name guarantees they have identical bytes.
-                try {File.Move(temporary,destination);}
-                catch(IOException) when(File.Exists(destination)) { }
+                if(File.Exists(destination))
+                    File.Replace(temporary,destination,null);
+                else
+                {
+                    try {File.Move(temporary,destination);}
+                    catch(IOException) when(HasExpectedHash(destination,hash)) { }
+                }
             }
             finally
             {
                 if(File.Exists(temporary))File.Delete(temporary);
             }
+            if(!HasExpectedHash(destination,hash))
+                throw new InvalidDataException(
+                    "تعذر التحقق من سلامة نسخة صورة قالب الكرت المحلية.");
         }
         return original with {TemplateImagePath=destination};
     }
