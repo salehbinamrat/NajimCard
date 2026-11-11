@@ -24,12 +24,24 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
     private static bool Disabled(IReadOnlyDictionary<string, string> row) =>
         Get(row, "disabled") is "true" or "yes" or "1";
 
-    public async Task<RouterResource> ReadResourceAsync(CancellationToken ct = default)
+    private string _lastRouterIdentity = "";
+
+    public Task<RouterResource> ReadResourceAsync(CancellationToken ct = default)
+        => ReadResourceCoreAsync(true, ct);
+
+    public Task<RouterResource> ReadTelemetryResourceAsync(CancellationToken ct = default)
+        => ReadResourceCoreAsync(false, ct);
+
+    private async Task<RouterResource> ReadResourceCoreAsync(bool refreshIdentity, CancellationToken ct)
     {
-        var identity = (await client.CommandAsync("/system/identity/print", cancellationToken: ct)).FirstOrDefault();
+        if (refreshIdentity)
+        {
+            var identity = (await client.CommandAsync("/system/identity/print", cancellationToken: ct)).FirstOrDefault();
+            _lastRouterIdentity = identity is null ? "" : Get(identity, "name");
+        }
         var resource = (await client.CommandAsync("/system/resource/print", cancellationToken: ct)).FirstOrDefault();
         if (resource is null) throw new IOException("RouterOS returned no resource data");
-        return new RouterResource(Get(identity ?? resource, "name"), Get(resource, "board-name"),
+        return new RouterResource(_lastRouterIdentity, Get(resource, "board-name"),
             Get(resource, "version"), Get(resource, "cpu-load"), Get(resource, "free-memory"),
             Get(resource, "total-memory"), Get(resource, "uptime"));
     }
