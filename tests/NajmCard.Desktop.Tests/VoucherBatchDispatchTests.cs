@@ -486,4 +486,38 @@ public sealed class VoucherBatchDispatchTests
         }
         finally{Directory.Delete(root,true);}
     }
+
+    [Fact]
+    public async Task Two_Thousand_Hotspot_Vouchers_Use_Durable_Batch_Session_And_Bounded_Progress()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var cards=Enumerable.Range(1,2000)
+                .Select(i=>Voucher(i.ToString("D8"),"hotspot") with { Password="" })
+                .ToArray();
+            store.SaveBatch(cards);
+            var spy=new Spy();
+            var stages=new StageCapture();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync(cards,progress:stages);
+            Assert.True(result.Success);
+            Assert.Equal(2000,result.Succeeded);
+            Assert.Equal(2000,spy.Writes.Count);
+            var persisted=store.GetBatchVouchers("hotspot","batch-r");
+            Assert.Equal(2000,persisted.Count);
+            Assert.All(persisted,v=>
+            {
+                Assert.True(v.SentToRouter);
+                Assert.Equal("SENT",v.DeliveryStatus);
+                Assert.Empty(v.Password);
+            });
+            Assert.Contains(stages.Messages,m=>m.Contains("إرسال الكرت 2000 من 2000",
+                StringComparison.Ordinal));
+            Assert.True(stages.Messages.Count<400,
+                "Large batches must not enqueue progress updates for every card.");
+        }
+        finally{Directory.Delete(root,true);}
+    }
 }
