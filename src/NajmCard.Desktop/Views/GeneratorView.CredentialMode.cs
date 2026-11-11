@@ -4,6 +4,12 @@ namespace NajmCard.Desktop.Views;
 
 public partial class GeneratorView
 {
+    // All progress notifications originate from the actual issue/save stages.
+    // Only the UI workspace subscribes; no status text includes card passwords.
+    public event Action<string>? OperationProgressChanged;
+    private void ReportOperationProgress(string stage) =>
+        OperationProgressChanged?.Invoke(stage);
+
     // A saved batch is immutable. Changing the selected credential mode must
     // never send or print the previous batch as though it used the new choice.
     private void InvalidatePendingBatchForCredentialChange()
