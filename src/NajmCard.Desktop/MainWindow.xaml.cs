@@ -626,7 +626,19 @@ public partial class MainWindow : Window
         _gateway = null;
         var previous = _session;
         _session = null;
-        if (previous is not null) await previous.DisposeAsync();
+        if(previous is not null)
+        {
+            try{await previous.DisposeAsync();}
+            catch(Exception ex)
+            {
+                // Explicit logout already invalidated the session; a socket
+                // shutdown error must not crash an async-void UI click handler.
+                System.Diagnostics.Trace.TraceWarning(
+                    "Router session logout cleanup: "+ex.GetType().Name);
+                if(!_closed)
+                    LoginStatus.Text="تم تسجيل الخروج، لكن تعذر إغلاق الاتصال القديم بسلاسة.";
+            }
+        }
     }
 
     protected override async void OnClosed(EventArgs e)
@@ -641,6 +653,16 @@ public partial class MainWindow : Window
         _licenseHttp.Dispose();
         _store.Dispose();
         base.OnClosed(e);
-        if(disposal is { } pending)await pending;
+        if(disposal is { } pending)
+        {
+            try{await pending;}
+            catch(Exception ex)
+            {
+                // Window teardown must not surface an unhandled exception from
+                // asynchronous transport disposal after Application shutdown.
+                System.Diagnostics.Trace.TraceWarning(
+                    "Router session shutdown cleanup: "+ex.GetType().Name);
+            }
+        }
     }
 }
