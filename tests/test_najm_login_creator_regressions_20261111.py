@@ -39,6 +39,8 @@ class NajmLoginCreatorFixes(unittest.TestCase):
         self.assertIn('_customerPanel.Visibility = SelectedService=="userman"?Visibility.Visible:Visibility.Collapsed;', code)
         self.assertIn('"userman"=>1', code)
         self.assertIn('creator.SelectService(service)', workspace)
+        self.assertIn('var background=selected?"#EAC77C":name switch', workspace)
+        self.assertIn("btn.BorderThickness=new Thickness(selected?2:1)", workspace)
         self.assertIn("LastOperationMessage", code)
         self.assertIn("creator.LastOperationMessage", workspace)
 
