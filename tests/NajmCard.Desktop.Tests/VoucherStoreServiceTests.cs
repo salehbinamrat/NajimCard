@@ -109,4 +109,32 @@ public sealed class VoucherStoreServiceTests
         }
         finally { Directory.Delete(root, true); }
     }
+    [Fact]
+    public void Repeated_Backups_Do_Not_Overwrite_One_Another_And_Remain_Usable()
+    {
+        string root=NewRoot();
+        try
+        {
+            using var store=new VoucherStore(root);
+            store.SaveBatch([Card("000987","userman","admin")]);
+            var first=store.Backup();
+            var second=store.Backup();
+
+            Assert.NotEqual(first,second);
+            Assert.True(File.Exists(first));
+            Assert.True(File.Exists(second));
+            Assert.Equal(2,Directory.GetFiles(Path.Combine(root,"Backups"),"*.db").Length);
+            foreach(var path in new[]{first,second})
+            {
+                using var snapshot=new SqliteConnection(
+                    $"Data Source={path};Mode=ReadOnly;Pooling=False");
+                snapshot.Open();
+                using var count=snapshot.CreateCommand();
+                count.CommandText="SELECT COUNT(*) FROM vouchers WHERE username='000987'";
+                Assert.Equal(1L,(long)count.ExecuteScalar()!);
+            }
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
 }
