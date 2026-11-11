@@ -29,7 +29,9 @@ class CredentialModeIsolation(unittest.TestCase):
         self.assertIn("usernameOnly,", saved)
 
     def test_switching_credential_mode_invalidates_earlier_batch(self):
-        creator = source(DESKTOP / "GeneratorView.cs")
+        creator = source(DESKTOP / "GeneratorView.cs") + source(
+            DESKTOP / "GeneratorView.CredentialMode.cs"
+        )
         section = creator.split(
             "private void InvalidatePendingBatchForCredentialChange()", 1
         )[1].split("private void SetCredentialControlsBusy(", 1)[0]
