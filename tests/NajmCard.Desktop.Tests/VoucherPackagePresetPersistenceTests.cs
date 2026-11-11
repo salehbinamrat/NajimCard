@@ -166,4 +166,50 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
     }
 
 
+    [Fact]
+    public void Cached_Card_Artwork_Is_Repaired_After_Truncation_From_Valid_Source()
+    {
+        var outside=Path.Combine(_root,"source-image.png");
+        var pixels=Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/X/0AAAAASUVORK5CYII=");
+        File.WriteAllBytes(outside,pixels);
+        using var store=new VoucherStore(_root);
+        var preset=Preset() with
+        {Appearance=Preset().Appearance with {TemplateImagePath=outside}};
+        store.SavePackagePreset(preset);
+        var cached=store.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!
+            .Appearance.TemplateImagePath;
+        Assert.Equal(pixels,File.ReadAllBytes(cached));
+
+        // A truncated cache file must not be silently trusted by the next save.
+        File.WriteAllBytes(cached,[1,2,3]);
+        store.SavePackagePreset(preset);
+        Assert.Equal(pixels,File.ReadAllBytes(cached));
+        Assert.Equal(cached,store.LoadPackagePreset(
+            "192.168.1.1:8728","hotspot","30 Day")!.Appearance.TemplateImagePath);
+    }
+
+    [Fact]
+    public void Modified_Cache_Cannot_Be_Saved_As_A_Different_Artwork_By_Accident()
+    {
+        var outside=Path.Combine(_root,"owner-artwork.png");
+        File.WriteAllBytes(outside,Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/X/0AAAAASUVORK5CYII="));
+        using var store=new VoucherStore(_root);
+        var preset=Preset() with
+        {Appearance=Preset().Appearance with {TemplateImagePath=outside}};
+        store.SavePackagePreset(preset);
+        var cached=store.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!
+            .Appearance.TemplateImagePath;
+        File.WriteAllBytes(cached,[9,8,7,6]);
+
+        Assert.Throws<InvalidDataException>(()=>
+            store.SavePackagePreset(preset with
+            {Appearance=preset.Appearance with {TemplateImagePath=cached}}));
+        // The previous package record remains intact, even though its image
+        // now needs to be repaired from the original file.
+        Assert.Equal(cached,store.LoadPackagePreset(
+            "192.168.1.1:8728","hotspot","30 Day")!.Appearance.TemplateImagePath);
+    }
+
 }

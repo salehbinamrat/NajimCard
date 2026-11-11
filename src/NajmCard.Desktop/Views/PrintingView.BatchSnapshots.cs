@@ -226,17 +226,34 @@ public partial class PrintingView
         var directory=Path.Combine(Environment.GetFolderPath(
             Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
         Directory.CreateDirectory(directory);
-        foreach(var file in Directory.EnumerateFiles(directory,"Najm_*.pdf"))
+        // Preview files are disposable, unlike saved PDF archives. Clean only
+        // our unique Najm_ files to avoid gradually filling the system drive.
+        PrunePreviewPdfFiles(directory,DateTime.UtcNow);
+        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
+    }
+
+    private static void PrunePreviewPdfFiles(string directory,DateTime nowUtc)
+    {
+        const int maxRecent=120;
+        var cutoff=nowUtc.AddDays(-2);
+        FileInfo[] previews;
+        try
         {
-            try
-            {
-                if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
-                    File.Delete(file);
-            }
-            catch(IOException) { }
+            previews=Directory.EnumerateFiles(directory,"Najm_*.pdf",
+                    SearchOption.TopDirectoryOnly)
+                .Select(path=>new FileInfo(path))
+                .OrderByDescending(info=>info.LastWriteTimeUtc).ToArray();
+        }
+        catch(IOException) {return;}
+        catch(UnauthorizedAccessException) {return;}
+        for(var i=0;i<previews.Length;i++)
+        {
+            if(i<maxRecent && previews[i].LastWriteTimeUtc>=cutoff)
+                continue;
+            try {previews[i].Delete();}
+            catch(IOException) { /* A PDF open in a viewer may be locked. */ }
             catch(UnauthorizedAccessException) { }
         }
-        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
     }
 
 
