@@ -259,7 +259,7 @@ public partial class MainWindow : Window
             "نجم كارد 0.1.0 — C#/.NET 10 WPF\n" +
             "برنامج مستقل لإدارة MikroTik وإنشاء الكروت، بهوية عنابية ذهبية.\n" +
             "التجربة المجانية المحلية: 20 يوما تبدأ بعد أول اتصال ناجح بـ MikroTik. "+
-            "الترخيص المدفوع متوافق مع منصة حضرموت، ويرتبط بجهاز واحد عبر HTTPS.",
+            "الترخيص المدفوع متوافق مع خدمة الترخيص، ويرتبط بجهاز واحد عبر HTTPS.",
             "حول نجم كارد",MessageBoxButton.OK,MessageBoxImage.Information);
     }
 
@@ -370,7 +370,7 @@ public partial class MainWindow : Window
     private void RenewLicense_Click(object sender,RoutedEventArgs e)
     {
         PaidLicenseEntry.Visibility=Visibility.Visible;
-        LicenseNotice.Text="للتجديد، حدّث صلاحية الرمز في مركز تراخيص حضرموت "+
+        LicenseNotice.Text="للتجديد، حدّث صلاحية الرمز في مركز تراخيص نجم كارد "+
             "ثم اضغط تحقق وتفعيل؛ أو أدخل رمزا جديدا صادرًا من المنصة.";
         LicenseNotice.Foreground=new SolidColorBrush(Color.FromRgb(255,224,166));
         LicenseCodeInput.Focus();
