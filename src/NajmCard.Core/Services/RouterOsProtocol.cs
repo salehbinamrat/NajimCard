@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Text;
 
@@ -43,13 +44,25 @@ public static class RouterOsProtocol
 
     public static async Task WriteSentenceAsync(Stream stream, IReadOnlyList<string> words, CancellationToken token)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(words);
+        // RouterOS is a sentence-framed TCP protocol. Writing the length prefix
+        // and the word in separate TCP writes is particularly slow with Nagle/
+        // delayed ACK on Windows: a single voucher may create many tiny packets.
+        // Frame the complete sentence first, then send it in ONE stream write.
+        // No credentials are logged or copied to permanent storage.
+        var packet = new ArrayBufferWriter<byte>(Math.Max(64, words.Count * 32));
         foreach (var word in words)
         {
             var bytes = Encoding.UTF8.GetBytes(word);
-            await stream.WriteAsync(EncodeLength((uint)bytes.Length), token);
-            await stream.WriteAsync(bytes, token);
+            if (bytes.Length > 8 * 1024 * 1024 ||
+                (long)packet.WrittenCount + bytes.Length + 6 > 8 * 1024 * 1024)
+                throw new InvalidDataException("RouterOS API command sentence is too large");
+            packet.Write(EncodeLength((uint)bytes.Length));
+            packet.Write(bytes);
         }
-        await stream.WriteAsync(new byte[] { 0 }, token);
+        packet.Write(new byte[] { 0 });
+        await stream.WriteAsync(packet.WrittenMemory, token);
         await stream.FlushAsync(token);
     }
 
