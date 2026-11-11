@@ -60,10 +60,12 @@ class UiDesignContract(unittest.TestCase):
                     "GeneratorView.DesignerPanel.cs",
                     "GeneratorView.ProfileLoading.cs",
                     "GeneratorView.PageCount.cs",
-                    "GeneratorView.SaveToast.cs"})
+                    "GeneratorView.SaveToast.cs",
+                    "GeneratorView.PackageSettings.cs"})
             if view=="PrintingView":
                 expected.add("PrintingView.PrintSelectors.cs")
                 expected.add("PrintingView.DraftDelivery.cs")
+                expected.add("PrintingView.BatchSnapshots.cs")
             self.assertEqual(set(matches), expected,
                              f"{view}: one main owner plus only explicitly reviewed partials")
         for path, content in sources:
