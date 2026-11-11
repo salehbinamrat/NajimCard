@@ -518,14 +518,6 @@ public partial class GeneratorView : UserControl
             TemplateImagePath=_templateImagePath
         }).Validate();
     }
-    internal Task<Voucher[]> BuildDraftPreviewAsync()
-    {
-        var options=ReadGenerationOptions(forPreview:true);
-        var service=SelectedService;
-        return Task.Run(()=>VoucherGenerator.Generate(options)
-            .Select(voucher=>voucher with {Service=service}).ToArray());
-    }
-
     internal VoucherCardAppearance ReadDraftPreviewAppearance() =>
         ReadCurrentAppearance() with {ShowPassword=ShowPreviewPassword};
     public async Task<bool> CreateAndSendAsync(bool singleCard=false,
