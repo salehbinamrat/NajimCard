@@ -11,7 +11,7 @@ public sealed record VoucherPackagePreset(
     int Quantity, string Prefix, int UsernameLength, string UsernameCharacters,
     bool SamePassword, int PasswordLength, string PasswordCharacters,
     bool LengthIncludesPrefix, CardPrintOptions Print, VoucherCardAppearance Appearance,
-    bool UsernameOnly=false)
+    bool UsernameOnly=false, VoucherOutputPreferences? Output=null)
 {
     public VoucherPackagePreset Validate()
     {
@@ -45,6 +45,7 @@ public sealed record VoucherPackagePreset(
         ArgumentNullException.ThrowIfNull(Print);
         ArgumentNullException.ThrowIfNull(Appearance);
         Appearance.Validate();
+        (Output??new VoucherOutputPreferences()).Validate();
         CardPrintLayoutPlanner.Calculate(Print,Quantity);
         return this;
     }
