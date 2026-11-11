@@ -13,7 +13,7 @@ public partial class GeneratorView
         _table.ItemsSource = null;
         _sendButton.IsEnabled = false;
         BatchChanged?.Invoke();
-        _status.Text = "تغير نوع بيانات الدخول. الدفعة القديمة لا تطابق الخيار الحالي؛ "
+        _status.Text = "تغيرت إعدادات إنشاء الكروت. الدفعة القديمة لا تطابق الخيارات الحالية؛ "
             + "أنشئ دفعة جديدة قبل الإرسال أو الطباعة.";
     }
 
@@ -22,6 +22,42 @@ public partial class GeneratorView
         _credentialMode.IsEnabled = !busy;
         _credentialsSame.IsEnabled = !busy;
         _credentialsDifferent.IsEnabled = !busy;
+        // Freeze every input affecting the issued credentials while generation
+        // and RouterOS delivery run asynchronously.
+        foreach (var input in new[]
+        {
+            _count, _pagesEstimate, _prefix, _length, _usernameCharacters,
+            _passwordLength, _passwordCharacters
+        }) input.IsEnabled = !busy;
+        foreach (var selector in new[]
+        {
+            _usernameAlphabetType, _passwordAlphabetType, _profile,
+            _customer, _server
+        }) selector.IsEnabled = !busy;
+        _lengthWithPrefix.IsEnabled = !busy;
+    }
+
+    // A preview/edit to the generation form cannot silently reuse a saved
+    // batch created from earlier settings. Service/profile/customer changes
+    // are already handled by their own navigation handlers.
+    private void SubscribeGenerationInputChanges()
+    {
+        foreach (var input in new[]
+        {
+            _count, _pagesEstimate, _prefix, _length, _usernameCharacters,
+            _passwordLength, _passwordCharacters
+        })
+            input.TextChanged += (_, _) => InvalidatePendingBatchForCredentialChange();
+
+        foreach (var selector in new[]
+        {
+            _usernameAlphabetType, _passwordAlphabetType
+        })
+            selector.SelectionChanged += (_, _) =>
+                InvalidatePendingBatchForCredentialChange();
+
+        _lengthWithPrefix.Checked += (_, _) => InvalidatePendingBatchForCredentialChange();
+        _lengthWithPrefix.Unchecked += (_, _) => InvalidatePendingBatchForCredentialChange();
     }
 
     private static string DescribeSavedCredentialMode(IReadOnlyList<Voucher> batch)
