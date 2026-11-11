@@ -144,11 +144,68 @@ public partial class PrintingView
     {
         if(preparedDocument is null || preparedCards.Count==0 ||
            preparedAppearance is null)return false;
-        var confirmed=latestCards.Where(card=>card.SentToRouter &&
+        return VerifyVoucherBatchSnapshot(
+            preparedCards,latestCards,preparedAppearance,latestAppearance);
+    }
+
+    // A latest-batch PDF and a printed batch must use the exact same
+    // selection rules; never mix services, owners or different batch IDs.
+    private static IReadOnlyList<Voucher> ReadCurrentPrintSelection(
+        VoucherStore store,ComboBox batchSelector,
+        Func<IReadOnlyList<Voucher>>? currentBatch,int maxCount)
+    {
+        if((batchSelector.SelectedItem as ComboBoxItem)?.Tag
+            is PrintableBatchSummary archive)
+            return store.GetBatchVouchers(archive.Service,archive.BatchId);
+        if(currentBatch is not null)return currentBatch();
+        var latest=store.ListPrintableBatches(1).FirstOrDefault();
+        return latest is null?[]:store.GetBatchVouchers(
+            latest.Service,latest.BatchId).Take(maxCount).ToArray();
+    }
+
+    private static bool VerifyVoucherBatchSnapshot(
+        IReadOnlyList<Voucher> expected,IReadOnlyList<Voucher> latest,
+        VoucherCardAppearance originalStyle,VoucherCardAppearance currentStyle)
+    {
+        if(expected.Count==0)return false;
+        var confirmed=latest.Where(card=>card.SentToRouter &&
             card.DeliveryStatus=="SENT").ToArray();
-        return confirmed.Length==preparedCards.Count &&
-            confirmed.SequenceEqual(preparedCards) &&
-            Equals(preparedAppearance,latestAppearance.Validate());
+        return confirmed.Length==expected.Count &&
+            confirmed.SequenceEqual(expected) &&
+            Equals(originalStyle,currentStyle.Validate());
+    }
+
+    // Never replace an existing PDF until every card is still confirmed, the
+    // selected package/layout is unchanged, and the historical print snapshot
+    // has been persisted successfully. Failed exports leave old PDFs intact.
+    private static async Task StageAndPublishVerifiedPdfAsync(
+        Func<string,Task> render,Func<bool> verify,
+        Action saveSnapshot,string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var target=Path.GetFullPath(path);
+        if(!string.Equals(Path.GetExtension(target),".pdf",
+            StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("امتداد ملف الطباعة يجب أن يكون PDF.",nameof(path));
+        var folder=Path.GetDirectoryName(target)!;
+        Directory.CreateDirectory(folder);
+        var temp=Path.Combine(folder,
+            ".najm-verified-"+Guid.NewGuid().ToString("N")+".pdf");
+        try
+        {
+            await render(temp);
+            if(!verify())
+                throw new InvalidDataException(
+                    "تغيرت حالة كرت أو الباقة أو إعدادات الطباعة أثناء إخراج PDF. "+
+                    "لم يتم اعتماد الملف؛ راجع الدفعة ثم أعد المعاينة.");
+            saveSnapshot();
+            if(File.Exists(target))File.Replace(temp,target,null);
+            else File.Move(temp,target);
+        }
+        finally
+        {
+            if(File.Exists(temp))File.Delete(temp);
+        }
     }
 
     public string? ChoosePdfDestination()

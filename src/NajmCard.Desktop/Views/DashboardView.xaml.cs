@@ -23,7 +23,9 @@ public partial class DashboardView : UserControl
     private CancellationTokenSource? _lifecycleToken;
     private readonly DispatcherTimer _telemetryTimer=new() {Interval=TimeSpan.FromSeconds(1)};
     private bool _initialSnapshotLoaded;
+    private bool _refreshAfterUnloaded;
     private bool _initialLifecycleAttempted;
+    private bool _lifecycleScheduleQueued;
     private bool _liveTelemetryRunning;
     private CancellationTokenSource? _telemetryToken;
 
@@ -42,8 +44,10 @@ public partial class DashboardView : UserControl
             _telemetryTimer.Start();
             if(!_initialSnapshotLoaded)
             {
-                _initialSnapshotLoaded=true;
-                _=RefreshAsync();
+                // If a previous request was cancelled by leaving the page,
+                // wait for it to drain and then restart on the current view.
+                if(_refreshing)_refreshAfterUnloaded=true;
+                else _=RefreshAsync();
             }
             if(!_initialLifecycleAttempted)
                 _=ScheduleInitialLifecycleAsync();
@@ -163,6 +167,9 @@ public partial class DashboardView : UserControl
             ErrorStatus.Text=(live.IsPartial?"توجد عدادات متصلين غير متاحة. ":"")+
                 (live.UserManagerTotal is null?"إجمالي User Manager غير متاح؛ لا يمكن اعتماد الصفر. ":"")+
                 "حالة النشطة والمنتهية تُقرأ مستقلة بحسب استخدام وحدود User Manager v6.";
+            // A request cancelled during navigation must not permanently
+            // suppress the initial snapshot on the next visit.
+            _initialSnapshotLoaded=true;
         }
         catch(OperationCanceledException)
         {
@@ -178,6 +185,9 @@ public partial class DashboardView : UserControl
             if(ReferenceEquals(_refreshToken,timeout))_refreshToken=null;
             _refreshing=false;
             RefreshButton.IsEnabled=true;
+            var retry=_refreshAfterUnloaded && IsLoaded && !_initialSnapshotLoaded;
+            _refreshAfterUnloaded=false;
+            if(retry)_=RefreshAsync(); // exactly one deferred read after navigation
         }
     }
 
@@ -206,7 +216,11 @@ public partial class DashboardView : UserControl
 
     private async Task ScheduleInitialLifecycleAsync()
     {
-        if(_initialLifecycleToken is not null)return;
+        if(_initialLifecycleToken is not null)
+        {
+            _lifecycleScheduleQueued=true;
+            return;
+        }
         using var pending=new CancellationTokenSource();
         _initialLifecycleToken=pending;
         try
@@ -214,7 +228,6 @@ public partial class DashboardView : UserControl
             await Task.Delay(TimeSpan.FromSeconds(5),pending.Token);
             if(IsLoaded && !pending.IsCancellationRequested)
             {
-                _initialLifecycleAttempted=true;
                 await RefreshLifecycleAsync();
             }
         }
@@ -222,7 +235,12 @@ public partial class DashboardView : UserControl
         finally
         {
             if(ReferenceEquals(_initialLifecycleToken,pending))
+            {
                 _initialLifecycleToken=null;
+                var retry=_lifecycleScheduleQueued && IsLoaded && !_initialLifecycleAttempted;
+                _lifecycleScheduleQueued=false;
+                if(retry)_=ScheduleInitialLifecycleAsync();
+            }
         }
     }
 
@@ -277,6 +295,7 @@ public partial class DashboardView : UserControl
                 " | صالحة غير مستخدمة "+state.Valid+
                 (state.Unclassified>0?" | غير مصنفة "+state.Unclassified:"")+
                 " | الكروت المنتهية: استنفاد Transfer Limit الموجب فقط.";
+            _initialLifecycleAttempted=true;
         }
         catch(OperationCanceledException)
         {
