@@ -330,7 +330,7 @@ public partial class GeneratorView : UserControl
         form.Children.Add(formatSurface);
         _customerPanel.Children.Add(PageUi.Label("مدير المستخدمين (السيرفر 6)"));
         _customerPanel.Children.Add(_customer);
-        _customerPanel.Visibility = Visibility.Collapsed;
+        _customerPanel.Visibility = SelectedService=="userman"?Visibility.Visible:Visibility.Collapsed;
         _server.ItemsSource=new[]{"all"};
         _server.SelectedIndex=0;
         void UpdatePasswordMode()
