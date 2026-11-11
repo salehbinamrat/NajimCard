@@ -680,7 +680,10 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
         if (voucher.Username.Length is < 1 or > 64
             || voucher.Username.Any(c => char.IsControl(c) || char.IsWhiteSpace(c)))
             throw new ArgumentException("اسم كرت User Manager غير صالح.", nameof(voucher));
-        if (voucher.Password.Length is < 1 or > 128)
+        // A genuinely username-only voucher has Password=="". RouterOS v6
+        // accepts an explicit empty password field; never replace it with
+        // the username behind the operator's back.
+        if (voucher.Password is null || voucher.Password.Length > 128)
             throw new ArgumentException("كلمة مرور كرت User Manager غير صالحة.", nameof(voucher));
         if (string.IsNullOrWhiteSpace(voucher.Profile) || voucher.Profile.Length > 100)
             throw new ArgumentException("اختر باقة User Manager صالحة.", nameof(voucher));
@@ -844,8 +847,8 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
             if (card is null || !names.Add(card.Username))
                 throw new ArgumentException("توجد أسماء كروت مكررة أو بيانات غير صالحة.");
             if (string.IsNullOrWhiteSpace(card.Profile)
-                || string.IsNullOrWhiteSpace(card.Password))
-                throw new ArgumentException("توجد كروت دون باقة أو كلمة مرور.");
+                || card.Password is null || card.Password.Length>128)
+                throw new ArgumentException("توجد كروت دون باقة أو ببيانات مرور غير صالحة.");
         }
 
         int succeeded = 0;
@@ -864,7 +867,8 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
 
     public async Task AddHotspotUserAsync(Voucher voucher, CancellationToken ct = default)
     {
-        if (voucher.Username.Length is < 1 or > 64 || voucher.Password.Length is < 1 or > 128)
+        if (voucher.Username.Length is < 1 or > 64 ||
+            voucher.Password is null || voucher.Password.Length > 128)
             throw new ArgumentException("بيانات الكرت غير صالحة.");
         await client.CommandAsync("/ip/hotspot/user/add", new Dictionary<string, string>
         {
