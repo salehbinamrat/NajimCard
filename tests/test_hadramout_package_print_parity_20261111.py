@@ -57,5 +57,47 @@ class HadramoutPackagePrintParity(unittest.TestCase):
         self.assertIn("هذه دفعة قديمة بلا قالب طباعة محفوظ",history)
         self.assertIn("if(_viewingArchive)",history)
 
+
+    def test_print_preflight_detects_stale_batches_on_both_confirmations(self):
+        printer=read(SOURCE/"Views/PrintingView.cs")
+        snapshots=read(SOURCE/"Views/PrintingView.BatchSnapshots.cs")
+        self.assertIn("preparedCards=cards.ToArray()",printer)
+        self.assertIn("preparedCards=[]",printer)
+        self.assertEqual(2,printer.count("if(!VerifyPreparedBatch())"))
+        self.assertIn('store.GetBatchVouchers(archive.Service,archive.BatchId)',printer)
+        self.assertIn('confirmed.SequenceEqual(preparedCards)',snapshots)
+        self.assertIn('card.DeliveryStatus=="SENT"',snapshots)
+        self.assertIn('card.SentToRouter',snapshots)
+        self.assertIn('Equals(preparedAppearance,latestAppearance.Validate())',snapshots)
+        self.assertLess(printer.index('if(!VerifyPreparedBatch())'),
+                        printer.index('dlg.PrintDocument(prepared!'))
+
+    def test_printer_absence_must_not_silently_redirect_to_default(self):
+        selector=read(SOURCE/"Views/PrintingView.PrintSelectors.cs")
+        printer=read(SOURCE/"Views/PrintingView.cs")
+        self.assertIn('selectedPrinter.Items.Add(selected)',selector)
+        self.assertIn('غير مثبتة على Windows الحالي',selector)
+        self.assertIn('chosenServer.GetPrintQueue(printerName)',printer)
+        self.assertIn('submittedToSpooler=true',printer)
+        self.assertIn('راجع قائمة انتظار الطابعة والورق',printer)
+
+    def test_customer_changes_invalidate_pending_batch_and_keep_packages_scoped(self):
+        creator=read(SOURCE/"Views/GeneratorView.cs")
+        settings=read(SOURCE/"Views/GeneratorView.PackageSettings.cs")
+        change=creator[creator.index('_customer.SelectionChanged +='):]
+        self.assertLess(change.index('_batch=[];'),
+                        change.index('RestorePackagePreset();'))
+        self.assertIn('if(_restoringPreset || _applyingProfileCatalog)return;',change)
+        self.assertIn('LoadPackagePreset(_routerKey,SelectedService,profile,owner)',settings)
+        self.assertIn('ApplyOutputPreferences?.Invoke(',settings)
+
+    def test_bulk_sqlite_insert_is_prepared_and_durable(self):
+        store=read(SOURCE/"Services/VoucherStore.cs")
+        self.assertIn('cmd.Prepare();',store)
+        self.assertIn('using var tx=db.BeginTransaction()',store)
+        self.assertIn('PRAGMA journal_mode=WAL',store)
+        self.assertIn('PRAGMA synchronous=FULL',store)
+        self.assertIn('WriteBatchPrintSnapshot(db,tx,printSnapshot)',store)
+
 if __name__=="__main__":
     unittest.main()
