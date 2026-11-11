@@ -152,18 +152,31 @@ internal static class Program
 
     private static void VerifyDashboardPanels(DashboardView dashboard)
     {
-        var panels=VisualChildren<Border>(dashboard)
-            .Where(panel=>Equals(panel.Tag,"DashboardPanel")).ToArray();
-        if(panels.Length!=10)
-            throw new InvalidDataException("Dashboard panels are missing.");
-        var cards=panels.Skip(1).ToArray();
-        var bounds=cards.Select(card=>card.TransformToAncestor(dashboard)
-            .TransformBounds(new Rect(card.RenderSize))).ToArray();
-        if(bounds.Any(card=>card.Width<=0 || card.Height<=0 || card.Left<0 ||
-            card.Right>dashboard.ActualWidth+1 || card.Bottom>dashboard.ActualHeight+1))
-            throw new InvalidDataException("A dashboard card is clipped.");
-        if(bounds.Max(card=>card.Width)-bounds.Min(card=>card.Width)>2)
-            throw new InvalidDataException("Dashboard card columns are not aligned.");
+        // The first two tiers each have three equal cards; the lower tier
+        // intentionally has two wider cards after removing duplicate sidebar
+        // shortcuts. Check clipping and alignment *within* each tier, not
+        // across unrelated columns of different widths.
+        var layout=(Grid)dashboard.Content;
+        var tiers=layout.Children.OfType<Grid>()
+            .Where(grid=>Grid.GetRow(grid) is 1 or 2 or 3)
+            .OrderBy(Grid.GetRow).ToArray();
+        var expected=new[]{3,3,2};
+        if(tiers.Length!=expected.Length)
+            throw new InvalidDataException("Dashboard tier layout is incomplete.");
+        for(int i=0;i<tiers.Length;i++)
+        {
+            var cards=tiers[i].Children.OfType<Border>()
+                .Where(panel=>Equals(panel.Tag,"DashboardPanel")).ToArray();
+            if(cards.Length!=expected[i])
+                throw new InvalidDataException("Dashboard panels missing in tier "+(i+1)+".");
+            var bounds=cards.Select(card=>card.TransformToAncestor(dashboard)
+                .TransformBounds(new Rect(card.RenderSize))).ToArray();
+            if(bounds.Any(card=>card.Width<=0 || card.Height<=0 || card.Left<0 ||
+                card.Right>dashboard.ActualWidth+1 || card.Bottom>dashboard.ActualHeight+1))
+                throw new InvalidDataException("A dashboard card is clipped.");
+            if(bounds.Max(card=>card.Width)-bounds.Min(card=>card.Width)>2)
+                throw new InvalidDataException("Dashboard cards are misaligned in tier "+(i+1)+".");
+        }
     }
 
     private static void VerifyProfilesPage(FrameworkElement root,ProfilesView profiles)
