@@ -62,5 +62,32 @@ class CredentialModeIsolation(unittest.TestCase):
         self.assertNotIn('["password"] = voucher.Password,', send)
 
 
+    def test_editing_other_generation_fields_invalidates_existing_batch(self):
+        creator = source(DESKTOP / "GeneratorView.cs")
+        mode = source(DESKTOP / "GeneratorView.CredentialMode.cs")
+        package = source(DESKTOP / "GeneratorView.PackageSettings.cs")
+        self.assertIn("SubscribeGenerationInputChanges();", creator)
+        self.assertIn("private void SubscribeGenerationInputChanges()", mode)
+        for field in (
+            "_count", "_pagesEstimate", "_prefix", "_length",
+            "_usernameCharacters", "_passwordLength", "_passwordCharacters",
+            "_usernameAlphabetType", "_passwordAlphabetType",
+        ):
+            self.assertIn(field, mode)
+        self.assertIn(
+            "input.TextChanged += (_, _) => InvalidatePendingBatchForCredentialChange();",
+            mode,
+        )
+        self.assertIn("selector.SelectionChanged += (_, _) =>", mode)
+        self.assertIn("_lengthWithPrefix.Checked +=", mode)
+        self.assertIn("_lengthWithPrefix.Unchecked +=", mode)
+        self.assertIn("input.IsEnabled = !busy;", mode)
+        self.assertIn("selector.IsEnabled = !busy;", mode)
+        self.assertIn(
+            "_restoringPreset=false;InvalidatePendingBatchForCredentialChange();",
+            package,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
