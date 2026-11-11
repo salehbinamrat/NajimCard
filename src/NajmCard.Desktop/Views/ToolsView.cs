@@ -68,7 +68,7 @@ public class ToolsView : UserControl
         neighborActions.Children.Add(copyNeighbor);
         neighborPanel.Children.Add(neighborActions);
         neighborPanel.Children.Add(PageUi.Label("بحث بالاسم أو IP أو MAC أو الواجهة"));
-        var neighborSearch=PageUi.Input();
+        var neighborSearch=PageUi.SearchInput();
         neighborPanel.Children.Add(neighborSearch);
         var detailedNeighbors=PageUi.Table(
             ("الجهاز","Identity"),("IPv4 / العنوان","PreferredAddress"),
