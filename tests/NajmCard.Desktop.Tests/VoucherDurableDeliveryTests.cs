@@ -105,4 +105,38 @@ public sealed class VoucherDurableDeliveryTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public void Batch_Send_Session_Keeps_Each_Lease_And_Receipt_Durable_Across_Restarts()
+    {
+        var root=Root();
+        try
+        {
+            var first=Card();
+            var second=Card() with { Username="001235" };
+            using(var store=new VoucherStore(root))
+            {
+                store.SaveBatch([first,second]);
+                using(var session=store.OpenSendSession())
+                {
+                    session.BeginSend(first);
+                    session.FinishSend(first,"SENT");
+                    session.BeginSend(second);
+                    // Simulate a crash after submitting the second card:
+                    // no definitive reply may be recorded before restart.
+                }
+            }
+            using(var reopened=new VoucherStore(root))
+            {
+                var cards=reopened.GetBatchVouchers("userman","batch-7");
+                Assert.Equal("SENT",cards.Single(x=>x.Username==first.Username).DeliveryStatus);
+                Assert.Equal("SENDING",cards.Single(x=>x.Username==second.Username).DeliveryStatus);
+                Assert.ThrowsAny<InvalidOperationException>(()=>reopened.BeginSend(first));
+                Assert.ThrowsAny<InvalidOperationException>(()=>reopened.BeginSend(second));
+                reopened.FinishSend(second,"UNKNOWN","Uncertain router outcome");
+                Assert.ThrowsAny<InvalidOperationException>(()=>reopened.BeginSend(second));
+            }
+        }
+        finally {Directory.Delete(root,true);}
+    }
 }

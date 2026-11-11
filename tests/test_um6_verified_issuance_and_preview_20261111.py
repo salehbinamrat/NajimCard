@@ -29,11 +29,12 @@ class UserManagerDeliveryParity(unittest.TestCase):
     def test_durable_write_and_safe_print_order(self):
         dispatch=(SERVICES/"VoucherBatchDispatcher.cs").read_text(encoding="utf-8")
         printer=(VIEWS/"PrintingView.cs").read_text(encoding="utf-8")+(VIEWS/"PrintingView.BatchSnapshots.cs").read_text(encoding="utf-8")
-        self.assertLess(dispatch.index("store.BeginSend(voucher);"),
+        self.assertLess(dispatch.index("sendSession.BeginSend(voucher);"),
                         dispatch.index("gateway.CreateAndActivateUserManagerV6Async("))
         self.assertIn('state = result.Success ? "SENT" :',dispatch)
         self.assertIn('result.UncertainOutcome ? "UNKNOWN" : "FAILED"',dispatch)
-        self.assertIn('store.FinishSend(voucher, state, error)',dispatch)
+        self.assertIn('sendSession.FinishSend(voucher, state, error)',dispatch)
+        self.assertIn('using var sendSession = store.OpenSendSession();',dispatch)
         self.assertIn('card.SentToRouter &&',printer)
         self.assertIn('card.DeliveryStatus=="SENT"',printer)
         self.assertIn('لا تُطبع الحالات CREATED/UNKNOWN/FAILED',printer)

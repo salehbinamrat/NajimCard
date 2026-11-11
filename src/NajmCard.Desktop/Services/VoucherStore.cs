@@ -295,8 +295,13 @@ public sealed partial class VoucherStore : IDisposable
     /// </summary>
     public void BeginSend(Voucher voucher)
     {
-        Validate(voucher);
         using var db = Open();
+        BeginSendOnConnection(db, voucher);
+    }
+
+    private static void BeginSendOnConnection(SqliteConnection db, Voucher voucher)
+    {
+        Validate(voucher);
         using var tx = db.BeginTransaction();
 
         using (var read = db.CreateCommand())
@@ -341,10 +346,16 @@ public sealed partial class VoucherStore : IDisposable
     /// <summary>Record the authoritative result; never convert UNKNOWN into retryable FAILED.</summary>
     public void FinishSend(Voucher voucher, string state, string error = "")
     {
+        using var db = Open();
+        FinishSendOnConnection(db, voucher, state, error);
+    }
+
+    private static void FinishSendOnConnection(
+        SqliteConnection db, Voucher voucher, string state, string error)
+    {
         ArgumentNullException.ThrowIfNull(voucher);
         if (state is not ("SENT" or "FAILED" or "UNKNOWN"))
             throw new ArgumentException("حالة تسليم الكرت غير صالحة.", nameof(state));
-        using var db = Open();
         using var tx = db.BeginTransaction();
         using var cmd = db.CreateCommand();
         cmd.Transaction = tx;
@@ -393,6 +404,28 @@ public sealed partial class VoucherStore : IDisposable
                 " من "+total+" | فاشل "+failed+" | غير مؤكد "+uncertain);
         }
         tx.Commit();
+    }
+
+    /// <summary>
+    /// Keep one WAL connection for a whole issuance batch, but use independent
+    /// synchronous=FULL transactions before and after EVERY RouterOS write.
+    /// Never group SENDING leases or acknowledgements into a late batch commit:
+    /// a crash must not make an already-issued voucher retryable.
+    /// </summary>
+    public SendSession OpenSendSession() => new(this);
+
+    public sealed class SendSession : IDisposable
+    {
+        private readonly SqliteConnection _db;
+
+        internal SendSession(VoucherStore store) => _db = store.Open();
+
+        public void BeginSend(Voucher voucher) => BeginSendOnConnection(_db, voucher);
+
+        public void FinishSend(Voucher voucher, string state, string error = "") =>
+            FinishSendOnConnection(_db, voucher, state, error);
+
+        public void Dispose() => _db.Dispose();
     }
 
     public string Backup()
