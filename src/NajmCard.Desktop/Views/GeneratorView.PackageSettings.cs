@@ -34,7 +34,12 @@ public partial class GeneratorView
                 _credentialMode.SelectedIndex==0,
                 OutputPreferencesProvider?.Invoke()??new VoucherOutputPreferences()).Validate();
             _store.SavePackagePreset(saved);
-            ApplyCardAppearance(saved.Appearance);
+            // Adopt the local copy made by the store immediately; a removed
+            // external image must not break print preview in this session.
+            var persisted=_store.LoadPackagePreset(_routerKey,SelectedService,
+                profile,SelectedService=="userman"
+                    ?_customer.SelectedItem?.ToString()??"":"");
+            ApplyCardAppearance(persisted?.Appearance??saved.Appearance);
             _status.Text="حُفظت إعدادات الباقة "+profile+" حتى بعد إغلاق البرنامج.";
             return true;
         }
