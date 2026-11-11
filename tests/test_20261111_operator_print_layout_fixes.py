@@ -55,6 +55,8 @@ class OperatorCorrections(unittest.TestCase):
         end=creator.index('private void SelectMatchingOwner()',start)
         self.assertNotIn("SaveCurrentPackage()",creator[start:end])
         self.assertIn("await PrepareBatchAsync(true,singleCard)",creator[start:end])
+        self.assertIn('_batch.All(v=>',creator[start:end])
+        self.assertIn('v.SentToRouter && v.DeliveryStatus=="SENT"',creator[start:end])
         self.assertIn('var saved=SaveCurrentPackage()',read(V/"GeneratorView.SaveToast.cs"))
 
     def test_loaded_catalog_validation_survives_temporarily_disabled_wpf_parent(self):
