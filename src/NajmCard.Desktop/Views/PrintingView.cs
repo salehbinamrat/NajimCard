@@ -523,7 +523,7 @@ public partial class PrintingView : UserControl
                             BorderThickness=new Thickness(2),
                             Child=new TextBlock
                             {
-                                Text="معاينة تجريبية\\nغير مفعلة في الراوتر",
+                                Text="معاينة تجريبية"+Environment.NewLine+"غير مفعلة في الراوتر",
                                 Foreground=Brushes.DarkRed,FontWeight=FontWeights.ExtraBold,
                                 FontFamily=new FontFamily("Arial"),FontSize=15,
                                 TextAlignment=TextAlignment.Center,
