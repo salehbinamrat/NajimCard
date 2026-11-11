@@ -13,18 +13,28 @@ public sealed class VoucherBatchDispatchTests
         new(name, "pass123", "gold", "batch-r", DateTimeOffset.UtcNow,
             Service: service, Customer: customer);
 
-    private sealed class Spy : IRouterCommandClient, IRouterReceiptClient
+    private sealed class Spy : IRouterCommandClient, IRouterReceiptClient, IRouterQueryClient
     {
         public readonly List<(string Name, IReadOnlyDictionary<string,string> Data)> Writes = [];
         public bool MissingId { get; set; }
         public bool FailNameRead { get; set; }
         public string? PppCollision { get; set; }
+        public string? LastUsername { get; set; }
+        public string? LastProfile { get; set; }
+        public string? LastCustomer { get; set; }
+        public bool SuppressActualProfile { get; set; }
+        public int QueryCount { get; set; }
         public readonly List<string> Reads = [];
         public Task<RouterCommandReply> CommandWithReceiptAsync(
             string command, IReadOnlyDictionary<string,string>? attributes = null,
             CancellationToken cancellationToken = default)
         {
             Writes.Add((command, new Dictionary<string,string>(attributes!)));
+            if(command=="/tool/user-manager/user/add")
+            {
+                LastUsername=attributes!["username"];
+                LastCustomer=attributes["customer"];
+            }
             return Task.FromResult(new RouterCommandReply(
                 [], MissingId ? new Dictionary<string,string>() : new Dictionary<string,string> { ["ret"] = "*A" }));
         }
@@ -44,7 +54,25 @@ public sealed class VoucherBatchDispatchTests
                 return Task.FromResult(data);
             }
             Writes.Add((command, new Dictionary<string,string>(attributes ?? new Dictionary<string,string>())));
+            if(command=="/tool/user-manager/user/create-and-activate-profile")
+                LastProfile=attributes!["profile"];
             return Task.FromResult<IReadOnlyList<IReadOnlyDictionary<string,string>>>([]);
+        }
+        public Task<IReadOnlyList<IReadOnlyDictionary<string,string>>> QueryByIdAsync(
+            string command,string id,IReadOnlyDictionary<string,string>? attributes = null,
+            CancellationToken cancellationToken = default)
+        {
+            QueryCount++;
+            IReadOnlyList<IReadOnlyDictionary<string,string>> rows=
+            [
+                new Dictionary<string,string>
+                {
+                    [".id"]=id,["username"]=LastUsername??"",
+                    ["actual-profile"]=SuppressActualProfile?"":LastProfile??"",
+                    ["customer"]=LastCustomer??""
+                }
+            ];
+            return Task.FromResult(rows);
         }
     }
 
@@ -80,6 +108,29 @@ public sealed class VoucherBatchDispatchTests
             Assert.False(Assert.Single(saved.Where(x => x.Service == "hotspot")).SentToRouter);
         }
         finally { Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task Unassigned_UserManager_Profile_Does_Not_Become_Printable()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("712345","userman","admin");
+            store.SaveBatch([card]);
+            var spy=new Spy{SuppressActualProfile=true};
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.UncertainOutcome);
+            Assert.Equal(0,result.Succeeded);
+            var saved=Assert.Single(store.GetVouchers());
+            Assert.Equal("UNKNOWN",saved.DeliveryStatus);
+            Assert.False(saved.SentToRouter);
+            Assert.True(spy.QueryCount>=1);
+            Assert.Equal(2,spy.Writes.Count);
+        }
+        finally{Directory.Delete(root,true);}
     }
 
     [Fact]
