@@ -395,6 +395,9 @@ public sealed class VoucherBatchDispatchTests
     [InlineData("userman", "username-only")]
     [InlineData("userman", "matching")]
     [InlineData("userman", "different")]
+    [InlineData("pppoe", "username-only")]
+    [InlineData("pppoe", "matching")]
+    [InlineData("pppoe", "different")]
     public async Task Credential_Mode_Survives_Generation_Storage_And_Actual_Router_Command(
         string service, string mode)
     {
@@ -419,8 +422,12 @@ public sealed class VoucherBatchDispatchTests
                 .SendAsync([card]);
             Assert.True(result.Success);
 
-            var addPath=service=="userman"
-                ?"/tool/user-manager/user/add":"/ip/hotspot/user/add";
+            var addPath=service switch
+            {
+                "userman"=>"/tool/user-manager/user/add",
+                "pppoe"=>"/ppp/secret/add",
+                _=>"/ip/hotspot/user/add"
+            };
             var attributes=Assert.Single(spy.Writes.Where(x=>x.Name==addPath)).Data;
             Assert.Equal(card.Username,attributes[service=="userman"?"username":"name"]);
             if(mode=="username-only")
