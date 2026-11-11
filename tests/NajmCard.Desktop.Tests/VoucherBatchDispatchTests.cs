@@ -340,4 +340,51 @@ public sealed class VoucherBatchDispatchTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public async Task Username_Only_UM6_Voucher_Round_Trips_Sqlite_And_Sends_Blank_Password()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("721540","userman","admin") with{Password=""};
+            store.SaveBatch([card]);
+            var before=Assert.Single(store.GetVouchers());
+            Assert.Empty(before.Password);
+            Assert.Equal("CREATED",before.DeliveryStatus);
+            var spy=new Spy();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.Success);
+            var sent=Assert.Single(store.GetVouchers());
+            Assert.Empty(sent.Password);
+            Assert.Equal("SENT",sent.DeliveryStatus);
+            Assert.True(sent.SentToRouter);
+            Assert.Equal("",spy.Writes[0].Data["password"]);
+            Assert.Equal("721540",spy.Writes[0].Data["username"]);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+    [Fact]
+    public async Task Username_Only_Hotspot_Sends_Blank_Password_Without_UM6_Radius_Preflight()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("721541","hotspot") with{Password=""};
+            store.SaveBatch([card]);
+            var spy=new Spy();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.Success);
+            Assert.Equal("",Assert.Single(spy.Writes).Data["password"]);
+            Assert.Equal("SENT",Assert.Single(store.GetVouchers()).DeliveryStatus);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+
 }
