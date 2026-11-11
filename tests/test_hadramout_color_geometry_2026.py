@@ -11,7 +11,7 @@ M=BASE/"src"/"NajmCard.Core"/"Models"
 class PrintPageGeometry(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.g=(V/"GeneratorView.cs").read_text(encoding="utf-8")
+        cls.g=(V/"GeneratorView.cs").read_text(encoding="utf-8")+(V/"GeneratorView.PackageSettings.cs").read_text(encoding="utf-8")
         cls.w=(V/"VoucherWorkspaceView.cs").read_text(encoding="utf-8")
         cls.p=(V/"PrintingView.cs").read_text(encoding="utf-8")
         cls.d=(V/"DashboardView.xaml").read_text(encoding="utf-8")
