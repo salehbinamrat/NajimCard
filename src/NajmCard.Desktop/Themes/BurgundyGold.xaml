@@ -158,14 +158,20 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBoxItem">
                     <Border x:Name="ItemSurface" Background="{StaticResource SurfaceBrush}" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter VerticalAlignment="Center"/>
+                        <ContentPresenter VerticalAlignment="Center"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"
+                                          RecognizesAccessKey="True"/>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- Selected/hovered options must use a light surface AND
+                             dark text; unselected dark surface uses cream text. -->
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="ItemSurface" Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
+                            <Setter TargetName="ItemSurface" Property="Background" Value="#F5DDAA"/>
+                            <Setter Property="Foreground" Value="#471A30"/>
                         </Trigger>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="ItemSurface" Property="Background" Value="{StaticResource BurgundyBrush}"/>
+                            <Setter TargetName="ItemSurface" Property="Background" Value="#EAC67F"/>
+                            <Setter Property="Foreground" Value="#471A30"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="ItemSurface" Property="Opacity" Value="0.6"/>
