@@ -57,7 +57,8 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn('x.DeliveryStatus=="SENT"&&x.SentToRouter',printer)
         self.assertIn("await _renderPdfAsync(job.Cards,job.Style,job.Options,path)",printer)
         self.assertIn("worker.SetApartmentState(ApartmentState.STA)",printer)
-        self.assertIn("Execute(printer.SavePdfAsync)",self.w)
+        self.assertIn("await printer.SavePdfAsync()",self.w)
+        self.assertIn("status.Text=printer.LastOperationMessage",self.w)
 
 if __name__=="__main__":
     unittest.main()
