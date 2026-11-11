@@ -133,24 +133,6 @@ public partial class PrintingView : UserControl
     internal static void OpenPreviewPdf(string path) =>
         Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
 
-    private static string NewPreviewPdfPath()
-    {
-        var directory=Path.Combine(Environment.GetFolderPath(
-            Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
-        Directory.CreateDirectory(directory);
-        foreach(var file in Directory.EnumerateFiles(directory,"Najm_*.pdf"))
-        {
-            try
-            {
-                if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
-                    File.Delete(file);
-            }
-            catch(IOException) { }
-            catch(UnauthorizedAccessException) { }
-        }
-        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
-    }
-
     public PrintingView(VoucherStore store,bool embedded=false,
         Func<IReadOnlyList<Voucher>>? selectedBatch=null,
         Func<VoucherCardAppearance>? selectedAppearance=null)
@@ -346,10 +328,11 @@ public partial class PrintingView : UserControl
 
         FixedDocument? prepared=null;
         VoucherCardAppearance? designUsed=null;
+        Voucher[] preparedCards=[];
         int preparedCount=0;
         void Clear()
         {
-            prepared=null;designUsed=null;preparedCount=0;
+            prepared=null;designUsed=null;preparedCards=[];preparedCount=0;
             viewer.Document=null;printButton.IsEnabled=false;
         }
         _invalidate=()=>{Clear();if(selectedBatch is not null)batchSelector.SelectedIndex=0;};
@@ -548,6 +531,7 @@ public partial class PrintingView : UserControl
                 prepared=MakeDocument(cards,opts,style);
                 store.SaveBatchPrintSnapshot(SnapshotForPrint(
                     cards,opts,style,GetOutputPreferences()));
+                preparedCards=cards.ToArray();
                 preparedCount=cards.Length;designUsed=style;
                 viewer.Document=prepared;
                 printButton.IsEnabled=true;
@@ -559,9 +543,35 @@ public partial class PrintingView : UserControl
             catch(Exception ex){_status.Text="تعذر إعداد معاينة الطباعة: "+ex.Message;return false;}
         }
 
+        bool VerifyPreparedBatch()
+        {
+            IReadOnlyList<Voucher> latest;
+            if((batchSelector.SelectedItem as ComboBoxItem)?.Tag
+                is PrintableBatchSummary archive)
+                latest=store.GetBatchVouchers(archive.Service,archive.BatchId);
+            else if(selectedBatch is not null)
+                latest=selectedBatch();
+            else
+            {
+                var summary=store.ListPrintableBatches(1).FirstOrDefault();
+                latest=summary is null?[]:store.GetBatchVouchers(
+                    summary.Service,summary.BatchId).Take(Math.Clamp(Int(qty.Text),1,10000)).ToArray();
+            }
+            return VerifyPreparedBatchSnapshot(prepared,preparedCards,latest,
+                designUsed,_selectedArchiveTemplate?.Appearance
+                ??selectedAppearance?.Invoke()??store.LoadCardAppearance());
+        }
+
         void Print()
         {
             if(prepared is null&&!Prepare())return;
+            if(!VerifyPreparedBatch())
+            {
+                Clear();
+                _status.Text="تغيرت الكروت أو حالتها منذ المعاينة؛ "+
+                    "أُلغيت الطباعة. حدّث المعاينة قبل المتابعة.";
+                return;
+            }
             if(!PageUi.Confirm("إرسال "+preparedCount+
                 " كرتا مؤكدا إرساله إلى الطابعة؛ هل مقاس الورق والاتجاه صحيحان؟"))return;
             LocalPrintServer? chosenServer=null;
@@ -583,6 +593,12 @@ public partial class PrintingView : UserControl
                     ?PageOrientation.Landscape:PageOrientation.Portrait;
                 dlg.PrintTicket=ticket;
                 if(dlg.ShowDialog()!=true)return;
+                if(!VerifyPreparedBatch())
+                {
+                    Clear();
+                    _status.Text="تغيرت بيانات الدفعة أثناء نافذة الطباعة؛ أُلغيت المهمة.";
+                    return;
+                }
                 dlg.PrintDocument(prepared!.DocumentPaginator,"NajmCard Confirmed Voucher Batch");
                 _status.Text="أُرسلت المهمة للطابعة؛ راجع محاذاة الورق على نسخة اختبار.";
             }
