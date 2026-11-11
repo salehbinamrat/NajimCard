@@ -130,15 +130,22 @@ public sealed class VoucherWorkspaceView : UserControl
             foreach(var (name,btn) in tabButtons)
             {
                 bool selected=name==creator.CurrentService;
-                var palette=name switch
+                // Only the active service uses the strong gold highlight.
+                // A permanent gold Hotspot tab previously made it look active
+                // even when User Manager was the selected default.
+                var background=selected?"#EAC77C":name switch
                 {
-                    "hotspot"=>("#EAC77C","#591632"),
-                    "userman"=>("#914064","#FFF1DC"),
-                    _=>("#583B68","#FFF1DC")
+                    "hotspot"=>"#5A2840",
+                    "userman"=>"#723851",
+                    _=>"#583B68"
                 };
-                btn.Background=(Brush)new BrushConverter().ConvertFrom(palette.Item1)!;
-                btn.Foreground=(Brush)new BrushConverter().ConvertFrom(palette.Item2)!;
-                btn.Opacity=selected?1.0:0.85;
+                btn.Background=(Brush)new BrushConverter().ConvertFrom(background)!;
+                btn.Foreground=(Brush)new BrushConverter().ConvertFrom(
+                    selected?"#49142C":"#FFF1DC")!;
+                btn.BorderBrush=(Brush)new BrushConverter().ConvertFrom(
+                    selected?"#F8E1AB":"#76465D")!;
+                btn.BorderThickness=new Thickness(selected?2:1);
+                btn.Opacity=selected?1.0:0.88;
                 var label=(TextBlock)btn.Content;
                 label.Foreground=btn.Foreground;
                 label.FontSize=selected?15:14;
