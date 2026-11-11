@@ -380,11 +380,74 @@ public sealed class VoucherBatchDispatchTests
             var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
                 .SendAsync([card]);
             Assert.True(result.Success);
-            Assert.Equal("",Assert.Single(spy.Writes).Data["password"]);
+            Assert.False(Assert.Single(spy.Writes).Data.ContainsKey("password"));
             Assert.Equal("SENT",Assert.Single(store.GetVouchers()).DeliveryStatus);
         }
         finally{Directory.Delete(root,true);}
     }
 
 
+
+    [Theory]
+    [InlineData("hotspot", "username-only")]
+    [InlineData("hotspot", "matching")]
+    [InlineData("hotspot", "different")]
+    [InlineData("userman", "username-only")]
+    [InlineData("userman", "matching")]
+    [InlineData("userman", "different")]
+    public async Task Credential_Mode_Survives_Generation_Storage_And_Actual_Router_Command(
+        string service, string mode)
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var options=new VoucherGenerationOptions(1,"",8,VoucherGenerator.Digits,
+                mode=="matching","gold",PasswordLength:6,PasswordCharacters:"abcdef",
+                UsernameOnly:mode=="username-only");
+            var card=Assert.Single(VoucherGenerator.Generate(options)) with
+            {
+                Service=service,Customer=service=="userman"?"admin":""
+            };
+            store.SaveBatch([card]);
+            var before=Assert.Single(store.GetBatchVouchers(service,card.BatchId));
+            Assert.Equal(card.Password,before.Password);
+            Assert.Equal("CREATED",before.DeliveryStatus);
+
+            var spy=new Spy();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.Success);
+
+            var addPath=service=="userman"
+                ?"/tool/user-manager/user/add":"/ip/hotspot/user/add";
+            var attributes=Assert.Single(spy.Writes.Where(x=>x.Name==addPath)).Data;
+            Assert.Equal(card.Username,attributes[service=="userman"?"username":"name"]);
+            if(mode=="username-only")
+            {
+                Assert.Empty(card.Password);
+                if(service=="hotspot")
+                    Assert.False(attributes.ContainsKey("password"));
+                else
+                    Assert.Equal("",attributes["password"]);
+            }
+            else if(mode=="matching")
+            {
+                Assert.Equal(card.Username,card.Password);
+                Assert.Equal(card.Username,attributes["password"]);
+            }
+            else
+            {
+                Assert.NotEmpty(card.Password);
+                Assert.NotEqual(card.Username,card.Password);
+                Assert.Equal(card.Password,attributes["password"]);
+            }
+
+            var after=Assert.Single(store.GetBatchVouchers(service,card.BatchId));
+            Assert.Equal(card.Password,after.Password);
+            Assert.Equal("SENT",after.DeliveryStatus);
+            Assert.True(after.SentToRouter);
+        }
+        finally{Directory.Delete(root,true);}
+    }
 }
