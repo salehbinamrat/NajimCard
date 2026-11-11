@@ -512,31 +512,8 @@ public partial class PrintingView : UserControl
                     FixedPage.SetTop(cardBorder,Dip(slot.TopMm));
                     page.Children.Add(cardBorder);
                     if(previewOnly)
-                    {
-                        // Sample or pre-send numbers must never resemble issued,
-                        // working vouchers, even if the user prints this PDF.
-                        var warning=new Border
-                        {
-                            Width=Dip(opts.CardWidthMm),Height=Dip(opts.CardHeightMm),
-                            Background=new SolidColorBrush(Color.FromArgb(125,255,245,235)),
-                            BorderBrush=Brushes.DarkRed,
-                            BorderThickness=new Thickness(2),
-                            Child=new TextBlock
-                            {
-                                Text="معاينة تجريبية"+Environment.NewLine+"غير مفعلة في الراوتر",
-                                Foreground=Brushes.DarkRed,FontWeight=FontWeights.ExtraBold,
-                                FontFamily=new FontFamily("Arial"),FontSize=15,
-                                TextAlignment=TextAlignment.Center,
-                                TextWrapping=TextWrapping.Wrap,
-                                HorizontalAlignment=HorizontalAlignment.Center,
-                                VerticalAlignment=VerticalAlignment.Center,
-                                FlowDirection=FlowDirection.RightToLeft
-                            }
-                        };
-                        FixedPage.SetLeft(warning,Dip(slot.LeftMm));
-                        FixedPage.SetTop(warning,Dip(slot.TopMm));
-                        page.Children.Add(warning);
-                    }
+                        AddDraftWatermark(page,Dip(opts.CardWidthMm),
+                            Dip(opts.CardHeightMm),Dip(slot.LeftMm),Dip(slot.TopMm));
                 }
                 var pageContent=new PageContent();
                 ((System.Windows.Markup.IAddChild)pageContent).AddChild(page);
@@ -545,30 +522,12 @@ public partial class PrintingView : UserControl
             return doc;
         }
 
-        Task RenderExportAsync(IReadOnlyList<Voucher> cards,
-            VoucherCardAppearance appearance,CardPrintOptions options,
-            string path,bool previewOnly)
-        {
-            var completion=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            // PDF rendering and WPF visual tree construction stay on one STA.
-            var worker=new Thread(()=>
-            {
-                try
-                {
-                    VoucherPdfExporter.Export(
-                        MakeDocument(cards,options,appearance,previewOnly),path);
-                    completion.SetResult();
-                }
-                catch(Exception ex){completion.SetException(ex);}
-            }){IsBackground=true};
-            worker.SetApartmentState(ApartmentState.STA);
-            worker.Start();
-            return completion.Task;
-        }
         _renderPdfAsync=(cards,appearance,options,path)=>
-            RenderExportAsync(cards,appearance,options,path,false);
+            RenderDocumentPdfOnStaAsync(
+                ()=>MakeDocument(cards,options,appearance),path);
         _renderDraftPdfAsync=(cards,appearance,options,path)=>
-            RenderExportAsync(cards,appearance,options,path,true);
+            RenderDocumentPdfOnStaAsync(
+                ()=>MakeDocument(cards,options,appearance,true),path);
 
         (Voucher[] Cards,VoucherCardAppearance Style,CardPrintOptions Options)? ConfirmPrintJob()
         {
