@@ -36,6 +36,9 @@ public sealed partial class VoucherStore
     {
         ArgumentNullException.ThrowIfNull(style);
         style.Validate(); // Validate before opening/altering SQLite.
+        // Global card appearance must be as portable as package presets.
+        // Keep the original template untouched; persist an app-owned copy.
+        style=EnsureStoredCardArtwork(style);
         var value=JsonSerializer.Serialize(style);
         if(value.Length>4096)
             throw new ArgumentException("إعدادات مظهر الكرت أكبر من الحد المسموح.");

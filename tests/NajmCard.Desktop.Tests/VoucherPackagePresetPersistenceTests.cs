@@ -212,4 +212,37 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
             "192.168.1.1:8728","hotspot","30 Day")!.Appearance.TemplateImagePath);
     }
 
+    [Fact]
+    public void Imported_Hash_Named_Image_Can_Be_Saved_With_Package_And_Reloaded()
+    {
+        var bytes=Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/X/0AAAAASUVORK5CYII=");
+        var templateFolder=Path.Combine(_root,"CardTemplates");
+        Directory.CreateDirectory(templateFolder);
+        var hash=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+        var imported=Path.Combine(templateFolder,hash+".img");
+        File.WriteAllBytes(imported,bytes);
+
+        using(var store=new VoucherStore(_root))
+        {
+            var preset=Preset() with
+            {Appearance=Preset().Appearance with {TemplateImagePath=imported}};
+            store.SavePackagePreset(preset);
+            var saved=store.LoadPackagePreset("192.168.1.1:8728","hotspot","30 Day")!;
+            Assert.NotEqual(imported,saved.Appearance.TemplateImagePath);
+            Assert.Equal(bytes,File.ReadAllBytes(saved.Appearance.TemplateImagePath));
+            File.Delete(imported);
+            Assert.Equal(bytes,File.ReadAllBytes(saved.Appearance.TemplateImagePath));
+
+            // The same portable extension is not a free pass for arbitrary
+            // replacement bytes. A mismatched SHA filename fails closed.
+            File.WriteAllBytes(imported,[5,4,3,2,1]);
+            Assert.Throws<InvalidDataException>(()=>store.SavePackagePreset(
+                preset with {Profile="modified"}));
+            Assert.Null(store.LoadPackagePreset(
+                "192.168.1.1:8728","hotspot","modified"));
+        }
+    }
+
+
 }
