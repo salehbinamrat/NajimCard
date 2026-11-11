@@ -530,22 +530,11 @@ public partial class PrintingView : UserControl
             catch(Exception ex){_status.Text="تعذر إعداد معاينة الطباعة: "+ex.Message;return false;}
         }
 
-        IReadOnlyList<Voucher> ReadCurrentPrintSelection()
-        {
-            if((batchSelector.SelectedItem as ComboBoxItem)?.Tag
-                is PrintableBatchSummary archive)
-                return store.GetBatchVouchers(archive.Service,archive.BatchId);
-            if(selectedBatch is not null)return selectedBatch();
-            var summary=store.ListPrintableBatches(1).FirstOrDefault();
-            return summary is null?[]:store.GetBatchVouchers(
-                summary.Service,summary.BatchId)
-                    .Take(Math.Clamp(Int(qty.Text),1,10000)).ToArray();
-        }
-
         bool SameVerifiedBatch(Voucher[] expected,VoucherCardAppearance style,
             CardPrintOptions options) =>
             Equals(options,Options()) &&
-            VerifyVoucherBatchSnapshot(expected,ReadCurrentPrintSelection(),style,
+            VerifyVoucherBatchSnapshot(expected,ReadCurrentPrintSelection(
+                store,batchSelector,selectedBatch,Math.Clamp(Int(qty.Text),1,10000)),style,
                 _selectedArchiveTemplate?.Appearance
                     ??selectedAppearance?.Invoke()??store.LoadCardAppearance());
 
