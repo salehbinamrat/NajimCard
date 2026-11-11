@@ -44,6 +44,11 @@ internal static class Program
             var height=(int)window.Height;
             if(width!=1200 || height!=730)
                 throw new InvalidDataException("Unexpected default window size.");
+            if(window.ResizeMode!=ResizeMode.CanMinimize ||
+               !window.ShowInTaskbar ||
+               window.WindowState!=WindowState.Normal)
+                throw new InvalidDataException(
+                    "The fixed-size main window must minimize to the Windows taskbar.");
 
             ((Grid)window.FindName("LoginLayer")).Visibility=Visibility.Collapsed;
             ((Grid)window.FindName("WorkspaceLayer")).Visibility=Visibility.Visible;
