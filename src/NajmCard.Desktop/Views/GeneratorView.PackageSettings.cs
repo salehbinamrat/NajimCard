@@ -23,15 +23,16 @@ public partial class GeneratorView
                     "السيرفر المختار ظاهر للفحص، لكن إرسال كروت لسيرفر محدد غير متاح بعد. "+
                     "اختر all حتى لا توزع الكروت على السيرفر الخطأ.");
             int length=int.Parse(_length.Text,CultureInfo.InvariantCulture);
+            bool usernameOnly=_credentialMode.SelectedIndex==0;
             bool same=_samePassword.IsChecked==true;
             var saved=new VoucherPackagePreset(_routerKey,SelectedService,profile,
                 SelectedService=="userman"?_customer.SelectedItem?.ToString()??"":"",
                 int.Parse(_count.Text,CultureInfo.InvariantCulture),_prefix.Text.Trim(),
                 length,_usernameCharacters.Text.Trim(),same,
-                same?length:int.Parse(_passwordLength.Text,CultureInfo.InvariantCulture),
+                usernameOnly||same?length:int.Parse(_passwordLength.Text,CultureInfo.InvariantCulture),
                 _passwordCharacters.Text.Trim(),_lengthWithPrefix.IsChecked==true,
                 PrintOptionsProvider?.Invoke()??new CardPrintOptions(),ReadCurrentAppearance(),
-                _credentialMode.SelectedIndex==0,
+                usernameOnly,
                 OutputPreferencesProvider?.Invoke()??new VoucherOutputPreferences()).Validate();
             _store.SavePackagePreset(saved);
             // Adopt the local copy made by the store immediately; a removed
