@@ -69,6 +69,18 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
             throw new ArgumentException(
                 "رقم الكرت موجود مسبقاً في Hotspot أو PPPoE أو User Manager. أُوقف إرسال الدفعة.");
 
+        // An active User Manager account is not a working Hotspot voucher
+        // unless the local NAS is configured for RADIUS. Do this *before*
+        // the SQLite SENDING lease and any RouterOS mutation.
+        if(service=="userman")
+        {
+            if(batch.Any(v=>v.Profile!=first.Profile))
+                throw new ArgumentException(
+                    "لا يمكن إصدار باقات مختلفة داخل دفعة User Manager واحدة.");
+            await gateway.VerifyUserManagerV6HotspotReadinessAsync(
+                first.Profile,customer,cancellationToken);
+        }
+
         var failed = new List<string>();
         int succeeded = 0;
         foreach (var voucher in batch)
