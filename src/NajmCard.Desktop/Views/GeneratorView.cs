@@ -483,6 +483,7 @@ public partial class GeneratorView : UserControl
             RestorePackagePreset();
         };
         SubscribeLiveCardPreview();
+        SubscribeGenerationInputChanges();
         SubscribeLiveCardAppearance();
         Loaded += async (_, _) => await LoadProfilesAsync();
         Unloaded += (_,_)=>_profileRequestVersion++;
