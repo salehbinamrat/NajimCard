@@ -18,9 +18,10 @@ public partial class GeneratorView
                CultureInfo.InvariantCulture,out var length))
             throw new ArgumentException("حدد العدد وطول اسم المستخدم بشكل صحيح.");
 
-        bool same=_credentialMode.SelectedIndex==0 || _samePassword.IsChecked==true;
+        bool usernameOnly=_credentialMode.SelectedIndex==0;
+        bool same=_samePassword.IsChecked==true;
         int passwordLength=0;
-        if(!same && !int.TryParse(_passwordLength.Text,NumberStyles.Integer,
+        if(!usernameOnly && !same && !int.TryParse(_passwordLength.Text,NumberStyles.Integer,
                CultureInfo.InvariantCulture,out passwordLength))
             throw new ArgumentException("أدخل طول كلمة المرور بشكل صحيح.");
 
@@ -31,8 +32,9 @@ public partial class GeneratorView
         return new VoucherGenerationOptions(
             count,_prefix.Text.Trim(),length,_usernameCharacters.Text.Trim(),
             same,profile,PasswordLength:passwordLength,
-            PasswordCharacters:same?null:_passwordCharacters.Text.Trim(),
-            LengthIncludesPrefix:_lengthWithPrefix.IsChecked==true);
+            PasswordCharacters:(usernameOnly||same)?null:_passwordCharacters.Text.Trim(),
+            LengthIncludesPrefix:_lengthWithPrefix.IsChecked==true,
+            UsernameOnly:usernameOnly);
     }
 
     // Like Hadramout's scheduled sample_card() repaint: no SaveBatch,

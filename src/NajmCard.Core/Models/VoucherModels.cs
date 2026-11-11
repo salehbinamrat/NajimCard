@@ -7,7 +7,7 @@ public sealed record Voucher(string Username, string Password, string Profile,
 public sealed record VoucherGenerationOptions(int Count, string Prefix, int Length,
     string Characters, bool PasswordEqualsUsername, string Profile,
     int PasswordLength = 0, string? PasswordCharacters = null,
-    bool LengthIncludesPrefix = false);
+    bool LengthIncludesPrefix = false, bool UsernameOnly = false);
 
 public sealed record BatchDeliveryResult(int Succeeded, IReadOnlyList<string> Failed,
     bool UncertainOutcome)

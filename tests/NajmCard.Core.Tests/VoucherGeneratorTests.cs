@@ -90,4 +90,48 @@ public sealed class VoucherGeneratorTests
         Assert.All(cards,x=>Assert.Contains(x.Password,new[]{"a","A"}));
     }
 
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Username_Only_Mode_Never_Generates_A_Hidden_Matching_Password(bool samePassword)
+    {
+        // Hadramout code_only always returns password="", independent of the
+        // otherwise selected matching/separate-password sub-option.
+        var options=new VoucherGenerationOptions(
+            8,"",8,VoucherGenerator.Digits,samePassword,"gold",
+            PasswordLength:0,PasswordCharacters:"INVALID-CHARS!",
+            UsernameOnly:true);
+        var sample=VoucherGenerator.PreviewSample(options);
+        Assert.NotEmpty(sample.Username);
+        Assert.Equal("",sample.Password);
+        var cards=VoucherGenerator.Generate(options);
+        Assert.Equal(8,cards.Count);
+        Assert.All(cards,card=>
+        {
+            Assert.NotEmpty(card.Username);
+            Assert.Equal("",card.Password);
+        });
+    }
+
+    [Fact]
+    public void All_Three_Credential_Modes_Are_Independent()
+    {
+        VoucherGenerationOptions opts=new(5,"",8,VoucherGenerator.Digits,true,"gold");
+        var usernameOnly=VoucherGenerator.Generate(opts with{UsernameOnly=true});
+        var samePassword=VoucherGenerator.Generate(opts with{UsernameOnly=false});
+        var separatePassword=VoucherGenerator.Generate(opts with
+        {
+            UsernameOnly=false,PasswordEqualsUsername=false,
+            PasswordLength=6,PasswordCharacters="abcdef"
+        });
+        Assert.All(usernameOnly,card=>Assert.Empty(card.Password));
+        Assert.All(samePassword,card=>Assert.Equal(card.Username,card.Password));
+        Assert.All(separatePassword,card=>
+        {
+            Assert.Equal(6,card.Password.Length);
+            Assert.NotEqual(card.Username,card.Password);
+        });
+    }
+
 }

@@ -245,4 +245,38 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
     }
 
 
+
+    [Fact]
+    public void Username_Only_And_Same_Password_Are_Stored_Separately_Per_Package()
+    {
+        using(var store=new VoucherStore(_root))
+        {
+            store.SavePackagePreset(Preset(profile:"username-only") with
+            {
+                UsernameOnly=true,SamePassword=false,PasswordCharacters="INVALID!",
+                PasswordLength=8
+            });
+            store.SavePackagePreset(Preset(profile:"matching") with
+            {
+                UsernameOnly=false,SamePassword=true
+            });
+            store.SavePackagePreset(Preset(profile:"separate") with
+            {
+                UsernameOnly=false,SamePassword=false,PasswordCharacters="abcdef",
+                PasswordLength=6
+            });
+        }
+        using var reopened=new VoucherStore(_root);
+        var a=reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","username-only")!;
+        var b=reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","matching")!;
+        var c=reopened.LoadPackagePreset("192.168.1.1:8728","hotspot","separate")!;
+        Assert.True(a.UsernameOnly);
+        Assert.False(a.SamePassword);
+        Assert.False(b.UsernameOnly);
+        Assert.True(b.SamePassword);
+        Assert.False(c.UsernameOnly);
+        Assert.False(c.SamePassword);
+    }
+
+
 }

@@ -18,7 +18,9 @@ public sealed partial class RouterGateway
         if(voucher.Username.Length is < 1 or > 64 ||
             voucher.Username.Any(c=>char.IsControl(c)||char.IsWhiteSpace(c)))
             throw new ArgumentException("اسم حساب PPPoE غير صالح.",nameof(voucher));
-        if(voucher.Password.Length is < 1 or > 128)
+        // Mirror Hadramout's code_only option: an explicit empty password
+        // remains empty, although PPPoE authentication needs NAS-side support.
+        if(voucher.Password is null || voucher.Password.Length > 128)
             throw new ArgumentException("كلمة مرور PPPoE غير صالحة.",nameof(voucher));
         if(string.IsNullOrWhiteSpace(voucher.Profile) || voucher.Profile.Length>100)
             throw new ArgumentException("اختر باقة PPPoE صالحة.",nameof(voucher));

@@ -24,6 +24,11 @@ public sealed class VoucherBatchDispatchTests
         public string? LastProfile { get; set; }
         public string? LastCustomer { get; set; }
         public bool SuppressActualProfile { get; set; }
+        public bool NoHotspotServers { get; set; }
+        public bool DisableHotspotRadius { get; set; }
+        public bool NoRadiusClient { get; set; }
+        public bool NoRegisteredNas { get; set; }
+        public bool WrongProfileOwner { get; set; }
         public int QueryCount { get; set; }
         public readonly List<string> Reads = [];
         public Task<RouterCommandReply> CommandWithReceiptAsync(
@@ -49,10 +54,40 @@ public sealed class VoucherBatchDispatchTests
                 OnInventoryRead?.Invoke();
                 if (FailNameRead && command == "/ppp/secret/print")
                     throw new RouterOsTrapException("not enough permissions");
-                IReadOnlyList<IReadOnlyDictionary<string,string>> data =
-                    command == "/ppp/secret/print" && PppCollision is not null
-                        ? [new Dictionary<string,string> { ["name"] = PppCollision }]
-                        : [];
+                IReadOnlyList<IReadOnlyDictionary<string,string>> data=command switch
+                {
+                    "/ppp/secret/print" when PppCollision is not null =>
+                        [new Dictionary<string,string>{["name"]=PppCollision}],
+                    "/tool/user-manager/profile/print" =>
+                        [new Dictionary<string,string>
+                        {
+                            ["name"]="gold",["owner"]=WrongProfileOwner?"another-owner":"admin"
+                        }],
+                    "/ip/hotspot/print" when !NoHotspotServers =>
+                        [new Dictionary<string,string>
+                        {
+                            ["name"]="hotspot1",["profile"]="hsprof",["disabled"]="no"
+                        }],
+                    "/ip/hotspot/profile/print" =>
+                        [new Dictionary<string,string>
+                        {
+                            ["name"]="hsprof",["use-radius"]=DisableHotspotRadius?"no":"yes",
+                            ["radius-accounting"]="yes"
+                        }],
+                    "/radius/print" when !NoRadiusClient =>
+                        [new Dictionary<string,string>
+                        {
+                            ["service"]="hotspot",["address"]="127.0.0.1",
+                            ["disabled"]="no"
+                        }],
+                    "/tool/user-manager/router/print" when !NoRegisteredNas =>
+                        [new Dictionary<string,string>
+                        {
+                            ["name"]="local-nas",["ip-address"]="127.0.0.1",
+                            ["disabled"]="no"
+                        }],
+                    _=>[]
+                };
                 return Task.FromResult(data);
             }
             Writes.Add((command, new Dictionary<string,string>(attributes ?? new Dictionary<string,string>())));
@@ -130,6 +165,60 @@ public sealed class VoucherBatchDispatchTests
             Assert.Equal("UNKNOWN",saved.DeliveryStatus);
             Assert.False(saved.SentToRouter);
             Assert.True(spy.QueryCount>=1);
+            Assert.Equal(2,spy.Writes.Count);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+    [Theory]
+    [InlineData("hotspot-disabled")]
+    [InlineData("radius-missing")]
+    [InlineData("nas-missing")]
+    [InlineData("wrong-owner")]
+    [InlineData("no-hotspot")]
+    public async Task Unworkable_UserManager_Nas_Is_Rejected_Before_Any_User_Write(
+        string failure)
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("725514","userman","admin");
+            store.SaveBatch([card]);
+            var spy=new Spy
+            {
+                DisableHotspotRadius=failure=="hotspot-disabled",
+                NoRadiusClient=failure=="radius-missing",
+                NoRegisteredNas=failure=="nas-missing",
+                WrongProfileOwner=failure=="wrong-owner",
+                NoHotspotServers=failure=="no-hotspot"
+            };
+            await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>
+                new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                    .SendAsync([card]));
+            Assert.Empty(spy.Writes);
+            Assert.Equal("CREATED",Assert.Single(store.GetVouchers()).DeliveryStatus);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+    [Fact]
+    public async Task UserManager_Preflight_Uses_Only_Reads_Before_Creating_Voucher()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("725516","userman","admin");
+            store.SaveBatch([card]);
+            var spy=new Spy();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.Success);
+            Assert.Contains("/ip/hotspot/print",spy.Reads);
+            Assert.Contains("/ip/hotspot/profile/print",spy.Reads);
+            Assert.Contains("/radius/print",spy.Reads);
+            Assert.Contains("/tool/user-manager/router/print",spy.Reads);
             Assert.Equal(2,spy.Writes.Count);
         }
         finally{Directory.Delete(root,true);}
@@ -251,4 +340,51 @@ public sealed class VoucherBatchDispatchTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public async Task Username_Only_UM6_Voucher_Round_Trips_Sqlite_And_Sends_Blank_Password()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("721540","userman","admin") with{Password=""};
+            store.SaveBatch([card]);
+            var before=Assert.Single(store.GetVouchers());
+            Assert.Empty(before.Password);
+            Assert.Equal("CREATED",before.DeliveryStatus);
+            var spy=new Spy();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.Success);
+            var sent=Assert.Single(store.GetVouchers());
+            Assert.Empty(sent.Password);
+            Assert.Equal("SENT",sent.DeliveryStatus);
+            Assert.True(sent.SentToRouter);
+            Assert.Equal("",spy.Writes[0].Data["password"]);
+            Assert.Equal("721540",spy.Writes[0].Data["username"]);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+    [Fact]
+    public async Task Username_Only_Hotspot_Sends_Blank_Password_Without_UM6_Radius_Preflight()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("721541","hotspot") with{Password=""};
+            store.SaveBatch([card]);
+            var spy=new Spy();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card]);
+            Assert.True(result.Success);
+            Assert.Equal("",Assert.Single(spy.Writes).Data["password"]);
+            Assert.Equal("SENT",Assert.Single(store.GetVouchers()).DeliveryStatus);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+
 }
