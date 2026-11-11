@@ -40,7 +40,7 @@ public sealed record VoucherPackagePreset(
                value.Distinct().Count()>=minCount &&
                value.All(char.IsAsciiLetterOrDigit);
         if(!ValidAlphabet(UsernameCharacters,2) ||
-           (!SamePassword && !ValidAlphabet(PasswordCharacters,1)))
+           (!UsernameOnly && !SamePassword && !ValidAlphabet(PasswordCharacters,1)))
             throw new ArgumentException("أحرف الرقم أو كلمة المرور غير صالحة.");
         ArgumentNullException.ThrowIfNull(Print);
         ArgumentNullException.ThrowIfNull(Appearance);
