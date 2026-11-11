@@ -226,7 +226,7 @@ public sealed class VoucherWorkspaceView : UserControl
             MakeButton("معاينة قبل الإنشاء","#1756AE","#FFFFFF"),
             MakeButton("ملف PDF","#641A81","#FFF5E6"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
-            MakeButton("طباعة دفعة","#6532A6","#FFFFFF")
+            MakeButton("طباعة الدفعة","#6532A6","#FFFFFF")
         };
         async Task Execute(Func<Task> work)
         {
@@ -356,15 +356,23 @@ public sealed class VoucherWorkspaceView : UserControl
             }
         }
         actions[2].Click+=async(_,_)=>await Execute(PreviewDraftPdf);
-        actions[3].Click+=async(_,_)=>await Execute(printer.SavePdfAsync);
+        actions[3].Click+=async(_,_)=>await Execute(async()=>
+        {
+            await printer.SavePdfAsync();
+            status.Text=printer.LastOperationMessage;
+        });
         actions[4].Click+=async(_,_)=>await Execute(async()=>
         {
             if(creator.HasBatch || printer.HasSavedBatchSelection)await printer.PreviewPdfAsync();
             else await PreviewDraftPdf();
+            if(creator.HasBatch || printer.HasSavedBatchSelection)
+                status.Text=printer.LastOperationMessage;
         });
         actions[5].Click+=(_,_)=>_ = Execute(()=>
         {
-            printer.PrintBatch();return Task.CompletedTask;
+            printer.PrintBatch();
+            status.Text=printer.LastOperationMessage;
+            return Task.CompletedTask;
         });
         DockPanel.SetDock(footer,Dock.Bottom);
         root.Children.Add(footer);
