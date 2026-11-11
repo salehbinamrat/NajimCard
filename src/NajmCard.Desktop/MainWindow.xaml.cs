@@ -67,17 +67,18 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Loaded+=(_,_)=>FitWindowToWorkArea();
+        Loaded+=async(_,_)=>{FitWindowToWorkArea();await RestoreSavedPaidLicenseAsync();};
         try
         {
             _localTrial=new LocalTrialService(new ProtectedLocalTrialStore(),
                 WindowsLicenseFingerprint.LocalTrial());
             _licenseGate=new LicenseGate(_localTrial);
             _paidLicense=new PaidLicenseClient(_licenseHttp,
-                WindowsLicenseFingerprint.Paid());
+                WindowsLicenseFingerprint.Paid(),cache:new SignedPaidLicenseCache());
             _storedPaidCode=_paidCodeStore.Load();
             var previousTrial=_localTrial.Check();
-            if(previousTrial.Mode=="trial")_licenseGate.SelectTrial();
+            if(previousTrial.Mode=="trial" && string.IsNullOrEmpty(_storedPaidCode))
+                _licenseGate.SelectTrial();
             LicenseNotice.Text=previousTrial.Message+
                 (string.IsNullOrEmpty(_storedPaidCode)?"":" | يوجد رمز مدفوع محفوظ؛ سيتحقق التطبيق من صلاحيته عند الدخول.");
             TrialButton.IsEnabled=previousTrial.Mode is "ready" or "trial";
@@ -309,13 +310,13 @@ public partial class MainWindow : Window
         try
         {
             var response=await _paidLicense.ActivateAsync(code);
-            _licenseGate.SetPaid(response);
             LicenseNotice.Text=response.Message;
             if(response.Mode is "active" or "claim_pending")
             {
                 _paidCodeStore.Save(code);
                 _storedPaidCode=code;
             }
+            _licenseGate.SetPaid(response);
             if(response.Permitted)
                 ShowActivePaidLicense(response);
             else
@@ -327,6 +328,33 @@ public partial class MainWindow : Window
                 "راجع الإنترنت وصلاحيات Windows ثم تحقق من حالة الرمز.";
         }
         finally{_licenseBusy=false;ActivateLicenseButton.IsEnabled=true;}
+    }
+
+    private async Task RestoreSavedPaidLicenseAsync()
+    {
+        if(string.IsNullOrEmpty(_storedPaidCode)||_paidLicense is null||_licenseGate is null)return;
+        ConnectButton.IsEnabled=TrialButton.IsEnabled=ActivateLicenseButton.IsEnabled=false;
+        PaidLicenseEntry.Visibility=Visibility.Collapsed;
+        LicenseNotice.Text="جار استعادة الترخيص المحفوظ...";
+        try
+        {
+            var result=await _paidLicense.VerifyAsync(_storedPaidCode);
+            _licenseGate.SetPaid(result);
+            if(result.Permitted)ShowActivePaidLicense(result);
+            else
+            {
+                LicenseNotice.Text=result.Message;
+                PaidLicenseEntry.Visibility=Visibility.Visible;
+                RenewLicenseButton.Visibility=Visibility.Visible;
+                TrialButton.IsEnabled=_localTrial?.Check().Mode is "ready" or "trial";
+            }
+        }
+        catch(Exception)
+        {
+            LicenseNotice.Text="تعذر استعادة الترخيص المحفوظ. تحقق من صلاحيات Windows ثم أعد الاتصال.";
+            PaidLicenseEntry.Visibility=Visibility.Visible;
+        }
+        finally {ConnectButton.IsEnabled=ActivateLicenseButton.IsEnabled=true;}
     }
 
     private void ShowActivePaidLicense(LicenseCheck current)
@@ -434,8 +462,7 @@ public partial class MainWindow : Window
         {
             if(_licenseGate is null || _localTrial is null || _paidLicense is null)
                 throw new InvalidOperationException("نظام الترخيص غير جاهز؛ أعد فتح التطبيق.");
-            if(!string.IsNullOrEmpty(_storedPaidCode) &&
-                (_licenseGate.Paid?.Permitted==true || !_licenseGate.TrialSelected))
+            if(!string.IsNullOrEmpty(_storedPaidCode))
             {
                 var result=await _paidLicense.VerifyAsync(_storedPaidCode);
                 _licenseGate.SetPaid(result);

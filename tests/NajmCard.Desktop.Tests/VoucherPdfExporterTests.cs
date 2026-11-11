@@ -71,4 +71,43 @@ public sealed class VoucherPdfExporterTests
             finally {Directory.Delete(folder,true);}
         });
     }
+    [Theory]
+    [InlineData(8,"0001234567890123456789")]
+    [InlineData(18,"00123456abcdef")]
+    [InlineData(40,"ABCdef0123456789")]
+    public void Credential_Is_Real_Copyable_Text_With_Leading_Zeroes_And_Downscaling(int size,string number)
+    {
+        RunSta(()=>
+        {
+            var text=new TextBlock
+            {
+                Text=number,Tag=VoucherPdfExporter.CopyableCredentialTag,
+                FontFamily=new System.Windows.Media.FontFamily("Arial"),FontSize=size,
+                FontWeight=FontWeights.ExtraBold,Foreground=System.Windows.Media.Brushes.DarkRed,
+                Background=System.Windows.Media.Brushes.White
+            };
+            var page=new FixedPage{Width=794,Height=1122};
+            var plate=new Border{Width=110,Height=30,Child=new Viewbox
+                {StretchDirection=System.Windows.Controls.StretchDirection.DownOnly,Child=text}};
+            FixedPage.SetLeft(plate,100);FixedPage.SetTop(plate,120);page.Children.Add(plate);
+            var doc=new FixedDocument();var content=new PageContent();
+            ((System.Windows.Markup.IAddChild)content).AddChild(page);doc.Pages.Add(content);
+            var path=Path.Combine(Path.GetTempPath(),"najm-copy-"+Guid.NewGuid()+".pdf");
+            var original=text.Foreground;
+            try
+            {
+                VoucherPdfExporter.Export(doc,path);
+                using var pdf=UglyToad.PdfPig.PdfDocument.Open(path);
+                Assert.Equal(number,pdf.GetPage(1).Text);
+                Assert.Same(original,text.Foreground);
+                Assert.All(pdf.GetPage(1).Letters,l=>
+                {
+                    Assert.InRange(l.GlyphRectangle.Left,70,170);
+                    Assert.InRange(l.GlyphRectangle.Width,0.01,30);
+                });
+            }
+            finally {if(File.Exists(path))File.Delete(path);}
+        });
+    }
+
 }

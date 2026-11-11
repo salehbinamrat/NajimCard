@@ -170,7 +170,7 @@ public sealed class VoucherWorkspaceView : UserControl
         }
         var actions=new[]{
             MakeButton("إنشاء وإرسال واحد","#13653E","#FFF5E6"),
-            MakeButton("إنشاء وإرسال","#EAC477","#49142C"),
+            MakeButton("إنشاء وإرسال وحفظ","#EAC477","#49142C"),
             MakeButton("معاينة قبل الإنشاء","#1756AE","#FFFFFF"),
             MakeButton("ملف PDF","#641A81","#FFF5E6"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
@@ -182,6 +182,7 @@ public sealed class VoucherWorkspaceView : UserControl
             _busy=true;
             foreach(var btn in actions)btn.IsEnabled=false;
             foreach(var btn in tabButtons.Values)btn.IsEnabled=false;
+            creator.IsEnabled=false;
             try{await work();}
             catch(Exception ex){status.Text="تعذر تنفيذ العملية: "+ex.Message;}
             finally
@@ -189,6 +190,7 @@ public sealed class VoucherWorkspaceView : UserControl
                 _busy=false;
                 foreach(var btn in actions)btn.IsEnabled=true;
                 foreach(var btn in tabButtons.Values)btn.IsEnabled=true;
+                creator.IsEnabled=true;
             }
         }
         async Task ExportAdditionalAsync()
@@ -246,11 +248,42 @@ public sealed class VoucherWorkspaceView : UserControl
         });
         actions[1].Click+=async(_,_)=>await Execute(async()=>
         {
-            var sent=await creator.CreateAndSendAsync();
-            status.Text=sent
-                ?"اكتمل إرسال كروت مؤكدة وحُفظت حالاتها في SQLite.":
-                "تعذر تأكيد الإرسال. راجع حالات الدفعة قبل إعادة المحاولة.";
-            if(sent)await ExportAdditionalAsync();
+            var picker=new OpenFolderDialog
+            {
+                Title="اختر مكان حفظ الكروت قبل الإرسال",Multiselect=false
+            };
+            if(picker.ShowDialog()!=true)return;
+            var options=printer.GetOptions();
+            var appearance=creator.ReadDraftPreviewAppearance();
+            string? folder=null;
+            string? savedBeforeSend=null;
+            int archivedCount=0;
+            var sent=await creator.CreateAndSendAsync(saveBeforeSend:async cards=>
+            {
+                folder=VoucherBatchArchive.CreateDirectory(picker.FolderName,cards);
+                savedBeforeSend=Path.Combine(folder,"محفوظة-قبل-الإرسال-لا-تطبع.pdf");
+                await printer.SaveBatchArchivePdfAsync(cards,appearance,options,savedBeforeSend);
+                archivedCount=cards.Count;
+                status.Text="حُفظت "+cards.Count+" كرتا قبل الإرسال في: "+folder;
+            });
+            if(!sent)
+            {
+                status.Text=archivedCount>0
+                    ?"حُفظت الدفعة ولم يتأكد إرسالها. راجع حالتها في: "+folder
+                    :"تعذر إنشاء الدفعة. راجع إعدادات الباقة.";
+                return;
+            }
+            var confirmed=creator.ConfirmedBatch().ToArray();
+            var path=Path.Combine(folder!,"كروت-مؤكدة-"+confirmed.Length+".pdf");
+            if(confirmed.Length==archivedCount)
+                File.Move(savedBeforeSend!,path);
+            else
+                await printer.SaveBatchArchivePdfAsync(confirmed,appearance,options,path);
+            status.Text="حُفظت الكروت وأُرسل "+confirmed.Length+" كرتا. ملف PDF: "+path;
+            try {PrintingView.OpenPreviewPdf(path);}
+            catch(System.ComponentModel.Win32Exception)
+            {status.Text+=" | افتح الملف من مجلد الحفظ للمعاينة.";}
+            await ExportAdditionalAsync();
         });
         async Task PreviewDraftPdf()
         {

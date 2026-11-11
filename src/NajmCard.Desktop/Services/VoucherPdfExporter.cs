@@ -1,6 +1,8 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Documents;
+using System.Windows.Controls;
+using System.Globalization;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using PdfSharp.Drawing;
@@ -8,13 +10,53 @@ using PdfSharp.Pdf;
 
 namespace NajmCard.Desktop.Services;
 
-/// <summary>
-/// PDF of the exact FixedDocument already used by card preview/printer.
-/// WPF rasterizes the text before PDF embedding, preserving Arabic shaping,
-/// font weight and custom design colors even on Windows without PDF fonts.
-/// </summary>
+/// <summary>Preserves WPF artwork/Arabic shaping while exporting credentials as
+/// embedded Unicode text that can be selected and copied in a PDF reader.</summary>
 public static class VoucherPdfExporter
 {
+    public const string CopyableCredentialTag="NajmCard.PdfCredential";
+
+    private static IEnumerable<TextBlock> Credentials(DependencyObject parent)
+    {
+        if(parent is TextBlock text && Equals(text.Tag,CopyableCredentialTag))yield return text;
+        for(int i=0;i<VisualTreeHelper.GetChildrenCount(parent);i++)
+            foreach(var child in Credentials(VisualTreeHelper.GetChild(parent,i)))yield return child;
+    }
+
+    private static void DrawCredential(XGraphics graphics,TextBlock text,FixedPage page)
+    {
+        var formatted=new FormattedText(text.Text,CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,new Typeface(text.FontFamily,text.FontStyle,
+                text.FontWeight,text.FontStretch),text.FontSize,text.Foreground,1);
+        var transform=text.TransformToAncestor(page);
+        var origin=transform.Transform(new Point(text.Padding.Left,text.Padding.Top));
+        var horizontal=transform.Transform(new Point(text.Padding.Left+1,text.Padding.Top));
+        var vertical=transform.Transform(new Point(text.Padding.Left,text.Padding.Top+1));
+        var style=text.FontWeight.ToOpenTypeWeight()>=700?XFontStyleEx.Bold:XFontStyleEx.Regular;
+        if(text.FontStyle==FontStyles.Italic)style|=XFontStyleEx.Italic;
+        var font=new XFont(text.FontFamily.Source,text.FontSize,style,
+            new XPdfFontOptions(PdfFontEncoding.Unicode));
+        if(text.Foreground is not SolidColorBrush brush)
+            throw new InvalidDataException("لون رقم الكرت غير مدعوم لتصدير النص.");
+        var color=brush.Color;
+        var width=graphics.MeasureString(text.Text,font).Width;
+        var state=graphics.Save();
+        try
+        {
+            const double point=72d/96d;
+            graphics.MultiplyTransform(new XMatrix(
+                (horizontal.X-origin.X)*point,(horizontal.Y-origin.Y)*point,
+                (vertical.X-origin.X)*point,(vertical.Y-origin.Y)*point,
+                origin.X*point,origin.Y*point));
+            // Match the real WPF glyph width, including Viewbox downscaling.
+            if(width>0)graphics.ScaleTransform(formatted.WidthIncludingTrailingWhitespace/width,1);
+            graphics.DrawString(text.Text,font,
+                new XSolidBrush(XColor.FromArgb(color.A,color.R,color.G,color.B)),
+                new XPoint(0,formatted.Baseline),XStringFormats.BaseLineLeft);
+        }
+        finally {graphics.Restore(state);}
+    }
+
     public static void Export(FixedDocument document,string path)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -48,7 +90,18 @@ public static class VoucherPdfExporter
                         (int)Math.Ceiling(dipWidth*dpi/96d),
                         (int)Math.Ceiling(dipHeight*dpi/96d),
                         dpi,dpi,PixelFormats.Pbgra32);
-                    bitmap.Render(source);
+                    var credentials=Credentials(source).ToArray();
+                    var originalBrushes=credentials.Select(t=>t.Foreground).ToArray();
+                    try
+                    {
+                        // Hide glyphs only; preserve each credential's backing and geometry.
+                        foreach(var text in credentials)text.Foreground=Brushes.Transparent;
+                        bitmap.Render(source);
+                    }
+                    finally
+                    {
+                        for(int i=0;i<credentials.Length;i++)credentials[i].Foreground=originalBrushes[i];
+                    }
                     var encoder=new PngBitmapEncoder();
                     encoder.Frames.Add(BitmapFrame.Create(bitmap));
                     using var memory=new MemoryStream();
@@ -60,6 +113,7 @@ public static class VoucherPdfExporter
                     page.Height=PdfSharp.Drawing.XUnit.FromPoint(dipHeight*72/96d);
                     using var graphics=XGraphics.FromPdfPage(page);
                     graphics.DrawImage(image,0,0,page.Width.Point,page.Height.Point);
+                    foreach(var text in credentials)DrawCredential(graphics,text,source);
                 }
                 // Stage the complete PDF before touching any existing report.
                 pdf.Save(staged);
