@@ -54,7 +54,14 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         self.assertIn("_credentialMode.SelectedIndex==0",self.live)
         self.assertIn("_lengthWithPrefix.Checked+=",self.live)
         self.assertIn("_lengthWithPrefix.Unchecked+=",self.live)
-        self.assertIn("PasswordCharacters:same?null:_passwordCharacters.Text.Trim()",self.live)
+        # Username-only has no password and is independent of the two
+        # username+password modes. This is a functional contract, not merely
+        # the legacy same-password expression.
+        self.assertIn("bool usernameOnly=_credentialMode.SelectedIndex==0;",self.live)
+        self.assertIn("bool same=_samePassword.IsChecked==true;",self.live)
+        self.assertIn("PasswordCharacters:(usernameOnly||same)?null:_passwordCharacters.Text.Trim()",self.live)
+        self.assertIn("UsernameOnly:usernameOnly",self.live)
+        self.assertIn('options.UsernameOnly ? ""',self.generator)
 
     def test_preview_reuses_generator_rules_without_io(self):
         self.assertIn("private static PreparedGeneration Prepare(",self.generator)
