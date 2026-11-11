@@ -27,7 +27,7 @@ public sealed partial class VoucherStore
         cmd.ExecuteNonQuery();
     }
 
-    private static void WriteBatchPrintSnapshot(SqliteConnection db,
+    private void WriteBatchPrintSnapshot(SqliteConnection db,
         SqliteTransaction tx,VoucherBatchPrintSnapshot snapshot)
     {
         snapshot.Validate();
