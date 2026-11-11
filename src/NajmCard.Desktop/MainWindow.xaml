@@ -150,7 +150,8 @@
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,3,9,0">
                                     <Label Content="كلمة المرور"/>
-                                    <Grid>
+                                    <!-- Physical LTR layout keeps the eye on the right, opposite the text start. -->
+                                    <Grid FlowDirection="LeftToRight">
                                         <PasswordBox x:Name="PasswordInput" FlowDirection="LeftToRight"
                                                      MinHeight="36" Padding="8,6,44,6"/>
                                         <TextBox x:Name="VisiblePasswordInput" FlowDirection="LeftToRight"
