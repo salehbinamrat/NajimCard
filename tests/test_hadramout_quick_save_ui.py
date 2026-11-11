@@ -41,12 +41,14 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn("await creator.BuildDraftPreviewAsync()",self.w)
 
     def test_draft_pdf_uses_current_options_without_changing_the_issued_batch(self):
-        start=self.g.index("internal Task<Voucher[]> BuildDraftPreviewAsync()")
-        end=self.g.index("public async Task<bool> CreateAndSendAsync(",start)
-        draft=self.g[start:end]
+        # Preview-only generation lives in its own reviewed partial.
+        live=(VIEW/"GeneratorView.LivePreview.cs").read_text(encoding="utf-8")
+        start=live.index("internal Task<Voucher[]> BuildDraftPreviewAsync()")
+        end=live.index("private VoucherGenerationOptions ReadGenerationOptions(",start)
+        draft=live[start:end]
         self.assertIn("ReadGenerationOptions(forPreview:true)",draft)
         self.assertIn("VoucherGenerator.Generate(options)",draft)
-        self.assertIn("ShowPassword=ShowPreviewPassword",draft)
+        self.assertIn("ShowPassword=ShowPreviewPassword",self.g)
         for side_effect in ("_store", "_gateway", "_batch", "UploadAsync"):
             self.assertNotIn(side_effect,draft)
         self.assertIn("printer.GetOptions()",self.w)
