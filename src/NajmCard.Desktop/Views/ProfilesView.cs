@@ -39,8 +39,8 @@ public sealed class ProfilesView : UserControl
         {
             var panel=PageUi.Column();
 
-            var search=PageUi.Input();
-            search.Width=320;search.Margin=new Thickness(0,6,0,6);
+            var search=PageUi.SearchInput();
+            search.Margin=new Thickness(0,6,0,6);
 
             var grid=PageUi.Table(("اسم الباقة","Name"),("السرعة","Speed"),
                 ("السعة","Capacity"),("الصلاحية","Validity"),
