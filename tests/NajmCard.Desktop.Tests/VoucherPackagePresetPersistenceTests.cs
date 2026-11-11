@@ -141,4 +141,29 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         Assert.ThrowsAny<ArgumentException>(()=>
             store.SavePackagePreset(Preset(service:service,profile:profile)));
     }
+
+    [Fact]
+    public void Package_Saves_A_Portable_Template_Image_Not_An_External_Path()
+    {
+        var outside=Path.Combine(Path.GetTempPath(),"najm-package-art-"+Guid.NewGuid().ToString("N")+".png");
+        File.WriteAllBytes(outside,Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/X/0AAAAASUVORK5CYII="));
+        try
+        {
+            var preset=Preset() with
+            {Appearance=Preset().Appearance with {TemplateImagePath=outside}};
+            using(var store=new VoucherStore(_root))
+                store.SavePackagePreset(preset);
+            File.Delete(outside);
+            using var reopened=new VoucherStore(_root);
+            var loaded=reopened.LoadPackagePreset(
+                "192.168.1.1:8728","hotspot","30 Day");
+            Assert.NotNull(loaded);
+            Assert.NotEqual(outside,loaded.Appearance.TemplateImagePath);
+            Assert.True(File.Exists(loaded.Appearance.TemplateImagePath));
+        }
+        finally{if(File.Exists(outside))File.Delete(outside);}
+    }
+
+
 }
