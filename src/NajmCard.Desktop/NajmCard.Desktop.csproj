@@ -16,6 +16,10 @@
   <ItemGroup>
     <ProjectReference Include="..\NajmCard.Core\NajmCard.Core.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <!-- Microsoft.Data.Sqlite 10.0.0 otherwise resolves vulnerable SQLitePCLRaw 2.1.11.
+         Pin the compatible patched 2.1.x bundle, including its native SQLite DLL.
+         Keep this explicit until upstream Microsoft.Data.Sqlite resolves a safe bundle. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
     <PackageReference Include="PDFsharp-WPF" Version="6.2.4" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
     <!-- Managed RFC 8032 Ed25519 verification for the signed shared license feed. -->
