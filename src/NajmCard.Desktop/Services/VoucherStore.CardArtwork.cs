@@ -19,7 +19,7 @@ public sealed partial class VoucherStore
         if(string.IsNullOrWhiteSpace(source))return original;
         var ext=Path.GetExtension(source).ToLowerInvariant();
         if(ext is not (".png" or ".jpg" or ".jpeg" or ".bmp" or ".gif"
-            or ".tif" or ".tiff" or ".webp" or ".ico"))
+            or ".tif" or ".tiff" or ".webp" or ".ico" or ".img"))
             throw new InvalidDataException("امتداد صورة قالب الكرت غير مدعوم.");
 
         const long maxBytes=15L*1024*1024;
