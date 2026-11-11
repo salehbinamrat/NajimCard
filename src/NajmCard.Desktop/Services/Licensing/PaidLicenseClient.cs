@@ -105,7 +105,7 @@ public static class PaidLicenseFeedVerifier
                     "الترخيص موقوف أو ملغى. راجع مركز التراخيص.");
             DateTimeOffset? expiry=expires is null?null:new DateTimeOffset(
                 DateTime.ParseExact(expires,"yyyy-MM-dd",CultureInfo.InvariantCulture),
-                TimeSpan.Zero);
+                TimeSpan.Zero).AddDays(1);
             return new LicenseCheck("active",expires is null?
                 "تم تفعيل الترخيص بنجاح — ترخيص دائم لنجم كارد وحضرموت على هذا الجهاز.":
                 "ترخيصك فعال حتى "+expires+
@@ -160,7 +160,8 @@ public static class PaidLicenseFeedVerifier
 
 /// <summary>Paid-only network path; the local trial never instantiates or calls
 /// this service. No service-role token or user entitlement is stored in the EXE.</summary>
-public sealed class PaidLicenseClient(HttpClient http,string deviceId,byte[]? trustedKey=null)
+public sealed class PaidLicenseClient(HttpClient http,string deviceId,byte[]? trustedKey=null,
+    ISignedPaidLicenseCache? cache=null)
 {
     public const string BaseUrl=
         "https://zlirqppwemfmzxkholcr.supabase.co/functions/v1/hadramout-license";
@@ -197,14 +198,27 @@ public sealed class PaidLicenseClient(HttpClient http,string deviceId,byte[]? tr
         try
         {
             var feed=await FetchFeedAsync(ct);
-            return PaidLicenseFeedVerifier.Verify(feed,normalized,_device,
+            var result=PaidLicenseFeedVerifier.Verify(feed,normalized,_device,
                 DateTimeOffset.UtcNow,_testKey);
+            // Cache signed results, including a signed revocation; never revive an older grant.
+            if(result.Mode is not ("feed_invalid" or "input_invalid"))
+            {
+                try {cache?.Write(feed);}
+                catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or CryptographicException)
+                {return new LicenseCheck("storage_error","تعذر حفظ إثبات الترخيص؛ تحقق من صلاحيات Windows.");}
+            }
+            return result;
         }
         catch(Exception ex) when(ex is HttpRequestException or IOException
             or TaskCanceledException or InvalidDataException)
         {
+            // Only transport failure permits offline use. Every cached signature,
+            // device binding and expiry is validated again at the current time.
+            if(ex is not InvalidDataException && cache?.Read() is byte[] saved)
+                return PaidLicenseFeedVerifier.Verify(saved,normalized,_device,
+                    DateTimeOffset.UtcNow,_testKey);
             return new LicenseCheck("network_error",
-                "تعذر الاتصال بمنصة الترخيص. تأكد من الإنترنت ثم اضغط تحقق.");
+                "تعذر الاتصال بمنصة الترخيص. الرمز محفوظ؛ أعد المحاولة عند توفر الإنترنت.");
         }
     }
     public async Task<LicenseCheck> ActivateAsync(string code,CancellationToken ct=default)
@@ -274,5 +288,41 @@ public sealed class ProtectedPaidCodeStore(string? directory=null)
         var temp=_path+"."+Guid.NewGuid().ToString("N")+".tmp";
         try{File.WriteAllBytes(temp,protectedCode);File.Move(temp,_path,true);}
         finally{if(File.Exists(temp))File.Delete(temp);}
+    }
+}
+
+public interface ISignedPaidLicenseCache
+{
+    byte[]? Read();
+    void Write(byte[] signedFeed);
+}
+
+/// <summary>Device/user-protected copy of the signed grant, never a cached boolean.</summary>
+public sealed class SignedPaidLicenseCache(string? directory=null):ISignedPaidLicenseCache
+{
+    private static readonly byte[] Entropy=Encoding.UTF8.GetBytes("NajmCard-Signed-Paid-Feed-V1");
+    private readonly string _path=Path.Combine(directory??Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NajmCard","Licensing"),"paid-feed-v1.bin");
+    public byte[]? Read()
+    {
+        try
+        {
+            if(!File.Exists(_path)||new FileInfo(_path).Length>2*1024*1024)return null;
+            return ProtectedData.Unprotect(File.ReadAllBytes(_path),Entropy,DataProtectionScope.CurrentUser);
+        }
+        catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or CryptographicException)
+        {return null;}
+    }
+    public void Write(byte[] signedFeed)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+        var temp=_path+"."+Guid.NewGuid().ToString("N")+".tmp";
+        try
+        {
+            File.WriteAllBytes(temp,ProtectedData.Protect(signedFeed,Entropy,DataProtectionScope.CurrentUser));
+            File.Move(temp,_path,true);
+        }
+        finally {if(File.Exists(temp))File.Delete(temp);}
     }
 }

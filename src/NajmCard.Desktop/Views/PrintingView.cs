@@ -120,6 +120,10 @@ public partial class PrintingView : UserControl
         return path;
     }
 
+    internal Task SaveBatchArchivePdfAsync(IReadOnlyList<Voucher> cards,
+        VoucherCardAppearance appearance,CardPrintOptions options,string path) =>
+        _renderPdfAsync(cards,appearance,options,path);
+
     internal static void OpenPreviewPdf(string path) =>
         Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
 
@@ -423,6 +427,7 @@ public partial class PrintingView : UserControl
                         var line=new TextBlock
                         {
                             Text=value,FontFamily=family,
+                            Tag=credential?VoucherPdfExporter.CopyableCredentialTag:null,
                             FontWeight=usernameCredential?FontWeights.ExtraBold:FontWeights.Bold,FontSize=size,
                             Foreground=usernameCredential?numberInk:ink,TextAlignment=TextAlignment.Center,
                             FlowDirection=FlowDirection.LeftToRight,

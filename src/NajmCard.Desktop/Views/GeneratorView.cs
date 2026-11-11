@@ -584,12 +584,15 @@ public partial class GeneratorView : UserControl
 
     internal VoucherCardAppearance ReadDraftPreviewAppearance() =>
         ReadCurrentAppearance() with {ShowPassword=ShowPreviewPassword};
-    public async Task<bool> CreateAndSendAsync(bool singleCard=false)
+    public async Task<bool> CreateAndSendAsync(bool singleCard=false,
+        Func<IReadOnlyList<Voucher>,Task>? saveBeforeSend=null)
     {
         if(_sending||_preparing||!SaveCurrentPackage())return false;
         _batch=[];BatchChanged?.Invoke();
         await PrepareBatchAsync(true,singleCard);
         if(_batch.Count==0)return false;
+        // A failed archive write must stop before any RouterOS write.
+        if(saveBeforeSend is not null)await saveBeforeSend(_batch.ToArray());
         await UploadAsync();
         return _batch.Any(v=>v.SentToRouter&&v.DeliveryStatus=="SENT");
     }

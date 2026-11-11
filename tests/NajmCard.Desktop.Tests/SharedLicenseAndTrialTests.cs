@@ -200,6 +200,82 @@ public sealed class SharedLicenseAndTrialTests
         Assert.DoesNotContain("trial",handler.RequestBody,StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("machine_guid",handler.RequestBody,StringComparison.OrdinalIgnoreCase);
     }
+
+    private sealed class ToggleFeedHandler(byte[] feed):HttpMessageHandler
+    {
+        public bool Offline;
+        public byte[] Feed=feed;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken ct)
+        {
+            if(Offline)throw new HttpRequestException("offline");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(Feed)});
+        }
+    }
+    [Fact]
+    public async Task Paid_Code_And_Signed_Permanent_Grant_Survive_Restart_Offline()
+    {
+        const string code="0123456789ABCDEF0123456789ABCDEF";
+        const string device="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        var directory=Path.Combine(Path.GetTempPath(),"najm-paid-"+Guid.NewGuid());
+        try
+        {
+            var handler=new ToggleFeedHandler(SignedFeed(code,device));
+            using var http=new HttpClient(handler);
+            var client=new PaidLicenseClient(http,device,Secret.GeneratePublicKey().GetEncoded(),
+                new SignedPaidLicenseCache(directory));
+            Assert.True((await client.VerifyAsync(code)).Permitted);
+            new ProtectedPaidCodeStore(directory).Save(code);
+            handler.Offline=true;
+            var reopened=new PaidLicenseClient(http,device,Secret.GeneratePublicKey().GetEncoded(),
+                new SignedPaidLicenseCache(directory));
+            var check=await reopened.VerifyAsync(new ProtectedPaidCodeStore(directory).Load());
+            Assert.True(check.Permitted);Assert.Null(check.ExpiresAtUtc);
+            var trial=new LocalTrialService(new Store(),"LOCAL");
+            var gate=new LicenseGate(trial);gate.SelectTrial();gate.SetPaid(check);
+            Assert.Equal("active",gate.OnSuccessfulRouterLogin().Mode);
+            Assert.Equal("ready",trial.Check().Mode);
+            // A real online revocation must replace the previously cached permanent grant.
+            handler.Offline=false;handler.Feed=SignedFeed(code,device,"revoked");
+            Assert.Equal("revoked",(await reopened.VerifyAsync(code)).Mode);
+            handler.Offline=true;
+            Assert.Equal("revoked",(await client.VerifyAsync(code)).Mode);
+        }
+        finally {if(Directory.Exists(directory))Directory.Delete(directory,true);}
+    }
+    [Theory]
+    [InlineData("expired")]
+    [InlineData("wrong_device")]
+    [InlineData("tampered")]
+    public async Task Offline_Cache_Does_Not_Authorize_Expired_Other_Device_Or_Tampered_Feed(string invalid)
+    {
+        const string code="0123456789ABCDEF0123456789ABCDEF";
+        const string device="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        var directory=Path.Combine(Path.GetTempPath(),"najm-paid-"+Guid.NewGuid());
+        try
+        {
+            var bytes=SignedFeed(code,invalid=="wrong_device"?new string('B',64):device,
+                expires:invalid=="expired"?DateTime.UtcNow.AddDays(-1).ToString("yyyy-MM-dd"):null);
+            if(invalid=="tampered")bytes[bytes.Length-12]^=1;
+            new SignedPaidLicenseCache(directory).Write(bytes);
+            using var http=new HttpClient(new ToggleFeedHandler(bytes){Offline=true});
+            var result=await new PaidLicenseClient(http,device,Secret.GeneratePublicKey().GetEncoded(),
+                new SignedPaidLicenseCache(directory)).VerifyAsync(code);
+            Assert.False(result.Permitted);
+        }
+        finally {if(Directory.Exists(directory))Directory.Delete(directory,true);}
+    }
+    [Fact]
+    public void Paid_Date_Includes_Whole_Expiry_Day_And_Permanent_Has_No_Deadline()
+    {
+        const string code="0123456789ABCDEF0123456789ABCDEF";
+        var device=new string('A',64);
+        var now=new DateTimeOffset(2026,11,10,23,59,59,TimeSpan.Zero);
+        var bytes=SignedFeed(code,device,expires:"2026-11-10",issuedAtUtc:now.AddMinutes(-2));
+        var result=PaidLicenseFeedVerifier.Verify(bytes,code,device,now,Secret.GeneratePublicKey().GetEncoded());
+        Assert.True(result.Permitted);Assert.Equal(now.AddSeconds(1),result.ExpiresAtUtc);
+        Assert.Equal("expired",PaidLicenseFeedVerifier.Verify(bytes,code,device,now.AddSeconds(1),
+            Secret.GeneratePublicKey().GetEncoded()).Mode);
+    }
     private sealed class CaptureHandler(byte[] pendingFeed):HttpMessageHandler
     {
         public int Claims;
