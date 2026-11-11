@@ -34,6 +34,14 @@ public sealed partial class VoucherStore
             throw new InvalidDataException("حجم صورة القالب تغير أثناء الحفظ.");
 
         var hash=Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+        // PortableCardTemplate stores checked images as <SHA256>.img. Accept
+        // that internal format only when the filename still matches its data;
+        // arbitrary .img files must not bypass the image import validation.
+        if(ext==".img" && !string.Equals(
+            Path.GetFileNameWithoutExtension(source),hash,
+            StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException(
+                "صورة القالب المستوردة لا تطابق بصمتها؛ أعد استيراد القالب.");
         var folder=Path.Combine(DirectoryPath,"CardArtwork");
         Directory.CreateDirectory(folder);
         var destination=Path.Combine(folder,hash+ext);
