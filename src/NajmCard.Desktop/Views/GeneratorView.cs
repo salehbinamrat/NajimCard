@@ -588,11 +588,24 @@ public partial class GeneratorView : UserControl
                     capturedPrint=PrintOptionsProvider?.Invoke()??new CardPrintOptions();
                     CardPrintLayoutPlanner.Calculate(capturedPrint,options.Count);
                     capturedAppearance=ReadDraftPreviewAppearance();
+                    // Print artwork is optional for issuing. Reject a missing
+                    // external template from the snapshot but allow the
+                    // independently valid send-only RouterOS transaction.
+                    if(!string.IsNullOrWhiteSpace(capturedAppearance.TemplateImagePath))
+                    {
+                        var picture=new FileInfo(capturedAppearance.TemplateImagePath);
+                        if(!picture.Exists || picture.Length>15L*1024*1024 ||
+                           picture.Length<=0)
+                            throw new InvalidDataException(
+                                "صورة القالب غير متاحة أو حجمها غير صالح؛ "+
+                                "ستصدر الكروت دون اعتماد قالب طباعة مفقود.");
+                    }
                     capturedOutput=(OutputPreferencesProvider?.Invoke()
                         ??new VoucherOutputPreferences()).Validate();
                 }
                 catch(Exception ex) when(ex is ArgumentException or FormatException
-                    or OverflowException or InvalidOperationException)
+                    or OverflowException or InvalidOperationException or InvalidDataException
+                    or UnauthorizedAccessException)
                 {
                     capturedPrint=null;
                     printWarning=" | إعدادات الطباعة غير صالحة ولم تُحفظ مع الدفعة: "+
