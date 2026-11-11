@@ -177,7 +177,7 @@ public sealed class VoucherWorkspaceView : UserControl
         };
         var status=new TextBlock
         {
-            Text="احفظ إعدادات كل باقة من أعلى قسم الباقة ومسار الإرسال. الطباعة وPDF للكروت المؤكد إرسالها فقط.",
+            Text="احفظ إعدادات الباقة والتصميم والطباعة من زر الحفظ بجانب عنوان الصفحة. طباعة الدفعات المؤكدة فقط.",
             Foreground=new SolidColorBrush(Color.FromRgb(255,224,169)),
             TextWrapping=TextWrapping.Wrap,FontSize=11,
             FontWeight=FontWeights.SemiBold,
@@ -221,8 +221,8 @@ public sealed class VoucherWorkspaceView : UserControl
             return button;
         }
         var actions=new[]{
-            MakeButton("إنشاء وإرسال واحد","#13653E","#FFF5E6"),
             MakeButton("إنشاء وإرسال وحفظ","#EAC477","#49142C"),
+            MakeButton("إنشاء وإرسال فقط","#13653E","#FFF5E6"),
             MakeButton("معاينة قبل الإنشاء","#1756AE","#FFFFFF"),
             MakeButton("ملف PDF","#641A81","#FFF5E6"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
@@ -292,14 +292,6 @@ public sealed class VoucherWorkspaceView : UserControl
         }
         actions[0].Click+=async(_,_)=>await Execute(async()=>
         {
-            var sent=await creator.CreateAndSendAsync(singleCard:true);
-            status.Text=sent
-                ?"أُرسل كرت واحد وحُفظت حالته."
-                :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
-            if(sent)await ExportAdditionalAsync();
-        });
-        actions[1].Click+=async(_,_)=>await Execute(async()=>
-        {
             var picker=new OpenFolderDialog
             {
                 Title="اختر مكان حفظ الكروت قبل الإرسال",Multiselect=false
@@ -337,6 +329,14 @@ public sealed class VoucherWorkspaceView : UserControl
             catch(System.ComponentModel.Win32Exception)
             {status.Text+=" | افتح الملف من مجلد الحفظ للمعاينة.";}
             await ExportAdditionalAsync();
+        });
+        actions[1].Click+=async(_,_)=>await Execute(async()=>
+        {
+            var sent=await creator.CreateAndSendAsync();
+            status.Text=sent
+                ?"تم إنشاء الكروت وإرسالها وحفظ حالتها محليا."
+                :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
+            if(sent)await ExportAdditionalAsync();
         });
         async Task PreviewDraftPdf()
         {
