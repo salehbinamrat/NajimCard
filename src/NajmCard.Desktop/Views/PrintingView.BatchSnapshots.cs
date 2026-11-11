@@ -151,6 +151,19 @@ public partial class PrintingView
             Equals(preparedAppearance,latestAppearance.Validate());
     }
 
+    public string? ChoosePdfDestination()
+    {
+        var dlg=new Microsoft.Win32.SaveFileDialog
+        {
+            Title="حفظ PDF للدفعة",
+            Filter="PDF (*.pdf)|*.pdf",
+            DefaultExt=".pdf",AddExtension=true,
+            FileName="نجم_كارد_"+DateTime.Now.ToString("yyyyMMdd_HHmm")+".pdf",
+            OverwritePrompt=true
+        };
+        return dlg.ShowDialog()==true?dlg.FileName:null;
+    }
+
     private static string NewPreviewPdfPath()
     {
         var directory=Path.Combine(Environment.GetFolderPath(
