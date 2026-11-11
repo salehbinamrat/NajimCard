@@ -76,7 +76,7 @@ public sealed class SavedRouterConnectionStore
             c.Port is < 1 or > 65535 ||
             string.IsNullOrWhiteSpace(c.Username) || c.Username.Length > 100 ||
             c.Mode is not ("local" or "remote") ||
-            c.Password.Length > 4096)
+            c.Password is null || c.Password.Length > 4096)
             throw new ArgumentException("بيانات الاتصال المحفوظ غير صالحة.");
     }
 
