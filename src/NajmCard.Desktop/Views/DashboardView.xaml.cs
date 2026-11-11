@@ -82,7 +82,7 @@ public partial class DashboardView : UserControl
         _telemetryToken=visibility;
         try
         {
-            var resource=await _gateway.ReadResourceAsync();
+            var resource=await _gateway.ReadTelemetryResourceAsync();
             if(!IsLoaded || visibility.IsCancellationRequested)return;
             Cpu.Text=resource.CpuLoad+"%";
             CpuProgress.Value=double.TryParse(resource.CpuLoad,NumberStyles.Float,
