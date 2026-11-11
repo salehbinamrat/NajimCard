@@ -36,6 +36,7 @@ class NajmLoginCreatorFixes(unittest.TestCase):
         code = source("Views/GeneratorView.cs")
         workspace = source("Views/VoucherWorkspaceView.cs")
         self.assertIn("_service.SelectedIndex = 1;", code)
+        self.assertIn('_customerPanel.Visibility = SelectedService=="userman"?Visibility.Visible:Visibility.Collapsed;', code)
         self.assertIn('"userman"=>1', code)
         self.assertIn('creator.SelectService(service)', workspace)
         self.assertIn("LastOperationMessage", code)
