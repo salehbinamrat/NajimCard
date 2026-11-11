@@ -26,8 +26,7 @@ public sealed class ActivityView : UserControl
         root.Children.Add(PageUi.Hint("سجل العمليات المحلي الحقيقي؛ لا يتصل بالراوتر عند التصفية أو الانتقال بين الصفحات."));
         var category=new ComboBox{ItemsSource=categories,SelectedIndex=0,MinWidth=160,
             Margin=new Thickness(5)};
-        var search=PageUi.Input();
-        search.MinWidth=280;
+        var search=PageUi.SearchInput();
         var refresh=PageUi.Button("تحديث",false);
         var controls=new WrapPanel();
         controls.Children.Add(PageUi.Label("الفئة"));controls.Children.Add(category);
