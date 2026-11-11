@@ -52,7 +52,7 @@ class OperatorCorrections(unittest.TestCase):
         for key in ('ReadCurrentAppearance()','PrintOptionsProvider?.Invoke()','_store.SavePackagePreset(saved)'):
             self.assertIn(key,creator)
         start=creator.index('public async Task<bool> CreateAndSendAsync(')
-        end=creator.index('private void SelectMatchingOwner()',start)
+        end=creator.index('private async Task PrepareBatchAsync(',start)
         self.assertNotIn("SaveCurrentPackage()",creator[start:end])
         self.assertIn("await PrepareBatchAsync(true,singleCard)",creator[start:end])
         self.assertIn('_batch.All(v=>',creator[start:end])
