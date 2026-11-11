@@ -600,7 +600,11 @@ public partial class GeneratorView : UserControl
         // A failed archive write must stop before any RouterOS write.
         if(saveBeforeSend is not null)await saveBeforeSend(_batch.ToArray());
         await UploadAsync();
-        return _batch.Any(v=>v.SentToRouter&&v.DeliveryStatus=="SENT");
+        // A partially acknowledged batch is not a successful "send all"
+        // operation. Preserve its durable status and do not announce success
+        // or print an incomplete batch as if every voucher was delivered.
+        return _batch.Count>0 && _batch.All(v=>
+            v.SentToRouter && v.DeliveryStatus=="SENT");
     }
 
     private void SelectMatchingOwner()
