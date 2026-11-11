@@ -58,7 +58,7 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         # username+password modes. This is a functional contract, not merely
         # the legacy same-password expression.
         self.assertIn("bool usernameOnly=_credentialMode.SelectedIndex==0;",self.live)
-        self.assertIn("bool same=_samePassword.IsChecked==true;",self.live)
+        self.assertIn("bool same=!usernameOnly && _credentialsSame.IsChecked==true;",self.live)
         self.assertIn("PasswordCharacters:(usernameOnly||same)?null:_passwordCharacters.Text.Trim()",self.live)
         self.assertIn("UsernameOnly:usernameOnly",self.live)
         self.assertIn('options.UsernameOnly ? ""',self.generator)
