@@ -16,6 +16,20 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
         ArgumentNullException.ThrowIfNull(batch);
         if (batch.Count == 0 || batch.Count > 10000)
             throw new ArgumentException("عدد كروت الدفعة غير صالح.", nameof(batch));
+        // Freeze the caller-owned collection before yielding. IReadOnlyList
+        // does not prevent its owner from replacing cards during preflight.
+        var snapshot=batch.ToArray();
+        // SQLite FULL commits and DPAPI are synchronous. Keep the complete
+        // sequential delivery transaction off the WPF dispatcher, including
+        // its initial validation and continuations after each router reply.
+        return await Task.Run(()=>SendSnapshotAsync(snapshot,cancellationToken),
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<BatchDeliveryResult> SendSnapshotAsync(
+        IReadOnlyList<Voucher> batch,CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
         var first = batch[0] ?? throw new ArgumentException("الكرت الأول غير صالح.");
         var service = first.Service;
         if (service is not ("hotspot" or "userman" or "pppoe"))

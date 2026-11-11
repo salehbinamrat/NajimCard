@@ -17,6 +17,7 @@ public sealed class VoucherBatchDispatchTests
     {
         public readonly List<(string Name, IReadOnlyDictionary<string,string> Data)> Writes = [];
         public bool MissingId { get; set; }
+        public Action? OnInventoryRead { get; set; }
         public bool FailNameRead { get; set; }
         public string? PppCollision { get; set; }
         public string? LastUsername { get; set; }
@@ -45,6 +46,7 @@ public sealed class VoucherBatchDispatchTests
             if (command.EndsWith("/print", StringComparison.Ordinal))
             {
                 Reads.Add(command);
+                OnInventoryRead?.Invoke();
                 if (FailNameRead && command == "/ppp/secret/print")
                     throw new RouterOsTrapException("not enough permissions");
                 IReadOnlyList<IReadOnlyDictionary<string,string>> data =
@@ -187,6 +189,50 @@ public sealed class VoucherBatchDispatchTests
             Assert.Equal("CREATED",Assert.Single(store.GetVouchers()).DeliveryStatus);
         }
         finally { Directory.Delete(root,true); }
+    }
+
+    [Fact]
+    public async Task Caller_Changes_During_Preflight_Do_Not_Replace_Validated_Batch()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var original=Voucher("111222","hotspot");
+            var replacement=Voucher("333444","hotspot");
+            store.SaveBatch([original,replacement]);
+            var batch=new List<Voucher>{original};
+            var spy=new Spy{OnInventoryRead=()=>batch[0]=replacement};
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync(batch);
+            Assert.True(result.Success);
+            var saved=store.GetBatchVouchers("hotspot",original.BatchId);
+            Assert.Equal("SENT",saved.Single(x=>x.Username==original.Username).DeliveryStatus);
+            Assert.Equal("CREATED",saved.Single(x=>x.Username==replacement.Username).DeliveryStatus);
+            Assert.Equal(original.Username,Assert.Single(spy.Writes).Data["name"]);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+    [Fact]
+    public async Task Cancelled_Batch_Does_Not_Lease_Or_Write_Cards()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("111222","hotspot");
+            store.SaveBatch([card]);
+            var spy=new Spy();
+            using var cancellation=new CancellationTokenSource();
+            cancellation.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(()=>
+                new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                    .SendAsync([card],cancellation.Token));
+            Assert.Empty(spy.Writes);
+            Assert.Equal("CREATED",Assert.Single(store.GetVouchers()).DeliveryStatus);
+        }
+        finally{Directory.Delete(root,true);}
     }
 
     [Fact]
