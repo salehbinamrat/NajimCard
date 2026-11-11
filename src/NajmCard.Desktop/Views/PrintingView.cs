@@ -575,23 +575,16 @@ public partial class PrintingView : UserControl
             catch(Exception ex){_status.Text="تعذر إعداد معاينة الطباعة: "+ex.Message;return false;}
         }
 
-        bool VerifyPreparedBatch()
-        {
-            if(prepared is null || preparedCards.Length==0)return false;
-            var requested=(batchSelector.SelectedItem as ComboBoxItem)?.Tag is
-                PrintableBatchSummary previous
-                ?store.GetBatchVouchers(previous.Service,previous.BatchId)
-                :selectedBatch is null
-                    ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
-                    :selectedBatch();
-            var confirmed=requested.Where(v=>
-                v.DeliveryStatus=="SENT"&&v.SentToRouter).ToArray();
-            return confirmed.Length==preparedCards.Length &&
-                confirmed.SequenceEqual(preparedCards) &&
-                Equals(Options(),_getOptions()) &&
-                Equals(designUsed,(selectedAppearance?.Invoke()??
-                    store.LoadCardAppearance()).Validate());
-        }
+        bool VerifyPreparedBatch() =>
+            VerifyPreparedBatchSnapshot(
+                prepared,preparedCards,
+                (batchSelector.SelectedItem as ComboBoxItem)?.Tag is
+                    PrintableBatchSummary previous
+                    ?store.GetBatchVouchers(previous.Service,previous.BatchId)
+                    :selectedBatch is null
+                        ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
+                        :selectedBatch(),
+                designUsed,selectedAppearance?.Invoke()??store.LoadCardAppearance());
 
         void Print()
         {
