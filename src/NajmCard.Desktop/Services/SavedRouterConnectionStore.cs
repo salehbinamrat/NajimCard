@@ -95,7 +95,7 @@ public sealed class SavedRouterConnectionStore
             foreach(var row in rows)
                 Validate(new SavedRouterConnection(row.Host,row.Port,row.Username,
                     row.UseTls,row.Mode));
-            if (rows.Any(r => r.PasswordBlob.Length > 10000))
+            if (rows.Any(r => r.PasswordBlob is null || r.PasswordBlob.Length > 10000))
                 throw new InvalidDataException("حقل كلمة المرور المحمية غير صالح.");
             return rows;
         }
