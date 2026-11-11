@@ -8,6 +8,14 @@ namespace NajmCard.Desktop.Views;
 
 public partial class GeneratorView
 {
+    internal Task<Voucher[]> BuildDraftPreviewAsync()
+    {
+        var options=ReadGenerationOptions(forPreview:true);
+        var service=SelectedService;
+        return Task.Run(()=>VoucherGenerator.Generate(options)
+            .Select(voucher=>voucher with {Service=service}).ToArray());
+    }
+
     // Preview and issuing share one source of generation options. Preview has
     // a local-only profile name before the router's real profiles are loaded.
     private VoucherGenerationOptions ReadGenerationOptions(bool forPreview)

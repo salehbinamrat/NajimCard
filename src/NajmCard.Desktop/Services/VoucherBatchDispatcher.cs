@@ -11,7 +11,7 @@ namespace NajmCard.Desktop.Services;
 public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore store)
 {
     public async Task<BatchDeliveryResult> SendAsync(IReadOnlyList<Voucher> batch,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,IProgress<string>? progress = null)
     {
         ArgumentNullException.ThrowIfNull(batch);
         if (batch.Count == 0 || batch.Count > 10000)
@@ -22,12 +22,13 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
         // SQLite FULL commits and DPAPI are synchronous. Keep the complete
         // sequential delivery transaction off the WPF dispatcher, including
         // its initial validation and continuations after each router reply.
-        return await Task.Run(()=>SendSnapshotAsync(snapshot,cancellationToken),
+        return await Task.Run(()=>SendSnapshotAsync(snapshot,cancellationToken,progress),
             cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<BatchDeliveryResult> SendSnapshotAsync(
-        IReadOnlyList<Voucher> batch,CancellationToken cancellationToken)
+        IReadOnlyList<Voucher> batch,CancellationToken cancellationToken,
+        IProgress<string>? progress)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var first = batch[0] ?? throw new ArgumentException("الكرت الأول غير صالح.");
@@ -62,6 +63,7 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
 
         // A complete cross-service read is mandatory; do not lease a card or send
         // any RouterOS writes if any service is unavailable/forbidden or names collide.
+        progress?.Report("التحقق من الأرقام الموجودة على الراوتر...");
         var existingNames = await gateway.ReadExistingVoucherNamesAsync(cancellationToken);
         var collisions = batch.Where(v => existingNames.Contains(v.Username))
             .Select(v => v.Username).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -77,6 +79,7 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
             if(batch.Any(v=>v.Profile!=first.Profile))
                 throw new ArgumentException(
                     "لا يمكن إصدار باقات مختلفة داخل دفعة User Manager واحدة.");
+            progress?.Report("فحص جاهزية User Manager وربط Hotspot مع RADIUS...");
             await gateway.VerifyUserManagerV6HotspotReadinessAsync(
                 first.Profile,customer,cancellationToken);
         }
@@ -86,6 +89,7 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
         foreach (var voucher in batch)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            progress?.Report($"إرسال الكرت {succeeded+failed.Count+1} من {batch.Count} إلى الراوتر...");
             // COMMIT to WAL+FULL synchronously BEFORE sending the first byte.
             store.BeginSend(voucher);
             string state;
@@ -144,6 +148,8 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
             // If the DB write fails, the SENDING lease is retained. Stop and
             // investigate; never assume a potentially created card is absent.
             store.FinishSend(voucher, state, error);
+            progress?.Report($"تسجيل نتيجة الكرت {succeeded+failed.Count+1} من {batch.Count}: "+
+                (state=="SENT"?"تم الإرسال":state=="FAILED"?"رفضه الراوتر":"النتيجة غير مؤكدة"));
             switch (state)
             {
                 case "SENT":

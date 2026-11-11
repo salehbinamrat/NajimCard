@@ -248,6 +248,25 @@ public sealed class VoucherWorkspaceView : UserControl
                 creator.IsEnabled=history.IsEnabled=true;
             }
         }
+        async Task WithCardProgressAsync(string operation,Func<Action<string>,Task> work)
+        {
+            // Non-modal: render and RouterOS I/O continue normally; the dialog
+            // displays actual workflow stages, without fabricating a percentage.
+            var popup=new VoucherOperationProgressWindow(operation);
+            if(Window.GetWindow(this) is Window owner)popup.Owner=owner;
+            void ShowStage(string stage)=>popup.UpdateStage(stage);
+            creator.OperationProgressChanged+=ShowStage;
+            try
+            {
+                popup.Show();
+                await work(ShowStage);
+            }
+            finally
+            {
+                creator.OperationProgressChanged-=ShowStage;
+                popup.Close();
+            }
+        }
         async Task ExportAdditionalAsync()
         {
             if(!printer.AdditionalExportRequested)return;
@@ -303,6 +322,8 @@ public sealed class VoucherWorkspaceView : UserControl
                 Title="اختر مكان حفظ الكروت قبل الإرسال",Multiselect=false
             };
             if(picker.ShowDialog()!=true)return;
+            await WithCardProgressAsync("إنشاء وإرسال وحفظ الكروت",async report=>
+            {
             var options=printer.GetOptions();
             var appearance=creator.ReadDraftPreviewAppearance();
             string? folder=null;
@@ -312,6 +333,7 @@ public sealed class VoucherWorkspaceView : UserControl
             {
                 folder=VoucherBatchArchive.CreateDirectory(picker.FolderName,cards);
                 savedBeforeSend=Path.Combine(folder,"محفوظة-قبل-الإرسال-لا-تطبع.pdf");
+                report("حفظ ملف PDF الأولي للكروت قبل الإرسال...");
                 await printer.SaveDraftArchivePdfAsync(cards,appearance,options,savedBeforeSend);
                 archivedCount=cards.Count;
                 status.Text="حُفظت "+cards.Count+" كرتا قبل الإرسال في: "+folder;
@@ -328,6 +350,7 @@ public sealed class VoucherWorkspaceView : UserControl
             // A pre-send PDF is visibly watermarked, never promoted as if
             // those unverified cards had been activated. Render the final PDF
             // solely from readback-confirmed vouchers, then remove the draft.
+            report("حفظ ملف PDF النهائي للكروت المؤكدة في الراوتر...");
             await printer.SaveBatchArchivePdfAsync(confirmed,appearance,options,path);
             if(savedBeforeSend is not null && File.Exists(savedBeforeSend))
                 File.Delete(savedBeforeSend);
@@ -337,14 +360,18 @@ public sealed class VoucherWorkspaceView : UserControl
             catch(System.ComponentModel.Win32Exception)
             {status.Text+=" | افتح الملف من مجلد الحفظ للمعاينة.";}
             await ExportAdditionalAsync();
+            });
         });
         actions[1].Click+=async(_,_)=>await Execute(async()=>
         {
+            await WithCardProgressAsync("إنشاء وإرسال الكروت",async report=>
+            {
             var sent=await creator.CreateAndSendAsync();
             status.Text=sent
                 ?"تم إنشاء الكروت وإرسالها وحفظ حالتها محليا."
                 :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
             if(sent)await ExportAdditionalAsync();
+            });
         });
         async Task PreviewDraftPdf()
         {

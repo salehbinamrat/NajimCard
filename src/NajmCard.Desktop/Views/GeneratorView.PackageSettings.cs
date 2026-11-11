@@ -92,7 +92,7 @@ public partial class GeneratorView
                 _status.Text=v is null?"لا يوجد قالب محفوظ لهذه الباقة.":
                     "استُعيدت إعدادات التوليد والتصميم والطباعة المحفوظة لهذه الباقة.";
             }
-            finally {_restoringPreset=false;UpdateLiveCardPreview();}
+            finally {_restoringPreset=false;InvalidatePendingBatchForCredentialChange();UpdateLiveCardPreview();}
         }
         catch(Exception ex){_status.Text="تعذر استعادة الباقة؛ لم يتغير السجل: "+ex.Message;}
     }

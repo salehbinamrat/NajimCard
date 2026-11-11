@@ -395,6 +395,9 @@ public sealed class VoucherBatchDispatchTests
     [InlineData("userman", "username-only")]
     [InlineData("userman", "matching")]
     [InlineData("userman", "different")]
+    [InlineData("pppoe", "username-only")]
+    [InlineData("pppoe", "matching")]
+    [InlineData("pppoe", "different")]
     public async Task Credential_Mode_Survives_Generation_Storage_And_Actual_Router_Command(
         string service, string mode)
     {
@@ -419,8 +422,12 @@ public sealed class VoucherBatchDispatchTests
                 .SendAsync([card]);
             Assert.True(result.Success);
 
-            var addPath=service=="userman"
-                ?"/tool/user-manager/user/add":"/ip/hotspot/user/add";
+            var addPath=service switch
+            {
+                "userman"=>"/tool/user-manager/user/add",
+                "pppoe"=>"/ppp/secret/add",
+                _=>"/ip/hotspot/user/add"
+            };
             var attributes=Assert.Single(spy.Writes.Where(x=>x.Name==addPath)).Data;
             Assert.Equal(card.Username,attributes[service=="userman"?"username":"name"]);
             if(mode=="username-only")
@@ -447,6 +454,35 @@ public sealed class VoucherBatchDispatchTests
             Assert.Equal(card.Password,after.Password);
             Assert.Equal("SENT",after.DeliveryStatus);
             Assert.True(after.SentToRouter);
+        }
+        finally{Directory.Delete(root,true);}
+    }
+
+    private sealed class StageCapture : IProgress<string>
+    {
+        public readonly List<string> Messages=[];
+        public void Report(string message)=>Messages.Add(message);
+    }
+
+    [Fact]
+    public async Task Dispatch_Progress_Reports_Real_Router_Preflight_And_Durable_Delivery()
+    {
+        var root=Root();
+        try
+        {
+            using var store=new VoucherStore(root);
+            var card=Voucher("723456","hotspot") with{Password=""};
+            store.SaveBatch([card]);
+            var spy=new Spy();
+            var stages=new StageCapture();
+            var result=await new VoucherBatchDispatcher(new RouterGateway(spy),store)
+                .SendAsync([card],progress:stages);
+            Assert.True(result.Success);
+            Assert.Contains(stages.Messages,x=>x.Contains("التحقق من الأرقام",StringComparison.Ordinal));
+            Assert.Contains(stages.Messages,x=>x.Contains("إرسال الكرت 1 من 1",StringComparison.Ordinal));
+            Assert.Contains(stages.Messages,x=>x.Contains("تسجيل نتيجة الكرت 1 من 1: تم الإرسال",StringComparison.Ordinal));
+            Assert.Equal("SENT",Assert.Single(store.GetVouchers()).DeliveryStatus);
+            Assert.DoesNotContain(stages.Messages,x=>x.Contains(card.Username,StringComparison.Ordinal));
         }
         finally{Directory.Delete(root,true);}
     }
