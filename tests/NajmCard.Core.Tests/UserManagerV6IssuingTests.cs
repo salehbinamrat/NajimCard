@@ -231,4 +231,32 @@ public sealed class UserManagerV6IssuingTests
         Assert.Equal("*1F", reply.Done["ret"]);
         Assert.Equal("client", Assert.Single(reply.Records)["username"]);
     }
+
+    [Fact]
+    public async Task Username_Only_UM6_Uses_An_Explicit_Empty_Password_Not_The_Username()
+    {
+        var spy=new RouterSpy();
+        var card=Card() with{Password=""};
+        var result=await new RouterGateway(spy)
+            .CreateAndActivateUserManagerV6Async(card,"admin");
+        Assert.True(result.Success);
+        Assert.Equal(2,spy.Calls.Count);
+        Assert.Equal(card.Username,spy.Calls[0].Args["username"]);
+        Assert.True(spy.Calls[0].Args.ContainsKey("password"));
+        Assert.Equal("",spy.Calls[0].Args["password"]);
+        Assert.Equal("gold",spy.Calls[1].Args["profile"]);
+    }
+
+    [Fact]
+    public async Task Username_Only_Hotspot_Uses_Blank_Password()
+    {
+        var spy=new RouterSpy();
+        var card=Card() with{Password="",Service="hotspot"};
+        await new RouterGateway(spy).AddHotspotUserAsync(card);
+        var args=Assert.Single(spy.Calls).Args;
+        Assert.Equal(card.Username,args["name"]);
+        Assert.Equal("",args["password"]);
+    }
+
+
 }
