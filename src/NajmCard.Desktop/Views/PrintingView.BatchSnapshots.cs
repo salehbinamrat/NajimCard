@@ -137,4 +137,37 @@ public partial class PrintingView
             first.Service,first.BatchId,first.Profile,first.Customer,
             options,appearance,output).Validate();
     }
+    private static bool VerifyPreparedBatchSnapshot(
+        System.Windows.Documents.FixedDocument? preparedDocument,
+        IReadOnlyList<Voucher> preparedCards,IReadOnlyList<Voucher> latestCards,
+        VoucherCardAppearance? preparedAppearance,VoucherCardAppearance latestAppearance)
+    {
+        if(preparedDocument is null || preparedCards.Count==0 ||
+           preparedAppearance is null)return false;
+        var confirmed=latestCards.Where(card=>card.SentToRouter &&
+            card.DeliveryStatus=="SENT").ToArray();
+        return confirmed.Length==preparedCards.Count &&
+            confirmed.SequenceEqual(preparedCards) &&
+            Equals(preparedAppearance,latestAppearance.Validate());
+    }
+
+    private static string NewPreviewPdfPath()
+    {
+        var directory=Path.Combine(Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
+        Directory.CreateDirectory(directory);
+        foreach(var file in Directory.EnumerateFiles(directory,"Najm_*.pdf"))
+        {
+            try
+            {
+                if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
+                    File.Delete(file);
+            }
+            catch(IOException) { }
+            catch(UnauthorizedAccessException) { }
+        }
+        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
+    }
+
+
 }
