@@ -31,7 +31,9 @@ public static class VoucherGenerator
             throw new ArgumentException("بادئة الكرت يجب أن تتكون من أحرف إنجليزية وأرقام أو - و _.");
         if(string.IsNullOrWhiteSpace(options.Profile))
             throw new ArgumentException("اختر الباقة أولاً.");
-        var chars=Alphabet(options.Characters,"أحرف اسم المستخدم",minimum:2);
+        // SQLite and router collision checks treat usernames without case.
+// Count a/A as ONE choice, otherwise the advertised space is inflated.
+        var chars=Alphabet(options.Characters,"أحرف اسم المستخدم",minimum:2,ignoreCase:true);
         var suffixLength=options.LengthIncludesPrefix ? options.Length-prefix.Length : options.Length;
         if(suffixLength < 0)
             throw new ArgumentException("بادئة الكرت أطول من طول الرقم المطلوب.");
@@ -70,6 +72,14 @@ public static class VoucherGenerator
         var p=Prepare(options);
         var used=new HashSet<string>(
             reserved ?? new HashSet<string>(),StringComparer.OrdinalIgnoreCase);
+        // Reject an exhausted local/router namespace before spending thousands
+        // of cryptographic RNG calls retrying inevitable collisions.
+        var alphabet=new HashSet<char>(p.Characters.Select(char.ToUpperInvariant));
+        var occupied=used.Count(name=>IsCandidateName(
+            name,p.Prefix,p.SuffixLength,alphabet));
+        if(BigInteger.Pow(p.Characters.Length,p.SuffixLength)-occupied<options.Count)
+            throw new ArgumentException(
+                "مساحة أرقام الكروت المتبقية لا تكفي للدفعة؛ غيّر البادئة أو الطول أو مجموعة الأحرف.");
         var results=new List<Voucher>(options.Count);
         string batch=DateTimeOffset.UtcNow.ToString("yyyyMMddHHmmss")+"-"+
             Guid.NewGuid().ToString("N")[..8];
@@ -88,9 +98,25 @@ public static class VoucherGenerator
         return results;
     }
 
-    private static string Alphabet(string? input,string label,int minimum)
+    private static bool IsCandidateName(string name,string prefix,int suffixLength,
+        IReadOnlySet<char> alphabet)
     {
-        string chars=new((input??"").Distinct().ToArray());
+        if(name is null || name.Length!=prefix.Length+suffixLength ||
+           !name.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))
+            return false;
+        for(var i=prefix.Length;i<name.Length;i++)
+            if(!alphabet.Contains(char.ToUpperInvariant(name[i])))
+                return false;
+        return true;
+    }
+
+    private static string Alphabet(string? input,string label,int minimum,
+        bool ignoreCase=false)
+    {
+        // Passwords retain case-sensitive letters; username tokens must use
+        // the case-insensitive SQLite uniqueness and RouterOS preflight key.
+        string chars=new((input??"")
+            .DistinctBy(c=>ignoreCase?char.ToUpperInvariant(c):c).ToArray());
         if(chars.Length<minimum || chars.Any(c=>!char.IsAsciiLetterOrDigit(c)))
             throw new ArgumentException(label+" يجب أن تكون أحرفا إنجليزية أو أرقاما فقط.");
         return chars;

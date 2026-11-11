@@ -39,4 +39,55 @@ public sealed class VoucherGeneratorTests
     {
         Assert.Throws<ArgumentException>(() => VoucherGenerator.Generate(new(100, "NC-", 4, "01", false, "default")));
     }
+
+    [Fact]
+    public void MixedCaseUsernameAlphabet_CannotOverestimateUniqueRouterNames()
+    {
+        // SQLite voucher names use COLLATE NOCASE: a/A are the same token.
+        // The old calculation incorrectly claimed 3^4 distinct numbers.
+        Assert.ThrowsAny<ArgumentException>(()=>VoucherGenerator.Generate(
+            new(17,"NC-",4,"aA1",true,"default")));
+        Assert.ThrowsAny<ArgumentException>(()=>VoucherGenerator.Generate(
+            new(2,"NC-",4,"aA",true,"default")));
+    }
+
+    [Fact]
+    public void GeneratedMixedCaseAlphabet_IsUniqueUnderSqliteCaseInsensitivity()
+    {
+        var vouchers=VoucherGenerator.Generate(
+            new(40,"NC-",4,"aA01",true,"default"));
+        Assert.Equal(40,vouchers.Count);
+        Assert.Equal(vouchers.Count,vouchers.Select(x=>x.Username)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.All(vouchers,x=>Assert.Equal(x.Username,x.Password));
+    }
+
+    [Fact]
+    public void ReservedNames_ExhaustingActualAlphabet_AreRejectedBeforeGeneration()
+    {
+        // Only 16 distinct 4-character credentials exist in {0,a}.
+        // Uppercase A in the router's historical users is equivalent to a.
+        var occupied=Enumerable.Range(0,15)
+            .Select(i=>"NC-"+Convert.ToString(i,2).PadLeft(4,'0')
+                .Replace('1',i%2==0?'A':'a'))
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.ThrowsAny<ArgumentException>(()=>VoucherGenerator.Generate(
+            new(2,"NC-",4,"aA0",false,"default"),occupied));
+    }
+
+    [Fact]
+    public void DifferentRouterPrefixes_DoNotConsumeTheCurrentNumberSpace()
+    {
+        var unrelated=Enumerable.Range(0,20)
+            .Select(i=>"OLD-"+i.ToString("D4"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var cards=VoucherGenerator.Generate(
+            new(10,"NC-",4,"aA01",false,"default",
+                PasswordLength:1,PasswordCharacters:"aA"),unrelated);
+        Assert.Equal(10,cards.Count);
+        Assert.Equal(10,cards.Select(x=>x.Username)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.All(cards,x=>Assert.Contains(x.Password,new[]{"a","A"}));
+    }
+
 }
