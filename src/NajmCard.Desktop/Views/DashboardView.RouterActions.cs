@@ -32,14 +32,17 @@ public partial class DashboardView
                     MessageBoxImage.Information);
                 return;
             }
-            if(candidates.Length>100)
-                throw new InvalidOperationException(
-                    "عدد السيرفرات كبير؛ حدد السيرفر من أدوات الصيانة.");
             var selector=new ComboBox
             {
                 ItemsSource=candidates,DisplayMemberPath="Name",SelectedIndex=0,
-                Margin=new Thickness(0,9,0,9),MinHeight=36
+                Margin=new Thickness(0,9,0,9),MinHeight=36,
+                MaxDropDownHeight=240
             };
+            // A large RouterOS installation may have hundreds of servers.
+            // Virtualize the selector instead of blocking a valid operation.
+            VirtualizingStackPanel.SetIsVirtualizing(selector,true);
+            VirtualizingStackPanel.SetVirtualizationMode(selector,VirtualizationMode.Recycling);
+            ScrollViewer.SetCanContentScroll(selector,true);
             var panel=new StackPanel{Margin=new Thickness(16)};
             panel.Children.Add(new TextBlock
             {
