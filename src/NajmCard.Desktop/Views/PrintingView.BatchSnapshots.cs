@@ -148,6 +148,21 @@ public partial class PrintingView
             preparedCards,latestCards,preparedAppearance,latestAppearance);
     }
 
+    // A latest-batch PDF and a printed batch must use the exact same
+    // selection rules; never mix services, owners or different batch IDs.
+    private static IReadOnlyList<Voucher> ReadCurrentPrintSelection(
+        VoucherStore store,ComboBox batchSelector,
+        Func<IReadOnlyList<Voucher>>? currentBatch,int maxCount)
+    {
+        if((batchSelector.SelectedItem as ComboBoxItem)?.Tag
+            is PrintableBatchSummary archive)
+            return store.GetBatchVouchers(archive.Service,archive.BatchId);
+        if(currentBatch is not null)return currentBatch();
+        var latest=store.ListPrintableBatches(1).FirstOrDefault();
+        return latest is null?[]:store.GetBatchVouchers(
+            latest.Service,latest.BatchId).Take(maxCount).ToArray();
+    }
+
     private static bool VerifyVoucherBatchSnapshot(
         IReadOnlyList<Voucher> expected,IReadOnlyList<Voucher> latest,
         VoucherCardAppearance originalStyle,VoucherCardAppearance currentStyle)
