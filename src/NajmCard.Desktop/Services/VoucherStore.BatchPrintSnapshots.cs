@@ -31,6 +31,9 @@ public sealed partial class VoucherStore
         SqliteTransaction tx,VoucherBatchPrintSnapshot snapshot)
     {
         snapshot.Validate();
+        // Hadramout-style historical snapshots cannot depend on an external
+        // USB image path that may vanish when the batch is reprinted.
+        snapshot=snapshot with {Appearance=EnsureStoredCardArtwork(snapshot.Appearance)};
         var json=JsonSerializer.Serialize(snapshot);
         if(json.Length>16000)
             throw new ArgumentException("قالب طباعة الدفعة أكبر من الحد الآمن.");
