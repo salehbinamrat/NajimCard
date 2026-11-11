@@ -17,7 +17,7 @@ class CreatorLivePreviewDensity(unittest.TestCase):
         def view(name):
             return (VIEWS/name).read_text(encoding="utf-8")
         cls.layout=view("GeneratorView.ReferenceLayout.cs")
-        cls.creator=view("GeneratorView.cs")
+        cls.creator=view("GeneratorView.cs")+view("GeneratorView.PackageSettings.cs")
         cls.live=view("GeneratorView.LivePreview.cs")
         cls.card=view("GeneratorView.CardDesign.cs")
         cls.designer=view("GeneratorView.DesignerPanel.cs")

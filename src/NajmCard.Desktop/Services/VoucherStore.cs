@@ -171,7 +171,8 @@ public sealed partial class VoucherStore : IDisposable
             throw new ArgumentException("حساب مدير User Manager v6 مطلوب.", nameof(voucher));
     }
 
-    public void SaveBatch(IReadOnlyList<Voucher> vouchers)
+    public void SaveBatch(IReadOnlyList<Voucher> vouchers,
+        VoucherBatchPrintSnapshot? printSnapshot=null)
     {
         ArgumentNullException.ThrowIfNull(vouchers);
         if(vouchers.Count==0)return;
@@ -179,6 +180,16 @@ public sealed partial class VoucherStore : IDisposable
             throw new ArgumentOutOfRangeException(nameof(vouchers),
                 "لا يمكن حفظ أكثر من 10000 كرت في دفعة واحدة.");
         foreach(var voucher in vouchers)Validate(voucher);
+        if(printSnapshot is not null)
+        {
+            printSnapshot.Validate();
+            if(vouchers.Any(v=>v.Service!=printSnapshot.Service ||
+                v.BatchId!=printSnapshot.BatchId ||
+                v.Profile!=printSnapshot.Profile ||
+                v.Customer!=printSnapshot.Customer))
+                throw new ArgumentException(
+                    "قالب الطباعة لا يطابق خدمة أو دفعة أو باقة الكروت.");
+        }
         using var db=Open();
         using var tx=db.BeginTransaction();
         // One prepared INSERT and its parameter objects are reused across the
@@ -219,6 +230,10 @@ public sealed partial class VoucherStore : IDisposable
         WriteActivity(db,tx,ActivityBatchKey(first.Service,first.BatchId),
             "CARDS","إنشاء دفعة كروت","INFO",
             "خدمة "+first.Service+" | عدد الكروت "+vouchers.Count.ToString(CultureInfo.InvariantCulture));
+        // Credential rows and their print-template snapshot must commit as one
+        // durable SQLite transaction. Do not leave a printable but unstyled batch.
+        if(printSnapshot is not null)
+            WriteBatchPrintSnapshot(db,tx,printSnapshot);
         tx.Commit();
     }
 

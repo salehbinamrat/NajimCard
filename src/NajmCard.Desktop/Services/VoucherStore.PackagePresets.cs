@@ -16,6 +16,8 @@ public sealed partial class VoucherStore
     {
         ArgumentNullException.ThrowIfNull(preset);
         preset.Validate();
+        // Freeze template artwork locally before committing a package preset.
+        preset=preset with {Appearance=EnsureStoredCardArtwork(preset.Appearance)};
         var value=JsonSerializer.Serialize(preset);
         if(value.Length>12000)
             throw new ArgumentException("إعدادات الباقة أكبر من الحد الآمن.");

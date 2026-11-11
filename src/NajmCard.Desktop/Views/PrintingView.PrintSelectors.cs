@@ -11,6 +11,37 @@ namespace NajmCard.Desktop.Views;
 /// </summary>
 public partial class PrintingView
 {
+    private ComboBox? _printerSelector;
+
+    public VoucherOutputPreferences GetOutputPreferences() =>
+        new VoucherOutputPreferences(
+            _printerSelector?.SelectedItem?.ToString()??"الافتراضية",
+            _additionalExport.IsChecked==true,
+            _csvExport.IsChecked==true,
+            _excelExport.IsChecked==true).Validate();
+
+    public void ApplyOutputPreferences(VoucherOutputPreferences preferences)
+    {
+        preferences.Validate();
+        _additionalExport.IsChecked=preferences.AdditionalExport;
+        _csvExport.IsChecked=preferences.ExportCsv;
+        _excelExport.IsChecked=preferences.ExportExcel;
+        if(_printerSelector is { } printer)
+        {
+            // Preserve a printer saved on another PC, but do not silently
+            // switch to a different physical queue if it is unavailable.
+            if(!printer.Items.Contains(preferences.PrinterName))
+                printer.Items.Add(preferences.PrinterName);
+            printer.SelectedItem=preferences.PrinterName;
+        }
+    }
+
+    public void ResetPrintBatchSelection()
+    {
+        if(_batchSelector is {Items.Count:>0} selector)
+            selector.SelectedIndex=0;
+    }
+
     private (ComboBox BatchSelector,ComboBox PrinterSelector) CreatePrintSelectors(
         VoucherStore store,Func<IReadOnlyList<Voucher>>? selectedBatch)
     {
@@ -58,6 +89,7 @@ public partial class PrintingView
         {
             MinWidth=0,ToolTip="اختر طابعة مثبتة على Windows، أو اترك الافتراضية."
         };
+        _printerSelector=selectedPrinter;
         selectedPrinter.Items.Add("الافتراضية");
         selectedPrinter.SelectedIndex=0;
         bool loadingPrinters=false;
@@ -78,6 +110,15 @@ public partial class PrintingView
                 selectedPrinter.Items.Clear();
                 selectedPrinter.Items.Add("الافتراضية");
                 foreach(var name in printers)selectedPrinter.Items.Add(name);
+                if(selected is not null && !selectedPrinter.Items.Contains(selected))
+                {
+                    // Never substitute another printer for the saved one.
+                    // Keeping the unavailable name makes GetPrintQueue fail
+                    // closed at print time instead of printing elsewhere.
+                    selectedPrinter.Items.Add(selected);
+                    _status.Text="الطابعة المحفوظة «"+selected+
+                        "» غير مثبتة على Windows الحالي. اختر طابعة صحيحة قبل الطباعة.";
+                }
                 selectedPrinter.SelectedItem=selected is not null &&
                     selectedPrinter.Items.Contains(selected)?selected: selectedPrinter.Items[0];
             }

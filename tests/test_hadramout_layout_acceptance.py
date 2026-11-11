@@ -8,7 +8,7 @@ R=Path(__file__).resolve().parents[1]/"src/NajmCard.Desktop"
 class HadramoutLayoutAcceptance(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.g=(R/"Views/GeneratorView.cs").read_text(encoding="utf-8")
+        cls.g=(R/"Views/GeneratorView.cs").read_text(encoding="utf-8")+(R/"Views/GeneratorView.PackageSettings.cs").read_text(encoding="utf-8")
         cls.layout=(R/"Views/GeneratorView.ReferenceLayout.cs").read_text(encoding="utf-8")
         cls.creator=(R/"Views/VoucherWorkspaceView.cs").read_text(encoding="utf-8")
         cls.design=(R/"Views/GeneratorView.CardDesign.cs").read_text(encoding="utf-8")

@@ -1,5 +1,6 @@
 using System.Windows.Controls.Primitives;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -30,6 +31,8 @@ public partial class GeneratorView : UserControl
     public event Action? ServiceChanged;
     public Func<CardPrintOptions>? PrintOptionsProvider;
     public Action<CardPrintOptions>? ApplyPrintOptions;
+    public Func<VoucherOutputPreferences>? OutputPreferencesProvider;
+    public Action<VoucherOutputPreferences>? ApplyOutputPreferences;
     public string CurrentService => SelectedService;
     public string LastOperationMessage => _status.Text;
     // Embedded page hosts this same save action beside the workspace title.
@@ -464,7 +467,11 @@ public partial class GeneratorView : UserControl
         };
         _customer.SelectionChanged += (_,_) =>
         {
-            if(_restoringPreset)return;
+            if(_restoringPreset || _applyingProfileCatalog)return;
+            // User Manager owners are separate profiles for issuing purposes.
+            // Never leave a pending batch tied to another owner's credentials.
+            _batch=[];
+            BatchChanged?.Invoke();
             RestorePackagePreset();
         };
         SubscribeLiveCardPreview();
@@ -501,82 +508,6 @@ public partial class GeneratorView : UserControl
             QrSize=Number(_designQrSize.Text),
             TemplateImagePath=_templateImagePath
         }).Validate();
-    }
-    public bool SaveCurrentPackage()
-    {
-        try
-        {
-            if(_sending||_preparing||_restoringPreset)
-                throw new InvalidOperationException("لا يمكن حفظ إعدادات الباقة أثناء إرسال الكروت أو استعادة الإعدادات.");
-            var profile=_profile.SelectedItem?.ToString()??"";
-            RequireRouteSelection();
-            if(SelectedService=="hotspot" && _server.SelectedItem?.ToString()!="all")
-                throw new InvalidOperationException(
-                    "السيرفر المختار ظاهر للفحص، لكن إرسال كروت لسيرفر محدد غير متاح بعد. "+
-                    "اختر all حتى لا توزع الكروت على السيرفر الخطأ.");
-            int length=int.Parse(_length.Text,CultureInfo.InvariantCulture);
-            bool same=_samePassword.IsChecked==true;
-            var saved=new VoucherPackagePreset(_routerKey,SelectedService,profile,
-                SelectedService=="userman"?_customer.SelectedItem?.ToString()??"":"",
-                int.Parse(_count.Text,CultureInfo.InvariantCulture),_prefix.Text.Trim(),
-                length,_usernameCharacters.Text.Trim(),same,
-                same?length:int.Parse(_passwordLength.Text,CultureInfo.InvariantCulture),
-                _passwordCharacters.Text.Trim(),_lengthWithPrefix.IsChecked==true,
-                PrintOptionsProvider?.Invoke()??new CardPrintOptions(),ReadCurrentAppearance(),
-                _credentialMode.SelectedIndex==0).Validate();
-            _store.SavePackagePreset(saved);
-            ApplyCardAppearance(saved.Appearance);
-            _status.Text="حُفظت إعدادات الباقة "+profile+" حتى بعد إغلاق البرنامج.";
-            return true;
-        }
-        catch(Exception ex){_status.Text="تعذر حفظ إعدادات الباقة: "+ex.Message;return false;}
-    }
-    // Restore current package preferences without changing navigation or router data.
-    public void RestoreSavedPackageSettings() => RestorePackagePreset();
-    private void RestorePackagePreset()
-    {
-        if(_restoringPreset)return;
-        string profile=_profile.SelectedItem?.ToString()??"";
-        string owner=SelectedService=="userman"?_customer.SelectedItem?.ToString()??"":"";
-        if(profile.Length==0||(SelectedService=="userman"&&owner.Length==0))return;
-        try
-        {
-            var v=_store.LoadPackagePreset(_routerKey,SelectedService,profile,owner);
-            _restoringPreset=true;
-            try
-            {
-                _count.Text=(v?.Quantity??60).ToString(CultureInfo.InvariantCulture);
-                _prefix.Text=v?.Prefix??"";
-                _length.Text=(v?.UsernameLength??10).ToString(CultureInfo.InvariantCulture);
-                _usernameCharacters.Text=v?.UsernameCharacters??VoucherGenerator.LowercaseMixed;
-                _passwordCharacters.Text=v?.PasswordCharacters??VoucherGenerator.LowercaseMixed;
-                static int AlphabetIndex(string value)=>value switch
-                {
-                    VoucherGenerator.Digits=>0,
-                    VoucherGenerator.LowercaseLetters=>1,
-                    VoucherGenerator.LowercaseMixed=>2,
-                    VoucherGenerator.UppercaseLetters=>3,
-                    VoucherGenerator.Mixed=>4,
-                    _=>5
-                };
-                _usernameAlphabetType.SelectedIndex=AlphabetIndex(_usernameCharacters.Text);
-                _passwordAlphabetType.SelectedIndex=AlphabetIndex(_passwordCharacters.Text);
-                _passwordLength.Text=(v?.PasswordLength??6).ToString(CultureInfo.InvariantCulture);
-                _samePassword.IsChecked=v?.SamePassword??true;
-                _credentialsSame.IsChecked=v?.SamePassword??true;
-                _credentialsDifferent.IsChecked=!(v?.SamePassword??true);
-                // A never-saved package follows Hadramout's username-only default.
-                _credentialMode.SelectedIndex=v?.UsernameOnly==false?1:0;
-                _lengthWithPrefix.IsChecked=v?.LengthIncludesPrefix??true;
-                var d=v?.Appearance??new VoucherCardAppearance(NetworkTitle:"نجم نت");
-                LoadCardAppearanceFields(d);
-                PackagePrintSettingsRestored?.Invoke(v?.Print??new CardPrintOptions());
-                _status.Text=v is null?"لا يوجد قالب محفوظ لهذه الباقة.":
-                    "استُعيدت إعدادات التوليد والتصميم والطباعة المحفوظة لهذه الباقة.";
-            }
-            finally {_restoringPreset=false;UpdateLiveCardPreview();}
-        }
-        catch(Exception ex){_status.Text="تعذر استعادة الباقة؛ لم يتغير السجل: "+ex.Message;}
     }
     internal Task<Voucher[]> BuildDraftPreviewAsync()
     {
@@ -643,12 +574,56 @@ public partial class GeneratorView : UserControl
             _status.Text = persist
                 ? "جارٍ توليد الدفعة وحفظها محليا بشكل آمن..."
                 : "جارٍ إعداد عينة فعلية محلية دون حفظ أو إرسال...";
+            // Hadramout stores the print template with the issuing batch, so
+            // later changes to another package cannot alter older vouchers.
+            // Invalid print controls do not block the independent send-only
+            // path; those batches require explicit print settings before print.
+            CardPrintOptions? capturedPrint=null;
+            VoucherCardAppearance? capturedAppearance=null;
+            VoucherOutputPreferences? capturedOutput=null;
+            string printWarning="";
+            if(persist)
+            {
+                try
+                {
+                    capturedPrint=PrintOptionsProvider?.Invoke()??new CardPrintOptions();
+                    CardPrintLayoutPlanner.Calculate(capturedPrint,options.Count);
+                    capturedAppearance=ReadDraftPreviewAppearance();
+                    // Print artwork is optional for issuing. Reject a missing
+                    // external template from the snapshot but allow the
+                    // independently valid send-only RouterOS transaction.
+                    if(!string.IsNullOrWhiteSpace(capturedAppearance.TemplateImagePath))
+                    {
+                        var picture=new FileInfo(capturedAppearance.TemplateImagePath);
+                        if(!picture.Exists || picture.Length>15L*1024*1024 ||
+                           picture.Length<=0)
+                            throw new InvalidDataException(
+                                "صورة القالب غير متاحة أو حجمها غير صالح؛ "+
+                                "ستصدر الكروت دون اعتماد قالب طباعة مفقود.");
+                    }
+                    capturedOutput=(OutputPreferencesProvider?.Invoke()
+                        ??new VoucherOutputPreferences()).Validate();
+                }
+                catch(Exception ex) when(ex is ArgumentException or FormatException
+                    or OverflowException or InvalidOperationException or InvalidDataException
+                    or UnauthorizedAccessException)
+                {
+                    capturedPrint=null;
+                    printWarning=" | إعدادات الطباعة غير صالحة ولم تُحفظ مع الدفعة: "+
+                        ex.Message+"؛ راجعها قبل طباعة الكروت.";
+                }
+            }
             var candidates=await Task.Run(()=>
             {
                 var reserved=_store.ReservedNames(service);
                 var newCards=VoucherGenerator.Generate(options,reserved)
                     .Select(x=>x with {Service=service,Customer=customer}).ToArray();
-                if(persist)_store.SaveBatch(newCards);
+                VoucherBatchPrintSnapshot? snapshot=null;
+                if(persist && capturedPrint is not null && capturedAppearance is not null)
+                    snapshot=new VoucherBatchPrintSnapshot(
+                        service,newCards[0].BatchId,profile,customer,
+                        capturedPrint,capturedAppearance,capturedOutput);
+                if(persist)_store.SaveBatch(newCards,snapshot);
                 return newCards;
             });
             _batch=persist?candidates:[];
@@ -660,6 +635,7 @@ public partial class GeneratorView : UserControl
             _status.Text=persist
                 ? $"حُفظت {candidates.Length:N0} كرتا في قاعدة نجم كارد. لم تُرسل إلى الراوتر. "+ 
                     (candidates.Length>500?"الجدول يعرض أول 500 كرت لتسريع العرض.":"")
+                    +printWarning
                 : $"معاينة {candidates.Length:N0} كرتا؛ لم تُحفظ ولم تُرسل. "+
                     (candidates.Length>500?"الجدول يعرض أول 500 كرت.":"");
         }

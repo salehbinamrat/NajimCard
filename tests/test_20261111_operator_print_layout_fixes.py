@@ -42,7 +42,7 @@ class OperatorCorrections(unittest.TestCase):
         self.assertIn("DockPanel.SetDock(footer,Dock.Bottom)",workspace)
 
     def test_package_save_in_header_preserves_all_settings(self):
-        creator=read(V/"GeneratorView.cs")
+        creator=read(V/"GeneratorView.cs")+read(V/"GeneratorView.PackageSettings.cs")
         workspace=read(V/"VoucherWorkspaceView.cs")
         self.assertIn('PackageSaveButton=quickSaveButton',creator)
         self.assertIn('if(!embedded)routeHeader.Children.Add(quickSaveButton)',creator)
@@ -73,16 +73,17 @@ class OperatorCorrections(unittest.TestCase):
         self.assertNotIn("&& (!_customer.IsEnabled ||",loader)
 
     def test_diagnostics_are_visible_without_relaxing_router_checks(self):
-        creator=read(V/"GeneratorView.cs")
+        creator=read(V/"GeneratorView.cs")+read(V/"GeneratorView.PackageSettings.cs")
         workspace=read(V/"VoucherWorkspaceView.cs")
         store=read(ROOT/"Services"/"VoucherStore.DeliveryHistory.cs")
-        printer=read(V/"PrintingView.cs")
+        printer=read(V/"PrintingView.cs")+read(V/"PrintingView.BatchSnapshots.cs")
         self.assertIn("_store.FirstDeliveryError(service,current[0].BatchId)",creator)
         self.assertIn("public string? FirstDeliveryError(",store)
         self.assertIn("public string LastOperationMessage => _status.Text",printer)
         self.assertIn("status.Text=printer.LastOperationMessage",workspace)
         self.assertIn("confirmed",printer.lower())
-        self.assertIn('x.DeliveryStatus=="SENT"&&x.SentToRouter',printer)
+        self.assertIn('card.SentToRouter &&',printer)
+        self.assertIn('card.DeliveryStatus=="SENT"',printer)
         self.assertIn('if(saved)_status.Text=""',read(V/"GeneratorView.SaveToast.cs"))
 
     def test_readable_dropdowns_and_compact_search(self):

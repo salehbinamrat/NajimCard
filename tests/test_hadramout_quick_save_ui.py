@@ -7,7 +7,7 @@ VIEW=Path(__file__).resolve().parents[1]/"src"/"NajmCard.Desktop"/"Views"
 class HadramoutQuickSaveUi(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.g=(VIEW/"GeneratorView.cs").read_text(encoding="utf-8")
+        cls.g=(VIEW/"GeneratorView.cs").read_text(encoding="utf-8")+(VIEW/"GeneratorView.PackageSettings.cs").read_text(encoding="utf-8")
         cls.w=(VIEW/"VoucherWorkspaceView.cs").read_text(encoding="utf-8")
         cls.toast=(VIEW/"GeneratorView.SaveToast.cs").read_text(encoding="utf-8")
 
@@ -53,8 +53,9 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         self.assertIn("printer.CreateDraftPreviewPdfAsync(cards,appearance,options)",self.w)
 
     def test_confirmed_pdf_uses_worker_with_snapshot_and_sent_filter(self):
-        printer=(VIEW/"PrintingView.cs").read_text(encoding="utf-8")
-        self.assertIn('x.DeliveryStatus=="SENT"&&x.SentToRouter',printer)
+        printer=(VIEW/"PrintingView.cs").read_text(encoding="utf-8")+(VIEW/"PrintingView.BatchSnapshots.cs").read_text(encoding="utf-8")
+        self.assertIn('card.SentToRouter &&',printer)
+        self.assertIn('card.DeliveryStatus=="SENT"',printer)
         self.assertIn("await _renderPdfAsync(job.Cards,job.Style,job.Options,path)",printer)
         draft_worker=(VIEW/"PrintingView.DraftDelivery.cs").read_text(encoding="utf-8")
         self.assertIn("worker.SetApartmentState(ApartmentState.STA)",draft_worker)

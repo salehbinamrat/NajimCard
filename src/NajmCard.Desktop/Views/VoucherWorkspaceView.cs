@@ -22,10 +22,13 @@ public sealed class VoucherWorkspaceView : UserControl
             selectedAppearance:()=>creator.CurrentAppearance);
         creator.PrintOptionsProvider=printer.GetOptions;
         creator.ApplyPrintOptions=printer.ApplyOptions;
+        creator.OutputPreferencesProvider=printer.GetOutputPreferences;
+        creator.ApplyOutputPreferences=printer.ApplyOutputPreferences;
         creator.PackagePrintSettingsRestored+=printer.ApplyOptions;
         printer.LayoutSettingsChanged+=creator.RefreshPageCount;
         printer.LayoutSettingsChanged+=creator.RefreshInlineCardDimensions;
         creator.BatchChanged+=printer.Invalidate;
+        creator.BatchChanged+=printer.ResetPrintBatchSelection;
         creator.CardAppearanceChanged+=printer.Invalidate;
         creator.AttachPrintingSection(printer);
         creator.RefreshPageCount();

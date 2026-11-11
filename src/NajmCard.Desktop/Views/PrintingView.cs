@@ -83,19 +83,6 @@ public partial class PrintingView : UserControl
     public Task<bool> SavePdfToPathAsync(string path)=>_exportPdf(path);
     public void Invalidate()=>_invalidate();
 
-    public string? ChoosePdfDestination()
-    {
-        var dlg=new SaveFileDialog
-        {
-            Title="حفظ PDF للدفعة",
-            Filter="PDF (*.pdf)|*.pdf",
-            DefaultExt=".pdf",AddExtension=true,
-            FileName="نجم_كارد_"+DateTime.Now.ToString("yyyyMMdd_HHmm")+".pdf",
-            OverwritePrompt=true
-        };
-        return dlg.ShowDialog()==true?dlg.FileName:null;
-    }
-
     public async Task SavePdfAsync()
     {
         var path=ChoosePdfDestination();
@@ -132,24 +119,6 @@ public partial class PrintingView : UserControl
 
     internal static void OpenPreviewPdf(string path) =>
         Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
-
-    private static string NewPreviewPdfPath()
-    {
-        var directory=Path.Combine(Environment.GetFolderPath(
-            Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
-        Directory.CreateDirectory(directory);
-        foreach(var file in Directory.EnumerateFiles(directory,"Najm_*.pdf"))
-        {
-            try
-            {
-                if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
-                    File.Delete(file);
-            }
-            catch(IOException) { }
-            catch(UnauthorizedAccessException) { }
-        }
-        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
-    }
 
     public PrintingView(VoucherStore store,bool embedded=false,
         Func<IReadOnlyList<Voucher>>? selectedBatch=null,
@@ -346,13 +315,21 @@ public partial class PrintingView : UserControl
 
         FixedDocument? prepared=null;
         VoucherCardAppearance? designUsed=null;
+        Voucher[] preparedCards=[];
         int preparedCount=0;
         void Clear()
         {
-            prepared=null;designUsed=null;preparedCount=0;
+            prepared=null;designUsed=null;preparedCards=[];preparedCount=0;
             viewer.Document=null;printButton.IsEnabled=false;
         }
         _invalidate=()=>{Clear();if(selectedBatch is not null)batchSelector.SelectedIndex=0;};
+        batchSelector.SelectionChanged+=(_,_) =>
+        {
+            Clear();
+            RestoreArchivePrintTemplate(
+                (batchSelector.SelectedItem as ComboBoxItem)?.Tag as PrintableBatchSummary,
+                store,Apply,Options);
+        };
         _getOptions=Options;
         _applyOptions=Apply;
         foreach(var input in new[]{qty,width,height,rows,cols,gapX,gapY,margin})
@@ -529,39 +506,19 @@ public partial class PrintingView : UserControl
             RenderDocumentPdfOnStaAsync(
                 ()=>MakeDocument(cards,options,appearance,true),path);
 
-        (Voucher[] Cards,VoucherCardAppearance Style,CardPrintOptions Options)? ConfirmPrintJob()
-        {
-            var requested=(batchSelector.SelectedItem as ComboBoxItem)?.Tag is
-                PrintableBatchSummary previous
-                ?store.GetBatchVouchers(previous.Service,previous.BatchId)
-                :selectedBatch is null
-                    ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
-                    :selectedBatch();
-            var cards=requested.Where(x=>x.DeliveryStatus=="SENT"&&x.SentToRouter)
-                .ToArray();
-            if(cards.Length==0)
-            {
-                _status.Text="لا توجد كروت مؤكدة الإرسال من الدفعة المختارة؛ لا تُطبع حالات UNKNOWN/FAILED.";
-                return null;
-            }
-            if(cards.Select(x=>x.Username).Distinct(StringComparer.OrdinalIgnoreCase).Count()!=cards.Length)
-                throw new InvalidOperationException("تكرار أرقام الكروت في الدفعة يمنع الطباعة.");
-            var style=(selectedAppearance?.Invoke()??store.LoadCardAppearance()).Validate();
-            var opts=Options();
-            if(!PageUi.Confirm("هل تريد معاينة "+cards.Length+
-                " كرتا مؤكدا إرساله، "+(style.ShowPassword?"مع كلمات المرور؟":"دون كلمات المرور؟")))
-                return null;
-            return (cards,style,opts);
-        }
-
         bool Prepare()
         {
             Clear();
             try
             {
-                if(ConfirmPrintJob() is not { } job)return false;
+                if(ConfirmPrintJob(store,batchSelector,selectedBatch,
+                    selectedAppearance,Options,Math.Clamp(Int(qty.Text),1,10000))
+                    is not { } job)return false;
                 var (cards,style,opts)=job;
                 prepared=MakeDocument(cards,opts,style);
+                store.SaveBatchPrintSnapshot(SnapshotForPrint(
+                    cards,opts,style,GetOutputPreferences()));
+                preparedCards=cards.ToArray();
                 preparedCount=cards.Length;designUsed=style;
                 viewer.Document=prepared;
                 printButton.IsEnabled=true;
@@ -573,12 +530,39 @@ public partial class PrintingView : UserControl
             catch(Exception ex){_status.Text="تعذر إعداد معاينة الطباعة: "+ex.Message;return false;}
         }
 
+        bool VerifyPreparedBatch()
+        {
+            IReadOnlyList<Voucher> latest;
+            if((batchSelector.SelectedItem as ComboBoxItem)?.Tag
+                is PrintableBatchSummary archive)
+                latest=store.GetBatchVouchers(archive.Service,archive.BatchId);
+            else if(selectedBatch is not null)
+                latest=selectedBatch();
+            else
+            {
+                var summary=store.ListPrintableBatches(1).FirstOrDefault();
+                latest=summary is null?[]:store.GetBatchVouchers(
+                    summary.Service,summary.BatchId).Take(Math.Clamp(Int(qty.Text),1,10000)).ToArray();
+            }
+            return VerifyPreparedBatchSnapshot(prepared,preparedCards,latest,
+                designUsed,_selectedArchiveTemplate?.Appearance
+                ??selectedAppearance?.Invoke()??store.LoadCardAppearance());
+        }
+
         void Print()
         {
             if(prepared is null&&!Prepare())return;
+            if(!VerifyPreparedBatch())
+            {
+                Clear();
+                _status.Text="تغيرت الكروت أو حالتها منذ المعاينة؛ "+
+                    "أُلغيت الطباعة. حدّث المعاينة قبل المتابعة.";
+                return;
+            }
             if(!PageUi.Confirm("إرسال "+preparedCount+
                 " كرتا مؤكدا إرساله إلى الطابعة؛ هل مقاس الورق والاتجاه صحيحان؟"))return;
             LocalPrintServer? chosenServer=null;
+            bool submittedToSpooler=false;
             try
             {
                 var dlg=new PrintDialog();
@@ -597,19 +581,36 @@ public partial class PrintingView : UserControl
                     ?PageOrientation.Landscape:PageOrientation.Portrait;
                 dlg.PrintTicket=ticket;
                 if(dlg.ShowDialog()!=true)return;
+                if(!VerifyPreparedBatch())
+                {
+                    Clear();
+                    _status.Text="تغيرت بيانات الدفعة أثناء نافذة الطباعة؛ أُلغيت المهمة.";
+                    return;
+                }
+                submittedToSpooler=true;
                 dlg.PrintDocument(prepared!.DocumentPaginator,"NajmCard Confirmed Voucher Batch");
                 _status.Text="أُرسلت المهمة للطابعة؛ راجع محاذاة الورق على نسخة اختبار.";
             }
-            catch(Exception ex){_status.Text="تعذرت الطباعة: "+ex.Message;}
+            catch(Exception ex)
+            {
+                _status.Text=submittedToSpooler
+                    ?"حالة مهمة الطباعة غير مؤكدة بعد التسليم إلى Windows: "+
+                        ex.Message+" | راجع قائمة انتظار الطابعة والورق قبل إعادة الطباعة لمنع التكرار."
+                    :"تعذرت الطباعة قبل التسليم إلى Windows: "+ex.Message;
+            }
             finally{chosenServer?.Dispose();}
         }
         async Task<bool> Export(string path)
         {
             try
             {
-                if(ConfirmPrintJob() is not { } job)return false;
+                if(ConfirmPrintJob(store,batchSelector,selectedBatch,
+                selectedAppearance,Options,Math.Clamp(Int(qty.Text),1,10000))
+                is not { } job)return false;
                 _status.Text="جارٍ إخراج PDF للدفعة المؤكدة...";
                 await _renderPdfAsync(job.Cards,job.Style,job.Options,path);
+                store.SaveBatchPrintSnapshot(SnapshotForPrint(
+                    job.Cards,job.Options,job.Style,GetOutputPreferences()));
                 _status.Text="تم حفظ PDF للدفعة المؤكدة: "+path;
                 return true;
             }

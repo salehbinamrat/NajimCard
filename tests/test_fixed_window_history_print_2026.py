@@ -59,7 +59,7 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
         self.assertIn("selectedPrinter",printer)
         self.assertIn("GetPrintQueues",selectors)
         self.assertIn("batchSelector",selectors)
-        self.assertIn("selectedBatch()",printer)
+        self.assertIn("currentBatch()",read(V/"PrintingView.BatchSnapshots.cs"))
         self.assertIn("ExportAdditionalAsync(",host)
         self.assertIn("CheckBox",printer)
         self.assertIn("Excel",printer)
