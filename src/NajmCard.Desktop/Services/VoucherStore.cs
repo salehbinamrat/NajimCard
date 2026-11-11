@@ -392,8 +392,11 @@ public sealed partial class VoucherStore : IDisposable
     {
         string directory = Path.Combine(DirectoryPath, "Backups");
         Directory.CreateDirectory(directory);
+        // Never overwrite an earlier backup when the button is clicked twice
+        // in the same second. Keep the filename sortable and unique.
         string backup = Path.Combine(directory, "NajmCard-" +
-            DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".db");
+            DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture) +
+            "-" + Guid.NewGuid().ToString("N")[..8] + ".db");
         using var original = Open();
         using var snapshot = new SqliteConnection($"Data Source={backup};Pooling=False");
         snapshot.Open();

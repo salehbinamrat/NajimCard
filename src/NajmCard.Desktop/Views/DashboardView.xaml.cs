@@ -73,7 +73,11 @@ public partial class DashboardView : UserControl
     // display cadence. Never run overlapping requests or download UM user lists.
     private async Task RefreshLiveTelemetryAsync()
     {
-        if(!IsLoaded || _liveTelemetryRunning || _refreshing)return;
+        // Avoid RouterOS polling when the operator minimizes NajmCard.
+        // The 1-second telemetry display resumes automatically on restore;
+        // license monitoring continues independently in the main window.
+        if(!IsLoaded || Window.GetWindow(this)?.WindowState==WindowState.Minimized ||
+           _liveTelemetryRunning || _refreshing)return;
         _liveTelemetryRunning=true;
         // A 4-second cancellation previously disposed the shared RouterOS TCP
         // session while other views still held a gateway to it. Use the command

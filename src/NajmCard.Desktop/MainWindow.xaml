@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="نجم كارد | إدارة الشبكات وطباعة الكروت"
     Width="1200" Height="730" MinWidth="1200" MinHeight="730"
-    MaxWidth="1200" MaxHeight="730" ResizeMode="NoResize"
+    MaxWidth="1200" MaxHeight="730" ResizeMode="CanMinimize" ShowInTaskbar="True"
     WindowStartupLocation="CenterScreen" Background="{StaticResource CanvasBrush}" FlowDirection="RightToLeft">
     <Grid>
         <Grid x:Name="LoginLayer" Background="{StaticResource CanvasBrush}">

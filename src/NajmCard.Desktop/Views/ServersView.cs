@@ -51,5 +51,8 @@ public class ServersView : UserControl
             finally {busy=false;refresh.IsEnabled=true;}
         }
         refresh.Click+=async (_,_)=>await Load();
+        // A real inventory page should not appear empty until a manual refresh.
+        // The busy guard prevents a duplicate read if the operator clicks at load.
+        Loaded+=async (_,_)=>await Load();
     }
 }

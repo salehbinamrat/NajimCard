@@ -35,6 +35,7 @@ internal sealed class VoucherDeliveryHistoryWindow : Window
 
         var close = PageUi.Button("إغلاق", false);
         close.IsCancel = true;
+        close.Click += (_, _) => Close();
         close.HorizontalAlignment = HorizontalAlignment.Left;
         close.Margin = new Thickness(0, 8, 0, 0);
         DockPanel.SetDock(close, Dock.Bottom);
