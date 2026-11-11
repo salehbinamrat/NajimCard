@@ -1,13 +1,5 @@
-using System.Windows.Controls.Primitives;
-using System.Globalization;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Media;
-using Microsoft.Win32;
-using NajmCard.Core.Models;
 using NajmCard.Core.Services;
-using NajmCard.Desktop.Services;
 
 namespace NajmCard.Desktop.Views;
 
