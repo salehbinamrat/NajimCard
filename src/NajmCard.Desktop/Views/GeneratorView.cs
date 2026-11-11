@@ -146,6 +146,39 @@ public partial class GeneratorView : UserControl
     private IReadOnlyList<UserManagerV6Profile> _umProfiles = [];
     private IReadOnlyList<Voucher> _batch = [];
     private bool _sending;
+
+    // A saved batch is immutable. Changing the selected credential mode must
+    // never send or print the previous batch as though it used the new choice.
+    private void InvalidatePendingBatchForCredentialChange()
+    {
+        if (_restoringPreset || _preparing || _sending || _batch.Count == 0) return;
+        _batch = [];
+        _table.ItemsSource = null;
+        _sendButton.IsEnabled = false;
+        BatchChanged?.Invoke();
+        _status.Text = "تغير نوع بيانات الدخول. الدفعة القديمة لا تطابق الخيار الحالي؛ "
+            + "أنشئ دفعة جديدة قبل الإرسال أو الطباعة.";
+    }
+
+    private void SetCredentialControlsBusy(bool busy)
+    {
+        _credentialMode.IsEnabled = !busy;
+        _credentialsSame.IsEnabled = !busy;
+        _credentialsDifferent.IsEnabled = !busy;
+    }
+
+    private static string DescribeSavedCredentialMode(IReadOnlyList<Voucher> batch)
+    {
+        if (batch.Count == 0) return "";
+        if (batch.All(v => v.Password.Length == 0))
+            return "اسم مستخدم فقط (دون كلمة مرور)";
+        if (batch.All(v => string.Equals(v.Username, v.Password, StringComparison.Ordinal)))
+            return "اسم مستخدم وكلمة مرور متطابقين";
+        if (batch.All(v => v.Password.Length > 0 &&
+            !string.Equals(v.Username, v.Password, StringComparison.Ordinal)))
+            return "اسم مستخدم وكلمة مرور مختلفين";
+        return "";
+    }
     private string SelectedService => _service.SelectedIndex switch
     {
         1 => "userman",
@@ -345,15 +378,20 @@ public partial class GeneratorView : UserControl
             passwordModeRow.IsEnabled=!userOnly;
             // Keep password matching as a separate preference. Username-only
             // disables the controls, but must never turn into same-password.
-            _samePassword.IsChecked=_credentialsDifferent.IsChecked!=true;
-            bool hasSeparatePassword=!userOnly && _samePassword.IsChecked!=true;
+            _samePassword.IsChecked=!userOnly && _credentialsSame.IsChecked==true;
+            bool hasSeparatePassword=!userOnly && _credentialsDifferent.IsChecked==true;
             _passwordLength.IsEnabled=hasSeparatePassword;
             passwordKind.IsEnabled=passwordCharsCell.IsEnabled=hasSeparatePassword;
             _designShowPassword.IsChecked=!userOnly;
         }
-        _credentialMode.SelectionChanged+=(_,_)=>UpdatePasswordMode();
-        _credentialsSame.Checked+=(_,_)=>{_samePassword.IsChecked=true;UpdatePasswordMode();};
-        _credentialsDifferent.Checked+=(_,_)=>{_samePassword.IsChecked=false;UpdatePasswordMode();};
+        void CredentialChoiceChanged()
+        {
+            UpdatePasswordMode();
+            InvalidatePendingBatchForCredentialChange();
+        }
+        _credentialMode.SelectionChanged+=(_,_)=>CredentialChoiceChanged();
+        _credentialsSame.Checked+=(_,_)=>CredentialChoiceChanged();
+        _credentialsDifferent.Checked+=(_,_)=>CredentialChoiceChanged();
         UpdatePasswordMode();
         // Exact reference arrangement: wide graphic preview, narrow appearance
         // settings, compact header tools; editing is a separate window.
@@ -559,6 +597,7 @@ public partial class GeneratorView : UserControl
         if(_sending || _preparing)return;
         _preparing = true;
         _service.IsEnabled = false;
+        SetCredentialControlsBusy(true);
         _previewButton.IsEnabled = _generateButton.IsEnabled = _sendButton.IsEnabled = false;
         try
         {
@@ -654,6 +693,7 @@ public partial class GeneratorView : UserControl
         {
             _preparing=false;
             _service.IsEnabled=true;
+            SetCredentialControlsBusy(false);
             _previewButton.IsEnabled=_generateButton.IsEnabled=true;
         }
     }
@@ -671,13 +711,21 @@ public partial class GeneratorView : UserControl
         var description = service == "userman"
             ? "User Manager v6، حساب المدير " + customer
             : service == "pppoe" ? "PPPoE" : "Hotspot";
+        var savedMode = DescribeSavedCredentialMode(_batch);
+        if (savedMode.Length == 0)
+        {
+            _status.Text = "تحتوي الدفعة على أنماط مختلفة من بيانات الدخول؛ أوقف الإرسال.";
+            return;
+        }
         if (!PageUi.Confirm("سيتم إرسال " + _batch.Count + " كرتاً إلى خدمة " +
-            description + " على الراوتر. هل تريد المتابعة؟"))
+            description + " على الراوتر. نوع بيانات الدخول المحفوظة: " +
+            savedMode + ". هل تريد المتابعة؟"))
             return;
 
         _sending = true;
         _sendButton.IsEnabled = false;
         _service.IsEnabled = false;
+        SetCredentialControlsBusy(true);
         try
         {
             var current = _batch.ToArray();
@@ -731,6 +779,7 @@ public partial class GeneratorView : UserControl
             _sending = false;
             _sendButton.IsEnabled = _batch.Count > 0;
             _service.IsEnabled = true;
+            SetCredentialControlsBusy(false);
         }
     }
 }
