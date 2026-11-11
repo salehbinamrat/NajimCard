@@ -45,7 +45,7 @@ class CreatorLivePreviewDensity(unittest.TestCase):
     def test_card_preview_is_live_and_does_not_use_sample_literal(self):
         self.assertNotIn("1111111111",self.creator)
         self.assertIn("SubscribeLiveCardPreview();",self.creator)
-        self.assertIn("finally {_restoringPreset=false;UpdateLiveCardPreview();}",self.creator)
+        self.assertIn("finally {_restoringPreset=false;InvalidatePendingBatchForCredentialChange();UpdateLiveCardPreview();}",self.creator)
         self.assertIn("VoucherGenerator.PreviewSample(options)",self.live)
         self.assertIn("ReadGenerationOptions(forPreview:false)",self.creator)
         for field in ("_count","_prefix","_length","_passwordLength",
