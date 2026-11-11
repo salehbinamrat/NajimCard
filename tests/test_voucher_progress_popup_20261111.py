@@ -49,10 +49,13 @@ class VoucherProgressPopupContract(unittest.TestCase):
         self.assertIn("progress:new Progress<string>(ReportOperationProgress)",creator)
         self.assertIn('progress?.Report("التحقق من الأرقام',dispatch)
         self.assertIn('progress?.Report($"إرسال الكرت',dispatch)
-        self.assertIn('store.FinishSend(voucher, state, error);',dispatch)
+        self.assertIn('using var sendSession = store.OpenSendSession();',dispatch)
+        self.assertIn('sendSession.FinishSend(voucher, state, error);',dispatch)
         self.assertIn('progress?.Report($"تسجيل نتيجة الكرت',dispatch)
-        self.assertLess(dispatch.index("store.FinishSend(voucher, state, error);"),
+        self.assertLess(dispatch.index("sendSession.FinishSend(voucher, state, error);"),
                         dispatch.index('progress?.Report($"تسجيل نتيجة الكرت'))
+        self.assertIn("progressStride",dispatch)
+        self.assertIn("phaseSeconds",read(V/"VoucherWorkspaceView.cs"))
         self.assertNotIn("Task.Delay(",popup if (popup := read(V/"VoucherOperationProgressWindow.cs")) else "")
 
 if __name__=="__main__":
