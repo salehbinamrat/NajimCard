@@ -24,6 +24,48 @@ public sealed class VoucherIndexedQueriesTests : IDisposable
             Service:service,Customer:customer);
 
     [Fact]
+    public void Delivery_History_Recovers_Mixed_Outcomes_After_Reopening_Without_Reading_Passwords()
+    {
+        var sent = Card("00001", "batch");
+        var pending = Card("00002", "batch");
+        var failed = Card("00003", "batch");
+        var unknown = Card("00004", "batch");
+        var interrupted = Card("00005", "batch");
+        using (var store = new VoucherStore(_root))
+        {
+            store.SaveBatch([sent, pending, failed, unknown, interrupted,
+                Card("00001", "batch", "userman", "admin", minute: 1)]);
+            store.BeginSend(sent);
+            store.FinishSend(sent, "SENT");
+            store.BeginSend(failed);
+            store.FinishSend(failed, "FAILED");
+            store.BeginSend(unknown);
+            store.FinishSend(unknown, "UNKNOWN");
+            store.BeginSend(interrupted);
+        }
+
+        // The status view can still read records whose credential bytes are unavailable.
+        using (var db = new SqliteConnection(
+            $"Data Source={Path.Combine(_root, "najmcard.db")};Pooling=False"))
+        {
+            db.Open();
+            using var update = db.CreateCommand();
+            update.CommandText = "UPDATE vouchers SET password_protected='unreadable'";
+            update.ExecuteNonQuery();
+        }
+        using var reopened = new VoucherStore(_root);
+        var summaries = reopened.ListDeliveryBatches();
+        Assert.Equal(["userman", "hotspot"], summaries.Select(x => x.Service));
+        var batch = summaries[1];
+        Assert.Equal((5, 1, 1, 1, 2), (batch.Total, batch.Sent, batch.Pending, batch.Failed, batch.NeedsReview));
+        Assert.Equal([
+            new("00001", "SENT"), new("00002", "CREATED"), new("00003", "FAILED"),
+            new("00004", "REVIEW"), new("00005", "REVIEW")
+        ], reopened.ReadDeliveryEntries(batch.Service, batch.BatchId));
+        Assert.Single(reopened.ReadDeliveryEntries("userman", "batch"));
+    }
+
+    [Fact]
     public void Batch_Query_Returns_Only_Target_Service_And_Batch_Without_Relying_On_Global_Limit()
     {
         using var store=new VoucherStore(_root);
