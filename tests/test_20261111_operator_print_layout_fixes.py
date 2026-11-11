@@ -57,6 +57,19 @@ class OperatorCorrections(unittest.TestCase):
         self.assertIn("await PrepareBatchAsync(true,singleCard)",creator[start:end])
         self.assertIn('var saved=SaveCurrentPackage()',read(V/"GeneratorView.SaveToast.cs"))
 
+    def test_loaded_catalog_validation_survives_temporarily_disabled_wpf_parent(self):
+        loader=read(V/"GeneratorView.ProfileLoading.cs")
+        workspace=read(V/"VoucherWorkspaceView.cs")
+        self.assertIn("creator.IsEnabled=history.IsEnabled=false",workspace)
+        self.assertIn("private bool _loadedProfilesReady;",loader)
+        self.assertIn("private bool _loadedCustomersReady;",loader)
+        self.assertIn("_loadedProfilesReady=hasProfiles;",loader)
+        self.assertIn("_loadedCustomersReady=hasCustomers;",loader)
+        self.assertIn("if(!_loadedProfilesReady || _profile.SelectedIndex<0)",loader)
+        self.assertIn('SelectedService=="userman" && (!_loadedCustomersReady',loader)
+        self.assertNotIn("if(!_profile.IsEnabled ||",loader)
+        self.assertNotIn("&& (!_customer.IsEnabled ||",loader)
+
     def test_diagnostics_are_visible_without_relaxing_router_checks(self):
         creator=read(V/"GeneratorView.cs")
         workspace=read(V/"VoucherWorkspaceView.cs")
