@@ -103,6 +103,35 @@ public sealed class VoucherPackagePresetPersistenceTests : IDisposable
         Assert.Equal(1,other.PasswordScale);
     }
 
+    [Fact]
+    public void Printer_And_Additional_Exports_Save_Per_Profile_And_Stay_After_Restart()
+    {
+        using(var store=new VoucherStore(_root))
+        {
+            store.SavePackagePreset(Preset(profile:"100RY") with
+            {
+                Output=new VoucherOutputPreferences("HP LaserJet",true,true,true)
+            });
+            store.SavePackagePreset(Preset(profile:"200RY") with
+            {
+                Output=new VoucherOutputPreferences("الافتراضية",false,false,false)
+            });
+        }
+        using var opened=new VoucherStore(_root);
+        var a=opened.LoadPackagePreset("192.168.1.1:8728","hotspot","100RY")!;
+        var b=opened.LoadPackagePreset("192.168.1.1:8728","hotspot","200RY")!;
+        Assert.Equal("HP LaserJet",a.Output!.PrinterName);
+        Assert.True(a.Output.AdditionalExport);
+        Assert.True(a.Output.ExportCsv);
+        Assert.True(a.Output.ExportExcel);
+        Assert.Equal("الافتراضية",b.Output!.PrinterName);
+        Assert.False(b.Output.AdditionalExport);
+        Assert.ThrowsAny<ArgumentException>(()=>opened.SavePackagePreset(
+            a with {Output=new VoucherOutputPreferences("\\n")}));
+        Assert.Equal("HP LaserJet",opened.LoadPackagePreset(
+            "192.168.1.1:8728","hotspot","100RY")!.Output!.PrinterName);
+    }
+
     [Theory]
     [InlineData("unknown","30 Day")]
     [InlineData("hotspot","")]
