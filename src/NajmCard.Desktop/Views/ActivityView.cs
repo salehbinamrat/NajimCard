@@ -57,7 +57,11 @@ public sealed class ActivityView : UserControl
             try
             {
                 var key=(category.SelectedItem as Category)?.Key;
-                var result=await Task.Run(()=>store.ReadActivityPage(key,search.Text,current,250));
+                // Snapshot WPF controls on their dispatcher thread before background SQLite work.
+                var searchTerm=search.Text;
+                var requestedPage=current;
+                var result=await Task.Run(()=>
+                    store.ReadActivityPage(key,searchTerm,requestedPage,250));
                 current=result.Page;
                 grid.ItemsSource=result.Items;
                 int pages=Math.Max(1,(result.Total+result.PageSize-1)/result.PageSize);
