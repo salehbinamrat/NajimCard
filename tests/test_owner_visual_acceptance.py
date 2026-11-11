@@ -48,7 +48,7 @@ class OwnerVisualAcceptance(unittest.TestCase):
         self.assertEqual(3, len(tiers))
         for tier in tiers:
             columns = tier.findall("w:Grid.ColumnDefinitions/w:ColumnDefinition", ns)
-            self.assertEqual(["*", "8", "*", "8", "*"], [c.attrib["Width"] for c in columns])
+            self.assertEqual(["*", "8", "*"], [c.attrib["Width"] for c in columns])
         self.assertNotIn("StatusRing", raw)
         self.assertNotIn('Text="● نشطة"', raw)
         self.assertNotIn('Text="● منتهية"', raw)
