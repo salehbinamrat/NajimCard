@@ -343,7 +343,9 @@ public partial class GeneratorView : UserControl
         {
             bool userOnly=_credentialMode.SelectedIndex==0;
             passwordModeRow.IsEnabled=!userOnly;
-            _samePassword.IsChecked=userOnly || _credentialsDifferent.IsChecked!=true;
+            // Keep password matching as a separate preference. Username-only
+            // disables the controls, but must never turn into same-password.
+            _samePassword.IsChecked=_credentialsDifferent.IsChecked!=true;
             bool hasSeparatePassword=!userOnly && _samePassword.IsChecked!=true;
             _passwordLength.IsEnabled=hasSeparatePassword;
             passwordKind.IsEnabled=passwordCharsCell.IsEnabled=hasSeparatePassword;
