@@ -13,7 +13,7 @@ def source(name):
 
 class CreatorCreamBurgundyTests(unittest.TestCase):
     def test_single_package_save_is_upper_only(self):
-        generator=source("GeneratorView.cs")
+        generator=source("GeneratorView.cs")+source("GeneratorView.PackageSettings.cs")
         designer=source("GeneratorView.DesignerPanel.cs")
         self.assertIn('var quickSaveButton=PageUi.Button("حفظ إعدادات الباقة",false)',generator)
         self.assertIn("_store.SavePackagePreset(saved)",generator)
