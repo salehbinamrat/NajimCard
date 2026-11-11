@@ -67,8 +67,8 @@ public sealed class SavedRouterConnectionTests : IDisposable
     }
 
     [Theory]
-    [InlineData("[{\\"Host\\":\\"192.168.88.1\\",\\"Port\\":8728,\\"Username\\":\\"admin\\",\\"UseTls\\":false,\\"Mode\\":\\"local\\",\\"PasswordBlob\\":null}]")]
-    [InlineData("[{\\"Host\\":null,\\"Port\\":8728,\\"Username\\":\\"admin\\",\\"UseTls\\":false,\\"Mode\\":\\"local\\",\\"PasswordBlob\\":\\"\\"}]")]
+    [InlineData("""[{"Host":"192.168.88.1","Port":8728,"Username":"admin","UseTls":false,"Mode":"local","PasswordBlob":null}]""")]
+    [InlineData("""[{"Host":null,"Port":8728,"Username":"admin","UseTls":false,"Mode":"local","PasswordBlob":""}]""")]
     public void Malformed_Null_Fields_Fail_Closed_Without_Overwriting_History(string json)
     {
         var path=Path.Combine(folder,"profiles.json");
