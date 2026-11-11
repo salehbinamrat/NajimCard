@@ -83,19 +83,6 @@ public partial class PrintingView : UserControl
     public Task<bool> SavePdfToPathAsync(string path)=>_exportPdf(path);
     public void Invalidate()=>_invalidate();
 
-    public string? ChoosePdfDestination()
-    {
-        var dlg=new SaveFileDialog
-        {
-            Title="حفظ PDF للدفعة",
-            Filter="PDF (*.pdf)|*.pdf",
-            DefaultExt=".pdf",AddExtension=true,
-            FileName="نجم_كارد_"+DateTime.Now.ToString("yyyyMMdd_HHmm")+".pdf",
-            OverwritePrompt=true
-        };
-        return dlg.ShowDialog()==true?dlg.FileName:null;
-    }
-
     public async Task SavePdfAsync()
     {
         var path=ChoosePdfDestination();
