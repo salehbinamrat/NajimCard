@@ -64,11 +64,11 @@ class HadramoutPackagePrintParity(unittest.TestCase):
         self.assertIn("preparedCards=cards.ToArray()",printer)
         self.assertIn("preparedCards=[]",printer)
         self.assertEqual(2,printer.count("if(!VerifyPreparedBatch())"))
-        self.assertIn('store.GetBatchVouchers(archive.Service,archive.BatchId)',printer)
-        self.assertIn('confirmed.SequenceEqual(preparedCards)',snapshots)
+        self.assertIn('store.GetBatchVouchers(archive.Service,archive.BatchId)',snapshots)
+        self.assertIn('confirmed.SequenceEqual(expected)',snapshots)
         self.assertIn('card.DeliveryStatus=="SENT"',snapshots)
         self.assertIn('card.SentToRouter',snapshots)
-        self.assertIn('Equals(preparedAppearance,latestAppearance.Validate())',snapshots)
+        self.assertIn('Equals(originalStyle,currentStyle.Validate())',snapshots)
         self.assertLess(printer.index('if(!VerifyPreparedBatch())'),
                         printer.index('dlg.PrintDocument(prepared!'))
 
