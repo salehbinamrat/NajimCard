@@ -32,6 +32,8 @@ public partial class GeneratorView : UserControl
     public Action<CardPrintOptions>? ApplyPrintOptions;
     public string CurrentService => SelectedService;
     public string LastOperationMessage => _status.Text;
+    // Embedded page hosts this same save action beside the workspace title.
+    internal Button PackageSaveButton { get; private set; } = null!;
     public VoucherCardAppearance CurrentAppearance=>_currentAppearance with {ShowPassword=ShowPreviewPassword};
     public bool HasBatch => _batch.Count>0;
     public IReadOnlyList<Voucher> ConfirmedBatch()
@@ -174,6 +176,7 @@ public partial class GeneratorView : UserControl
         quickSaveButton.Background=(Brush)new BrushConverter().ConvertFrom("#F0C96E")!;
         quickSaveButton.ToolTip="حفظ خيارات التوليد والتصميم والطباعة لهذه الباقة في قاعدة نجم كارد المحلية.";
         WirePackageSaveNotification(quickSaveButton);
+        PackageSaveButton=quickSaveButton;
         servicePanel.Children.Add(routeHeader);
         var routeInputs=new UniformGrid{Columns=2,Margin=new Thickness(0,1,0,1)};
         var serverBox=PageUi.Column();
@@ -195,7 +198,7 @@ public partial class GeneratorView : UserControl
             FontWeight=FontWeights.ExtraBold,FontSize=12,
             TextAlignment=TextAlignment.Center
         };
-        routeHeader.Children.Add(quickSaveButton);
+        if(!embedded)routeHeader.Children.Add(quickSaveButton);
         servicePanel.Children.Add(routeInputs);
         servicePanel.Children.Add(_customerPanel);
         var catalogRow=new DockPanel{Margin=new Thickness(0,3,0,0)};
@@ -588,14 +591,20 @@ public partial class GeneratorView : UserControl
     public async Task<bool> CreateAndSendAsync(bool singleCard=false,
         Func<IReadOnlyList<Voucher>,Task>? saveBeforeSend=null)
     {
-        if(_sending||_preparing||!SaveCurrentPackage())return false;
+        // Preset storage is independent from issuing: an invalid print layout
+        // must not block the separately validated RouterOS card transaction.
+        if(_sending||_preparing)return false;
         _batch=[];BatchChanged?.Invoke();
         await PrepareBatchAsync(true,singleCard);
         if(_batch.Count==0)return false;
         // A failed archive write must stop before any RouterOS write.
         if(saveBeforeSend is not null)await saveBeforeSend(_batch.ToArray());
         await UploadAsync();
-        return _batch.Any(v=>v.SentToRouter&&v.DeliveryStatus=="SENT");
+        // A partially acknowledged batch is not a successful "send all"
+        // operation. Preserve its durable status and do not announce success
+        // or print an incomplete batch as if every voucher was delivered.
+        return _batch.Count>0 && _batch.All(v=>
+            v.SentToRouter && v.DeliveryStatus=="SENT");
     }
 
     private void SelectMatchingOwner()
@@ -700,8 +709,10 @@ public partial class GeneratorView : UserControl
                 _batch = _store.GetBatchVouchers(service, current[0].BatchId).ToArray();
                 BatchChanged?.Invoke();
                 _table.ItemsSource = _batch.Take(500).ToArray();
+                var reason=_store.FirstDeliveryError(service,current[0].BatchId);
                 _status.Text = "الاتصال أو رد الراوتر غير مؤكد. يُمنع إعادة إرسال كروت " +
-                    "UNKNOWN/SENDING أو طباعتها قبل التحقق من الراوتر.";
+                    "UNKNOWN/SENDING أو طباعتها قبل التحقق من الراوتر." +
+                    (string.IsNullOrWhiteSpace(reason)?"":" السبب: "+reason);
             }
             else
             {
@@ -709,9 +720,12 @@ public partial class GeneratorView : UserControl
                 _batch = persisted;
                 BatchChanged?.Invoke();
                 _table.ItemsSource = _batch.Take(500).ToArray();
+                var reason=result.Failed.Count>0?
+                    _store.FirstDeliveryError(service,current[0].BatchId):null;
                 _status.Text = "تم إرسال " + result.Succeeded +
                     " كرتاً، وفشل " + result.Failed.Count +
-                    ". جميع الحالات محفوظة محلياً.";
+                    ". جميع الحالات محفوظة محلياً." +
+                    (string.IsNullOrWhiteSpace(reason)?"":" السبب: "+reason);
             }
         }
         catch (Exception ex) { _status.Text = "فشل الإرسال: " + ex.Message; }

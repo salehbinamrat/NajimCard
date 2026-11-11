@@ -83,4 +83,26 @@ public sealed partial class VoucherStore
             result.Add(new VoucherDeliveryEntry(reader.GetString(0), reader.GetString(1)));
         return result;
     }
+    /// <summary>
+    /// Read the acknowledged RouterOS failure reason from durable SQLite state.
+    /// Never infer a successful send from this diagnostic message.
+    /// </summary>
+    public string? FirstDeliveryError(string service,string batchId)
+    {
+        if(service is not ("hotspot" or "userman" or "pppoe") ||
+            string.IsNullOrWhiteSpace(batchId))
+            throw new ArgumentException("معرف الدفعة أو الخدمة غير صالح.");
+        using var db=Open();
+        using var command=db.CreateCommand();
+        command.CommandText="""
+            SELECT last_error FROM vouchers
+            WHERE service=$service AND batch_id=$batch
+                  AND last_error IS NOT NULL AND last_error <> ''
+            ORDER BY created_at,username LIMIT 1
+            """;
+        command.Parameters.AddWithValue("$service",service);
+        command.Parameters.AddWithValue("$batch",batchId);
+        return command.ExecuteScalar() as string;
+    }
+
 }

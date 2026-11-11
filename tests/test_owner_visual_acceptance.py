@@ -46,14 +46,22 @@ class OwnerVisualAcceptance(unittest.TestCase):
         layout = tree.find("w:Grid", ns)
         tiers = layout.findall("w:Grid", ns)
         self.assertEqual(3, len(tiers))
-        for tier in tiers:
+        # The first two tiers retain three balanced data cards. Only the
+        # final tier shrinks to two after removing duplicated quick actions.
+        expected_columns = [
+            ["*", "8", "*", "8", "*"],
+            ["*", "8", "*", "8", "*"],
+            ["*", "8", "*"],
+        ]
+        for tier, expected in zip(tiers, expected_columns):
             columns = tier.findall("w:Grid.ColumnDefinitions/w:ColumnDefinition", ns)
-            self.assertEqual(["*", "8", "*", "8", "*"], [c.attrib["Width"] for c in columns])
+            self.assertEqual(expected, [c.attrib["Width"] for c in columns])
         self.assertNotIn("StatusRing", raw)
         self.assertNotIn('Text="● نشطة"', raw)
         self.assertNotIn('Text="● منتهية"', raw)
         self.assertNotIn('Text="● صالحة"', raw)
-        self.assertIn('<UniformGrid Columns="3">', raw)
+        self.assertIn('<UniformGrid Columns="3" Rows="1"', raw)
+        self.assertNotIn('Text="إجراءات سريعة"', raw)
         self.assertIn("عرض النشطة", raw)
         self.assertIn("عرض المنتهية", raw)
 

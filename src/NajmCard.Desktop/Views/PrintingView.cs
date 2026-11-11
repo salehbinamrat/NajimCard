@@ -77,6 +77,7 @@ public partial class PrintingView : UserControl
     public CardPrintOptions GetOptions()=>_getOptions();
     public void ApplyOptions(CardPrintOptions options)=>_applyOptions(options);
     public bool PreparePreview()=>_preparePreview();
+    public string LastOperationMessage => _status.Text;
     public void PrintBatch()=>_printBatch();
     public Task<bool> SavePdfToPathAsync(string path)=>_exportPdf(path);
     public void Invalidate()=>_invalidate();

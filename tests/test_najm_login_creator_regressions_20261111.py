@@ -52,7 +52,7 @@ class NajmLoginCreatorFixes(unittest.TestCase):
         self.assertIn('Background="{TemplateBinding Background}" BorderBrush="{StaticResource GoldBrush}"', theme)
         page_ui = source("Views/PageUi.cs")
         self.assertIn("TextBox SearchInput()", page_ui)
-        self.assertIn("Width=170,MinWidth=170,MaxWidth=170,Height=35", page_ui)
+        self.assertIn("Width=150,MinWidth=150,MaxWidth=150,Height=32", page_ui)
         for page in ("CardsView.cs", "ActivityView.cs", "ProfilesView.cs",
                      "ToolsView.cs", "NetworkMaintenanceView.cs",
                      "DashboardView.xaml.cs"):

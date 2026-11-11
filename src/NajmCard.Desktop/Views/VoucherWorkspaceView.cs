@@ -177,7 +177,7 @@ public sealed class VoucherWorkspaceView : UserControl
         };
         var status=new TextBlock
         {
-            Text="احفظ إعدادات كل باقة من أعلى قسم الباقة ومسار الإرسال. الطباعة وPDF للكروت المؤكد إرسالها فقط.",
+            Text="احفظ إعدادات الباقة والتصميم والطباعة من زر الحفظ بجانب عنوان الصفحة. طباعة الدفعات المؤكدة فقط.",
             Foreground=new SolidColorBrush(Color.FromRgb(255,224,169)),
             TextWrapping=TextWrapping.Wrap,FontSize=11,
             FontWeight=FontWeights.SemiBold,
@@ -221,12 +221,12 @@ public sealed class VoucherWorkspaceView : UserControl
             return button;
         }
         var actions=new[]{
-            MakeButton("إنشاء وإرسال واحد","#13653E","#FFF5E6"),
             MakeButton("إنشاء وإرسال وحفظ","#EAC477","#49142C"),
+            MakeButton("إنشاء وإرسال فقط","#13653E","#FFF5E6"),
             MakeButton("معاينة قبل الإنشاء","#1756AE","#FFFFFF"),
             MakeButton("ملف PDF","#641A81","#FFF5E6"),
             MakeButton("معاينة PDF","#0B7773","#FFFFFF"),
-            MakeButton("طباعة دفعة","#6532A6","#FFFFFF")
+            MakeButton("طباعة الدفعة","#6532A6","#FFFFFF")
         };
         async Task Execute(Func<Task> work)
         {
@@ -292,14 +292,6 @@ public sealed class VoucherWorkspaceView : UserControl
         }
         actions[0].Click+=async(_,_)=>await Execute(async()=>
         {
-            var sent=await creator.CreateAndSendAsync(singleCard:true);
-            status.Text=sent
-                ?"أُرسل كرت واحد وحُفظت حالته."
-                :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
-            if(sent)await ExportAdditionalAsync();
-        });
-        actions[1].Click+=async(_,_)=>await Execute(async()=>
-        {
             var picker=new OpenFolderDialog
             {
                 Title="اختر مكان حفظ الكروت قبل الإرسال",Multiselect=false
@@ -338,6 +330,14 @@ public sealed class VoucherWorkspaceView : UserControl
             {status.Text+=" | افتح الملف من مجلد الحفظ للمعاينة.";}
             await ExportAdditionalAsync();
         });
+        actions[1].Click+=async(_,_)=>await Execute(async()=>
+        {
+            var sent=await creator.CreateAndSendAsync();
+            status.Text=sent
+                ?"تم إنشاء الكروت وإرسالها وحفظ حالتها محليا."
+                :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
+            if(sent)await ExportAdditionalAsync();
+        });
         async Task PreviewDraftPdf()
         {
             var options=printer.GetOptions();
@@ -356,21 +356,47 @@ public sealed class VoucherWorkspaceView : UserControl
             }
         }
         actions[2].Click+=async(_,_)=>await Execute(PreviewDraftPdf);
-        actions[3].Click+=async(_,_)=>await Execute(printer.SavePdfAsync);
+        actions[3].Click+=async(_,_)=>await Execute(async()=>
+        {
+            await printer.SavePdfAsync();
+            status.Text=printer.LastOperationMessage;
+        });
         actions[4].Click+=async(_,_)=>await Execute(async()=>
         {
             if(creator.HasBatch || printer.HasSavedBatchSelection)await printer.PreviewPdfAsync();
             else await PreviewDraftPdf();
+            if(creator.HasBatch || printer.HasSavedBatchSelection)
+                status.Text=printer.LastOperationMessage;
         });
         actions[5].Click+=(_,_)=>_ = Execute(()=>
         {
-            printer.PrintBatch();return Task.CompletedTask;
+            printer.PrintBatch();
+            status.Text=printer.LastOperationMessage;
+            return Task.CompletedTask;
         });
         DockPanel.SetDock(footer,Dock.Bottom);
         root.Children.Add(footer);
-        var titleLabel=new TextBlock{Text="إنشاء وطباعة الكروت"};
+        var titleLabel=new TextBlock{Text="إنشاء وطباعة الكروت",
+            HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Center,
+            FlowDirection=FlowDirection.RightToLeft};
         titleLabel.SetResourceReference(StyleProperty,"WorkspaceTitleText");
-        var header=new Border{Child=titleLabel};
+        // One save action for the complete profile settings, print options,
+        // card appearance and generation parameters. It lives in the title row.
+        var pageSave=creator.PackageSaveButton;
+        pageSave.HorizontalAlignment=HorizontalAlignment.Left;
+        pageSave.VerticalAlignment=VerticalAlignment.Center;
+        pageSave.Margin=new Thickness(6,2,8,2);
+        pageSave.MinHeight=34;
+        pageSave.MinWidth=165;
+        pageSave.Padding=new Thickness(11,5,11,5);
+        var titleGrid=new Grid{FlowDirection=FlowDirection.LeftToRight,MinHeight=43};
+        titleGrid.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
+        titleGrid.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
+        Grid.SetColumn(pageSave,0);
+        Grid.SetColumn(titleLabel,1);
+        titleGrid.Children.Add(pageSave);
+        titleGrid.Children.Add(titleLabel);
+        var header=new Border{Child=titleGrid};
         header.SetResourceReference(StyleProperty,"WorkspaceTitleFrame");
         DockPanel.SetDock(header,Dock.Top);
         root.Children.Add(header);

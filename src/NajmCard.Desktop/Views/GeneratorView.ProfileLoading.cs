@@ -13,12 +13,17 @@ public partial class GeneratorView
     private readonly SemaphoreSlim _profileReadGate=new(1,1);
     private readonly TextBlock _catalogStatus=PageUi.Status();
     private bool _applyingProfileCatalog;
+    // Explicit catalog state must not be inferred from WPF IsEnabled:
+    // the parent creator is intentionally disabled during card operations,
+    // which makes every child IsEnabled=false even for loaded profiles.
+    private bool _loadedProfilesReady;
+    private bool _loadedCustomersReady;
 
     private void RequireRouteSelection()
     {
-        if(!_profile.IsEnabled || _profile.SelectedIndex<0)
+        if(!_loadedProfilesReady || _profile.SelectedIndex<0)
             throw new ArgumentException("اختر باقة محملة من الراوتر.");
-        if(SelectedService=="userman" && (!_customer.IsEnabled || _customer.SelectedIndex<0))
+        if(SelectedService=="userman" && (!_loadedCustomersReady || _customer.SelectedIndex<0))
             throw new ArgumentException("اختر حساب مدير User Manager.");
     }
 
@@ -26,6 +31,8 @@ public partial class GeneratorView
     {
         var requestVersion=++_profileRequestVersion;
         var service=SelectedService;
+        _loadedProfilesReady=false;
+        _loadedCustomersReady=false;
         var previousProfile=_profile.SelectedItem?.ToString();
         var previousServer=_server.SelectedItem?.ToString();
         var previousOwner=_customer.SelectedItem?.ToString();
@@ -102,6 +109,8 @@ public partial class GeneratorView
             {
                 hasProfiles=names.Length>0;
                 hasCustomers=customers.Length>0;
+                _loadedProfilesReady=hasProfiles;
+                _loadedCustomersReady=hasCustomers;
                 _umProfiles=umProfiles;
                 _server.ItemsSource=servers;
                 _server.SelectedItem=servers.Contains(previousServer) ? previousServer : "all";

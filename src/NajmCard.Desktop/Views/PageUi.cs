@@ -99,7 +99,7 @@ internal static class PageUi
     // Consistent compact search control across operator tables and lists.
     internal static TextBox SearchInput() => new()
     {
-        Width=170,MinWidth=170,MaxWidth=170,Height=35,MinHeight=35,MaxHeight=35,
+        Width=150,MinWidth=150,MaxWidth=150,Height=32,MinHeight=32,MaxHeight=32,FontSize=13,
         FlowDirection=FlowDirection.LeftToRight,
         Margin=new Thickness(3,2,3,2),
         ToolTip="ابحث داخل النتائج المعروضة"
