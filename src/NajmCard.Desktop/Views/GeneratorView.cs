@@ -535,6 +535,7 @@ public partial class GeneratorView : UserControl
         // must not block the separately validated RouterOS card transaction.
         if(_sending||_preparing)return false;
         _batch=[];BatchChanged?.Invoke();
+        ReportOperationProgress("التحقق من إعدادات الكروت...");
         await PrepareBatchAsync(true,singleCard);
         if(_batch.Count==0)return false;
         // A failed archive write must stop before any RouterOS write.
@@ -613,6 +614,8 @@ public partial class GeneratorView : UserControl
                         ex.Message+"؛ راجعها قبل طباعة الكروت.";
                 }
             }
+            ReportOperationProgress("توليد أرقام الكروت...");
+            var saveStage=new Progress<string>(ReportOperationProgress);
             var candidates=await Task.Run(()=>
             {
                 var reserved=_store.ReservedNames(service);
@@ -623,7 +626,11 @@ public partial class GeneratorView : UserControl
                     snapshot=new VoucherBatchPrintSnapshot(
                         service,newCards[0].BatchId,profile,customer,
                         capturedPrint,capturedAppearance,capturedOutput);
-                if(persist)_store.SaveBatch(newCards,snapshot);
+                if(persist)
+                {
+                    saveStage.Report("حفظ الكروت في قاعدة البيانات المحلية...");
+                    _store.SaveBatch(newCards,snapshot);
+                }
                 return newCards;
             });
             _batch=persist?candidates:[];
@@ -688,7 +695,8 @@ public partial class GeneratorView : UserControl
         try
         {
             var current = _batch.ToArray();
-            var result = await new VoucherBatchDispatcher(_gateway, _store).SendAsync(current);
+            var result = await new VoucherBatchDispatcher(_gateway, _store)
+                .SendAsync(current, progress:new Progress<string>(ReportOperationProgress));
             if (result.UncertainOutcome)
             {
                 _batch = await Task.Run(()=>_store.GetBatchVouchers(service, current[0].BatchId).ToArray());
