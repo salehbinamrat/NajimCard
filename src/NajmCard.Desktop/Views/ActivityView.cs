@@ -50,28 +50,45 @@ public sealed class ActivityView : UserControl
             PageUi.Surface(root,"#9B709A"));
         int current=0;
         bool busy=false;
+        bool reloadPending=false;
         async Task LoadAsync()
         {
-            if(busy)return;
+            // A filter/page change during SQLite I/O must never be dropped.
+            // Coalesce repeated requests into one final read on the UI thread,
+            // instead of launching overlapping database queries or displaying
+            // results that no longer match the visible filter.
+            if(busy){reloadPending=true;return;}
             busy=true;refresh.IsEnabled=false;
             try
             {
-                var key=(category.SelectedItem as Category)?.Key;
-                // Snapshot WPF controls on their dispatcher thread before background SQLite work.
-                var searchTerm=search.Text;
-                var requestedPage=current;
-                var result=await Task.Run(()=>
-                    store.ReadActivityPage(key,searchTerm,requestedPage,250));
-                current=result.Page;
-                grid.ItemsSource=result.Items;
-                int pages=Math.Max(1,(result.Total+result.PageSize-1)/result.PageSize);
-                pageLabel.Text="صفحة "+(current+1)+" من "+pages+" | "+result.Total+" عملية";
-                previous.IsEnabled=current>0;next.IsEnabled=current+1<pages;
-                status.Text="قراءة محلية مؤكدة دون أي طلب RouterOS.";
-            }
-            catch(Exception ex)
-            {
-                grid.ItemsSource=null;status.Text="تعذرت قراءة السجل: "+ex.Message;
+                do
+                {
+                    reloadPending=false;
+                    var key=(category.SelectedItem as Category)?.Key;
+                    var searchTerm=search.Text;
+                    var requestedPage=current;
+                    try
+                    {
+                        // Snapshot WPF values before entering the worker thread.
+                        var result=await Task.Run(()=>
+                            store.ReadActivityPage(key,searchTerm,requestedPage,250));
+                        if(reloadPending)continue;
+                        current=result.Page;
+                        grid.ItemsSource=result.Items;
+                        int pages=Math.Max(1,(result.Total+result.PageSize-1)/result.PageSize);
+                        pageLabel.Text="صفحة "+(current+1)+" من "+pages+
+                            " | "+result.Total+" عملية";
+                        previous.IsEnabled=current>0;next.IsEnabled=current+1<pages;
+                        status.Text="قراءة محلية مؤكدة دون أي طلب RouterOS.";
+                    }
+                    catch(Exception ex)
+                    {
+                        if(reloadPending)continue;
+                        grid.ItemsSource=null;
+                        previous.IsEnabled=next.IsEnabled=false;
+                        status.Text="تعذرت قراءة السجل: "+ex.Message;
+                    }
+                }while(reloadPending);
             }
             finally{busy=false;refresh.IsEnabled=true;}
         }
