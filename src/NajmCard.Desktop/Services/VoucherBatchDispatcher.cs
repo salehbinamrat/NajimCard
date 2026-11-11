@@ -86,12 +86,24 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
 
         var failed = new List<string>();
         int succeeded = 0;
+        int processed = 0;
+        // For thousands of vouchers, avoid flooding the WPF dispatcher with two
+        // notifications per card. Still report the first, last, ~80 checkpoints,
+        // and every non-success outcome, without hiding the actual results.
+        int progressStride = Math.Max(1, batch.Count / 80);
+        // One open WAL connection per batch; every card still has TWO separate
+        // durable FULL commits (lease before network, result after receipt).
+        using var sendSession = store.OpenSendSession();
         foreach (var voucher in batch)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            progress?.Report($"إرسال الكرت {succeeded+failed.Count+1} من {batch.Count} إلى الراوتر...");
+            int number = processed + 1;
+            bool reportCard = batch.Count <= 24 || number == 1 ||
+                number == batch.Count || number % progressStride == 0;
+            if (reportCard)
+                progress?.Report($"إرسال الكرت {number} من {batch.Count} إلى الراوتر...");
             // COMMIT to WAL+FULL synchronously BEFORE sending the first byte.
-            store.BeginSend(voucher);
+            sendSession.BeginSend(voucher);
             string state;
             string error = "";
             if (service == "userman")
@@ -147,9 +159,10 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
 
             // If the DB write fails, the SENDING lease is retained. Stop and
             // investigate; never assume a potentially created card is absent.
-            store.FinishSend(voucher, state, error);
-            progress?.Report($"تسجيل نتيجة الكرت {succeeded+failed.Count+1} من {batch.Count}: "+
-                (state=="SENT"?"تم الإرسال":state=="FAILED"?"رفضه الراوتر":"النتيجة غير مؤكدة"));
+            sendSession.FinishSend(voucher, state, error);
+            if (reportCard || state != "SENT")
+                progress?.Report($"تسجيل نتيجة الكرت {number} من {batch.Count}: "+
+                    (state=="SENT"?"تم الإرسال":state=="FAILED"?"رفضه الراوتر":"النتيجة غير مؤكدة"));
             switch (state)
             {
                 case "SENT":
@@ -161,6 +174,7 @@ public sealed class VoucherBatchDispatcher(RouterGateway gateway, VoucherStore s
                 default:
                     return new BatchDeliveryResult(succeeded, failed, true);
             }
+            processed++;
         }
         return new BatchDeliveryResult(succeeded, failed, false);
     }
