@@ -530,24 +530,28 @@ public partial class PrintingView : UserControl
             catch(Exception ex){_status.Text="تعذر إعداد معاينة الطباعة: "+ex.Message;return false;}
         }
 
-        bool VerifyPreparedBatch()
+        IReadOnlyList<Voucher> ReadCurrentPrintSelection()
         {
-            IReadOnlyList<Voucher> latest;
             if((batchSelector.SelectedItem as ComboBoxItem)?.Tag
                 is PrintableBatchSummary archive)
-                latest=store.GetBatchVouchers(archive.Service,archive.BatchId);
-            else if(selectedBatch is not null)
-                latest=selectedBatch();
-            else
-            {
-                var summary=store.ListPrintableBatches(1).FirstOrDefault();
-                latest=summary is null?[]:store.GetBatchVouchers(
-                    summary.Service,summary.BatchId).Take(Math.Clamp(Int(qty.Text),1,10000)).ToArray();
-            }
-            return VerifyPreparedBatchSnapshot(prepared,preparedCards,latest,
-                designUsed,_selectedArchiveTemplate?.Appearance
-                ??selectedAppearance?.Invoke()??store.LoadCardAppearance());
+                return store.GetBatchVouchers(archive.Service,archive.BatchId);
+            if(selectedBatch is not null)return selectedBatch();
+            var summary=store.ListPrintableBatches(1).FirstOrDefault();
+            return summary is null?[]:store.GetBatchVouchers(
+                summary.Service,summary.BatchId)
+                    .Take(Math.Clamp(Int(qty.Text),1,10000)).ToArray();
         }
+
+        bool SameVerifiedBatch(Voucher[] expected,VoucherCardAppearance style,
+            CardPrintOptions options) =>
+            Equals(options,Options()) &&
+            VerifyVoucherBatchSnapshot(expected,ReadCurrentPrintSelection(),style,
+                _selectedArchiveTemplate?.Appearance
+                    ??selectedAppearance?.Invoke()??store.LoadCardAppearance());
+
+        bool VerifyPreparedBatch() =>
+            prepared is not null && designUsed is not null &&
+            SameVerifiedBatch(preparedCards,designUsed,Options());
 
         void Print()
         {
@@ -608,9 +612,14 @@ public partial class PrintingView : UserControl
                 selectedAppearance,Options,Math.Clamp(Int(qty.Text),1,10000))
                 is not { } job)return false;
                 _status.Text="جارٍ إخراج PDF للدفعة المؤكدة...";
-                await _renderPdfAsync(job.Cards,job.Style,job.Options,path);
-                store.SaveBatchPrintSnapshot(SnapshotForPrint(
-                    job.Cards,job.Options,job.Style,GetOutputPreferences()));
+                // Render into a private .pdf first; do not publish an issued
+                // credential document if the batch changes while it renders.
+                var output=GetOutputPreferences();
+                await StageAndPublishVerifiedPdfAsync(
+                    stage=>_renderPdfAsync(job.Cards,job.Style,job.Options,stage),
+                    ()=>SameVerifiedBatch(job.Cards,job.Style,job.Options),
+                    ()=>store.SaveBatchPrintSnapshot(SnapshotForPrint(
+                        job.Cards,job.Options,job.Style,output)),path);
                 _status.Text="تم حفظ PDF للدفعة المؤكدة: "+path;
                 return true;
             }
