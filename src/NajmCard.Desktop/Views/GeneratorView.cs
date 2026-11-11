@@ -607,7 +607,7 @@ public partial class GeneratorView : UserControl
                 }
             }
             ReportOperationProgress("توليد أرقام الكروت...");
-            var saveStage=new Progress<string>(ReportOperationProgress);
+            IProgress<string> saveStage=new Progress<string>(ReportOperationProgress);
             var candidates=await Task.Run(()=>
             {
                 var reserved=_store.ReservedNames(service);
