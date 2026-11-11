@@ -30,6 +30,8 @@ public partial class GeneratorView : UserControl
     public event Action? ServiceChanged;
     public Func<CardPrintOptions>? PrintOptionsProvider;
     public Action<CardPrintOptions>? ApplyPrintOptions;
+    public Func<VoucherOutputPreferences>? OutputPreferencesProvider;
+    public Action<VoucherOutputPreferences>? ApplyOutputPreferences;
     public string CurrentService => SelectedService;
     public string LastOperationMessage => _status.Text;
     // Embedded page hosts this same save action beside the workspace title.
@@ -523,7 +525,8 @@ public partial class GeneratorView : UserControl
                 same?length:int.Parse(_passwordLength.Text,CultureInfo.InvariantCulture),
                 _passwordCharacters.Text.Trim(),_lengthWithPrefix.IsChecked==true,
                 PrintOptionsProvider?.Invoke()??new CardPrintOptions(),ReadCurrentAppearance(),
-                _credentialMode.SelectedIndex==0).Validate();
+                _credentialMode.SelectedIndex==0,
+                OutputPreferencesProvider?.Invoke()??new VoucherOutputPreferences()).Validate();
             _store.SavePackagePreset(saved);
             ApplyCardAppearance(saved.Appearance);
             _status.Text="حُفظت إعدادات الباقة "+profile+" حتى بعد إغلاق البرنامج.";
@@ -571,6 +574,7 @@ public partial class GeneratorView : UserControl
                 var d=v?.Appearance??new VoucherCardAppearance(NetworkTitle:"نجم نت");
                 LoadCardAppearanceFields(d);
                 PackagePrintSettingsRestored?.Invoke(v?.Print??new CardPrintOptions());
+                ApplyOutputPreferences?.Invoke(v?.Output??new VoucherOutputPreferences());
                 _status.Text=v is null?"لا يوجد قالب محفوظ لهذه الباقة.":
                     "استُعيدت إعدادات التوليد والتصميم والطباعة المحفوظة لهذه الباقة.";
             }
@@ -643,12 +647,43 @@ public partial class GeneratorView : UserControl
             _status.Text = persist
                 ? "جارٍ توليد الدفعة وحفظها محليا بشكل آمن..."
                 : "جارٍ إعداد عينة فعلية محلية دون حفظ أو إرسال...";
+            // Hadramout stores the print template with the issuing batch, so
+            // later changes to another package cannot alter older vouchers.
+            // Invalid print controls do not block the independent send-only
+            // path; those batches require explicit print settings before print.
+            CardPrintOptions? capturedPrint=null;
+            VoucherCardAppearance? capturedAppearance=null;
+            VoucherOutputPreferences? capturedOutput=null;
+            string printWarning="";
+            if(persist)
+            {
+                try
+                {
+                    capturedPrint=PrintOptionsProvider?.Invoke()??new CardPrintOptions();
+                    CardPrintLayoutPlanner.Calculate(capturedPrint,options.Count);
+                    capturedAppearance=ReadDraftPreviewAppearance();
+                    capturedOutput=(OutputPreferencesProvider?.Invoke()
+                        ??new VoucherOutputPreferences()).Validate();
+                }
+                catch(Exception ex) when(ex is ArgumentException or FormatException
+                    or OverflowException or InvalidOperationException)
+                {
+                    capturedPrint=null;
+                    printWarning=" | إعدادات الطباعة غير صالحة ولم تُحفظ مع الدفعة: "+
+                        ex.Message+"؛ راجعها قبل طباعة الكروت.";
+                }
+            }
             var candidates=await Task.Run(()=>
             {
                 var reserved=_store.ReservedNames(service);
                 var newCards=VoucherGenerator.Generate(options,reserved)
                     .Select(x=>x with {Service=service,Customer=customer}).ToArray();
-                if(persist)_store.SaveBatch(newCards);
+                VoucherBatchPrintSnapshot? snapshot=null;
+                if(persist && capturedPrint is not null && capturedAppearance is not null)
+                    snapshot=new VoucherBatchPrintSnapshot(
+                        service,newCards[0].BatchId,profile,customer,
+                        capturedPrint,capturedAppearance,capturedOutput);
+                if(persist)_store.SaveBatch(newCards,snapshot);
                 return newCards;
             });
             _batch=persist?candidates:[];
@@ -660,6 +695,7 @@ public partial class GeneratorView : UserControl
             _status.Text=persist
                 ? $"حُفظت {candidates.Length:N0} كرتا في قاعدة نجم كارد. لم تُرسل إلى الراوتر. "+ 
                     (candidates.Length>500?"الجدول يعرض أول 500 كرت لتسريع العرض.":"")
+                    +printWarning
                 : $"معاينة {candidates.Length:N0} كرتا؛ لم تُحفظ ولم تُرسل. "+
                     (candidates.Length>500?"الجدول يعرض أول 500 كرت.":"");
         }
