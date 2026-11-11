@@ -52,7 +52,7 @@ public class CardsView : UserControl
         _deleteExpiredButton.Click += async (_, _) => await DeleteExpiredAsync();
         buttons.Children.Add(_deleteExpiredButton);
         stack.Children.Add(buttons);
-        var search=PageUi.Input();search.Width=225;
+        var search=PageUi.SearchInput();
         var profiles=new ComboBox{MinWidth=180};
         profiles.Items.Add("كل الباقات");profiles.SelectedIndex=0;
         var online=new CheckBox{Content="المتصلون الآن",Margin=new Thickness(10,12,6,0)};
@@ -134,7 +134,7 @@ public class CardsView : UserControl
             "تُقرأ حالات مدير المستخدمين عند الطلب فقط. المنتهي يعني استنفاد Transfer Limit موجب؛ انتهاء الوقت وحده لا يكفي."));
         var loadUm = PageUi.Button("قراءة وتصنيف حسابات User Manager v6", false);
         umSection.Children.Add(loadUm);
-        var umSearch=PageUi.Input();umSearch.Width=225;
+        var umSearch=PageUi.SearchInput();
         var umProfiles=new ComboBox{MinWidth=180};
         umProfiles.Items.Add("كل الباقات");umProfiles.SelectedIndex=0;
         var umFilter=new WrapPanel();

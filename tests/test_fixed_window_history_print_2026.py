@@ -28,7 +28,7 @@ class FixedScreenPrintAcceptance(unittest.TestCase):
         self.assertIsNotNone(window.find(".//w:DataGrid[@"+XNS+"Name='HistoryConnectionsGrid']",NS))
         saved=window.find(".//w:DataGrid[@"+XNS+"Name='HistoryConnectionsGrid']",NS)
         columns=saved.findall("./w:DataGrid.Columns/w:DataGridTextColumn",NS)
-        self.assertEqual([c.attrib["Width"] for c in columns],["82","72","120","210"])
+        self.assertEqual([c.attrib["Width"] for c in columns],["82","72","120","*"])
         self.assertEqual(saved.attrib["EnableColumnVirtualization"],"False")
         code=read(DESKTOP/"MainWindow.xaml.cs")
         self.assertIn("HistoryGrid_SelectionChanged(",code)

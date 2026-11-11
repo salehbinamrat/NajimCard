@@ -315,7 +315,8 @@ public partial class DashboardView : UserControl
                 " · البحث محلي دون الاتصال بالراوتر",
             Margin=new Thickness(0,0,0,7),TextWrapping=TextWrapping.Wrap
         });
-        var filter=new TextBox{Margin=new Thickness(0,0,0,7)};
+        var filter=PageUi.SearchInput();
+        filter.Margin=new Thickness(0,0,0,7);
         header.Children.Add(filter);
         DockPanel.SetDock(header,Dock.Top);
         content.Children.Add(header);

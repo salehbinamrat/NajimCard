@@ -60,21 +60,33 @@
                                 <RadioButton x:Name="RemoteModeInput" GroupName="RouterMode" Content="VPN عن بعد" Checked="ConnectionMode_Checked"/>
                             </StackPanel>
                             <TextBlock x:Name="ConnectionModeHint" Text="محلي: اتصال مباشر على شبكة الراوتر." Foreground="#A8C4DF" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,13"/>
-                            <Label Content="محفوظات الاتصالات"/>
-                            <DockPanel>
-                                <Button DockPanel.Dock="Left" Content="حذف" Style="{StaticResource OutlineButton}" Margin="7,0,0,0" Click="DeleteSavedConnection_Click" MinWidth="65"/>
-                                <Button DockPanel.Dock="Left" Content="جديد" Style="{StaticResource OutlineButton}" Margin="7,0,0,0" Click="NewConnection_Click" MinWidth="65"/>
-                                <ComboBox x:Name="SavedConnectionsInput" DisplayMemberPath="DisplayName" SelectionChanged="SavedConnections_SelectionChanged" MinWidth="160"/>
-                            </DockPanel>
-                            <!-- Collapsible saved-router history: no password is ever displayed in this table. -->
-                            <Expander x:Name="SavedHistoryExpander" Header="عرض سجل محفوظات الاتصال" Margin="0,6,0,0" Foreground="#FFF1E1"
-                                      FontWeight="Bold" FontSize="12">
+                            <!-- Saved connections and maintenance controls share one compact expandable surface. -->
+                            <Expander x:Name="SavedHistoryExpander" Margin="0,2,0,2"
+                                      Foreground="#FFF1E1" FontWeight="Bold" FontSize="12">
+                                <Expander.Header>
+                                    <TextBlock Text="عرض سجل محفوظات الاتصال" Width="330" TextAlignment="Center"
+                                               Foreground="#FFE3A2" FontWeight="Bold" FontSize="13"/>
+                                </Expander.Header>
+                                <Border Background="#45253A" BorderBrush="#B48C56"
+                                        BorderThickness="1" CornerRadius="9" Padding="7" Margin="0,4,0,5">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,0,0,6">
+                                            <Button DockPanel.Dock="Left" Content="حذف" Style="{StaticResource OutlineButton}"
+                                                    Margin="4,0,0,0" Padding="7,3" MinWidth="46"
+                                                    ToolTip="حذف الاتصال المحدد فقط" Click="DeleteSavedConnection_Click"/>
+                                            <Button DockPanel.Dock="Left" Content="جديد" Style="{StaticResource OutlineButton}"
+                                                    Margin="4,0,0,0" Padding="7,3" MinWidth="46"
+                                                    ToolTip="إفراغ حقول الاتصال لإدخال راوتر آخر" Click="NewConnection_Click"/>
+                                            <ComboBox x:Name="SavedConnectionsInput" DisplayMemberPath="DisplayName"
+                                                      SelectionChanged="SavedConnections_SelectionChanged"
+                                                      MinHeight="32" ToolTip="اختر اتصالا من المحفوظات"/>
+                                        </DockPanel>
                                 <DataGrid x:Name="HistoryConnectionsGrid" AutoGenerateColumns="False" EnableColumnVirtualization="False" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                           SelectionChanged="HistoryGrid_SelectionChanged"
                                           IsReadOnly="True" HeadersVisibility="Column"
                                           CanUserAddRows="False" CanUserResizeRows="False"
                                           SelectionMode="Single" SelectionUnit="FullRow"
-                                          MaxHeight="134" RowHeight="30" ColumnHeaderHeight="30"
+                                          MaxHeight="116" RowHeight="30" ColumnHeaderHeight="30"
                                           Background="#FFF3DF" Foreground="#48192A"
                                           RowBackground="#FFF3DF" AlternatingRowBackground="#F4E2D5"
                                           BorderBrush="#75203E" BorderThickness="1">
@@ -107,36 +119,88 @@
                                         <DataGridTextColumn Header="الاتصال" Binding="{Binding ModeLabel}" Width="82" ElementStyle="{StaticResource HistoryText}"/>
                                         <DataGridTextColumn Header="المنفذ" Binding="{Binding Port}" Width="72" ElementStyle="{StaticResource HistoryText}"/>
                                         <DataGridTextColumn Header="اسم الدخول" Binding="{Binding Username}" Width="120" ElementStyle="{StaticResource HistoryText}"/>
-                                        <DataGridTextColumn Header="عنوان الراوتر" Binding="{Binding Host}" Width="210" ElementStyle="{StaticResource HistoryText}"/>
+                                        <DataGridTextColumn Header="عنوان الراوتر" Binding="{Binding Host}" Width="*" ElementStyle="{StaticResource HistoryText}"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
+                                    </StackPanel>
+                                </Border>
                             </Expander>
-                            <Grid Margin="0,9,0,0">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="122"/></Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="0,0,9,0">
+                            <!-- Account fields align with the host address; connection options sit under API. -->
+                            <Grid Margin="0,7,0,9">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="133"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,9,0">
                                     <Label Content="عنوان الراوتر / IP"/>
                                     <TextBox x:Name="HostInput" Text="192.168.88.1" FlowDirection="LeftToRight"/>
                                 </StackPanel>
-                                <StackPanel Grid.Column="1">
+                                <StackPanel Grid.Row="0" Grid.Column="1">
                                     <Label Content="منفذ API"/>
                                     <TextBox x:Name="PortInput" Text="8728" FlowDirection="LeftToRight"/>
                                 </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,3,9,0">
+                                    <Label Content="اسم المستخدم"/>
+                                    <TextBox x:Name="UserInput" Text="admin" FlowDirection="LeftToRight"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,3,9,0">
+                                    <Label Content="كلمة المرور"/>
+                                    <Grid>
+                                        <PasswordBox x:Name="PasswordInput" FlowDirection="LeftToRight"
+                                                     MinHeight="36" Padding="8,6,44,6"/>
+                                        <TextBox x:Name="VisiblePasswordInput" FlowDirection="LeftToRight"
+                                                 Visibility="Collapsed" MinHeight="36"
+                                                 Padding="8,6,44,6" Background="#270D1D" Foreground="#FFF5E8"/>
+                                        <ToggleButton x:Name="ShowPasswordInput" Width="35" Height="30"
+                                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                      Margin="0,0,4,0" ToolTip="إظهار أو إخفاء كلمة المرور"
+                                                      Checked="RevealPassword_Changed" Unchecked="RevealPassword_Changed">
+                                            <ToggleButton.Template>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border x:Name="EyeBorder" Background="#45253A"
+                                                            BorderBrush="#B48C56" BorderThickness="1"
+                                                            CornerRadius="6">
+                                                        <Viewbox Width="22" Height="16">
+                                                            <Grid Width="24" Height="18">
+                                                                <Path Data="M 1,9 Q 12,-2 23,9 Q 12,20 1,9"
+                                                                      Stroke="#FFE3A2" StrokeThickness="1.8" Fill="Transparent"/>
+                                                                <Ellipse Width="6" Height="6" Fill="#FFE3A2"
+                                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            </Grid>
+                                                        </Viewbox>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsChecked" Value="True">
+                                                            <Setter TargetName="EyeBorder" Property="Background" Value="#775169"/>
+                                                            <Setter TargetName="EyeBorder" Property="BorderBrush" Value="#FFE3A2"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </ToggleButton.Template>
+                                        </ToggleButton>
+                                    </Grid>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Grid.Row="1" Grid.RowSpan="2"
+                                            Margin="0,7,0,0" VerticalAlignment="Top">
+                                    <TextBlock Text="خيارات الاتصال" Foreground="#FFE3A2"
+                                               FontSize="12" FontWeight="SemiBold" Margin="0,1,0,5"/>
+                                    <CheckBox x:Name="TlsInput" Content="API-SSL" Margin="0,2,0,5"/>
+                                    <CheckBox x:Name="SaveConnectionInput" Margin="0,2,0,5"
+                                              Checked="SaveConnection_Changed" Unchecked="SaveConnection_Changed">
+                                        <TextBlock Text="حفظ بيانات الراوتر" Foreground="#FFF5E8"
+                                                   TextWrapping="Wrap" FontSize="12"/>
+                                    </CheckBox>
+                                    <CheckBox x:Name="SavePasswordInput" IsEnabled="False" Margin="0,2,0,3">
+                                        <TextBlock Text="حفظ كلمة المرور" Foreground="#FFF5E8"
+                                                   TextWrapping="Wrap" FontSize="12"/>
+                                    </CheckBox>
+                                </StackPanel>
                             </Grid>
-                            <Label Content="اسم المستخدم"/>
-                            <TextBox x:Name="UserInput" Text="admin" FlowDirection="LeftToRight"/>
-                            <Label Content="كلمة المرور"/>
-                            <Grid>
-                                <PasswordBox x:Name="PasswordInput" FlowDirection="LeftToRight"/>
-                                <TextBox x:Name="VisiblePasswordInput" FlowDirection="LeftToRight" Visibility="Collapsed"/>
-                            </Grid>
-                            <WrapPanel Margin="0,10,0,4">
-                                <CheckBox x:Name="ShowPasswordInput" Content="إظهار كلمة المرور" Checked="RevealPassword_Changed" Unchecked="RevealPassword_Changed" Margin="0,0,10,0"/>
-                                <CheckBox x:Name="TlsInput" Content="API-SSL مع التحقق من الشهادة" Margin="0,0,10,0"/>
-                            </WrapPanel>
-                            <WrapPanel Margin="0,0,0,13">
-                                <CheckBox x:Name="SaveConnectionInput" Content="حفظ بيانات الراوتر (IP واسم المستخدم وكلمة المرور محمية)" Checked="SaveConnection_Changed" Unchecked="SaveConnection_Changed" Margin="0,0,10,0"/>
-                                <CheckBox x:Name="SavePasswordInput" Content="حفظ كلمة المرور محمية لـ Windows" IsEnabled="False" Margin="0,0,10,0"/>
-                            </WrapPanel>
                             <Border Background="#35233B" CornerRadius="12"
                                     BorderBrush="#C49A66" BorderThickness="1"
                                     Padding="13,11" Margin="0,6,0,12">

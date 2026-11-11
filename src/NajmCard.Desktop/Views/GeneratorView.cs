@@ -31,6 +31,7 @@ public partial class GeneratorView : UserControl
     public Func<CardPrintOptions>? PrintOptionsProvider;
     public Action<CardPrintOptions>? ApplyPrintOptions;
     public string CurrentService => SelectedService;
+    public string LastOperationMessage => _status.Text;
     public VoucherCardAppearance CurrentAppearance=>_currentAppearance with {ShowPassword=ShowPreviewPassword};
     public bool HasBatch => _batch.Count>0;
     public IReadOnlyList<Voucher> ConfirmedBatch()
@@ -154,7 +155,7 @@ public partial class GeneratorView : UserControl
         _service.Items.Add("Hotspot");
         _service.Items.Add("User Manager v6");
         _service.Items.Add("PPPoE");
-        _service.SelectedIndex = 0;
+        _service.SelectedIndex = 1; // User Manager v6 is the initial service; users can switch freely.
         var form = PageUi.Column();
         var servicePanel=PageUi.Column();
         // Keep Hadramout's direct per-package save action visible beside
@@ -329,7 +330,7 @@ public partial class GeneratorView : UserControl
         form.Children.Add(formatSurface);
         _customerPanel.Children.Add(PageUi.Label("مدير المستخدمين (السيرفر 6)"));
         _customerPanel.Children.Add(_customer);
-        _customerPanel.Visibility = Visibility.Collapsed;
+        _customerPanel.Visibility = SelectedService=="userman"?Visibility.Visible:Visibility.Collapsed;
         _server.ItemsSource=new[]{"all"};
         _server.SelectedIndex=0;
         void UpdatePasswordMode()

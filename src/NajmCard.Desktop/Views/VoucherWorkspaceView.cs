@@ -46,9 +46,39 @@ public sealed class VoucherWorkspaceView : UserControl
         // WITHOUT changing the dark sidebar or the application's theme.
         var cream=(Brush)new BrushConverter().ConvertFrom("#FFFAF0")!;
         var maroon=(Brush)new BrushConverter().ConvertFrom("#471A30")!;
+        // Cream input dropdowns need cream rows and maroon text in every
+        // state; the shared burgundy popup style must not obscure the list.
+        var optionStyle=new Style(typeof(ComboBoxItem));
+        optionStyle.Setters.Add(new Setter(Control.BackgroundProperty,cream));
+        optionStyle.Setters.Add(new Setter(Control.ForegroundProperty,maroon));
+        optionStyle.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(8,4,8,4)));
+        var optionSurface=new FrameworkElementFactory(typeof(Border));
+        optionSurface.SetBinding(Border.BackgroundProperty,new System.Windows.Data.Binding("Background")
+        {
+            RelativeSource=new System.Windows.Data.RelativeSource(
+                System.Windows.Data.RelativeSourceMode.TemplatedParent)
+        });
+        var optionPresenter=new FrameworkElementFactory(typeof(ContentPresenter));
+        optionPresenter.SetValue(FrameworkElement.VerticalAlignmentProperty,VerticalAlignment.Center);
+        optionSurface.AppendChild(optionPresenter);
+        var optionControlTemplate=new ControlTemplate(typeof(ComboBoxItem))
+        {
+            VisualTree=optionSurface
+        };
+        optionStyle.Setters.Add(new Setter(Control.TemplateProperty,optionControlTemplate));
+        var hovered=new Trigger{Property=ComboBoxItem.IsHighlightedProperty,Value=true};
+        hovered.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#F0D8CE")!));
+        optionStyle.Triggers.Add(hovered);
+        var selected=new Trigger{Property=ComboBoxItem.IsSelectedProperty,Value=true};
+        selected.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#EAC67F")!));
+        optionStyle.Triggers.Add(selected);
+        dropdown.Setters.Add(new Setter(ItemsControl.ItemContainerStyleProperty,optionStyle));
+        dropdown.Setters.Add(new Setter(ComboBox.MaxDropDownHeightProperty,240d));
         var optionTemplate=new DataTemplate();
         var optionBacking=new FrameworkElementFactory(typeof(Border));
-        optionBacking.SetValue(Border.BackgroundProperty,cream);
+        optionBacking.SetValue(Border.BackgroundProperty,Brushes.Transparent);
         optionBacking.SetValue(Border.PaddingProperty,new Thickness(3,1,3,1));
         var optionText=new FrameworkElementFactory(typeof(TextBlock));
         optionText.SetBinding(TextBlock.TextProperty,
@@ -100,15 +130,22 @@ public sealed class VoucherWorkspaceView : UserControl
             foreach(var (name,btn) in tabButtons)
             {
                 bool selected=name==creator.CurrentService;
-                var palette=name switch
+                // Only the active service uses the strong gold highlight.
+                // A permanent gold Hotspot tab previously made it look active
+                // even when User Manager was the selected default.
+                var background=selected?"#EAC77C":name switch
                 {
-                    "hotspot"=>("#EAC77C","#591632"),
-                    "userman"=>("#914064","#FFF1DC"),
-                    _=>("#583B68","#FFF1DC")
+                    "hotspot"=>"#5A2840",
+                    "userman"=>"#723851",
+                    _=>"#583B68"
                 };
-                btn.Background=(Brush)new BrushConverter().ConvertFrom(palette.Item1)!;
-                btn.Foreground=(Brush)new BrushConverter().ConvertFrom(palette.Item2)!;
-                btn.Opacity=selected?1.0:0.85;
+                btn.Background=(Brush)new BrushConverter().ConvertFrom(background)!;
+                btn.Foreground=(Brush)new BrushConverter().ConvertFrom(
+                    selected?"#49142C":"#FFF1DC")!;
+                btn.BorderBrush=(Brush)new BrushConverter().ConvertFrom(
+                    selected?"#F8E1AB":"#76465D")!;
+                btn.BorderThickness=new Thickness(selected?2:1);
+                btn.Opacity=selected?1.0:0.88;
                 var label=(TextBlock)btn.Content;
                 label.Foreground=btn.Foreground;
                 label.FontSize=selected?15:14;
@@ -258,7 +295,7 @@ public sealed class VoucherWorkspaceView : UserControl
             var sent=await creator.CreateAndSendAsync(singleCard:true);
             status.Text=sent
                 ?"أُرسل كرت واحد وحُفظت حالته."
-                :"لم يتأكد إرسال الكرت. راجع حالة الدفعة قبل إعادة المحاولة.";
+                :"لم يتأكد إرسال الكرت: "+creator.LastOperationMessage+" | راجع سجل الدفعات قبل إعادة المحاولة.";
             if(sent)await ExportAdditionalAsync();
         });
         actions[1].Click+=async(_,_)=>await Execute(async()=>
@@ -284,8 +321,8 @@ public sealed class VoucherWorkspaceView : UserControl
             if(!sent)
             {
                 status.Text=archivedCount>0
-                    ?"حُفظت الدفعة ولم يتأكد إرسالها. راجع «سجل الدفعات». مجلد الحفظ: "+folder
-                    :"تعذر إنشاء الدفعة. راجع إعدادات الباقة.";
+                    ?"حُفظت الدفعة ولم يتأكد إرسالها: "+creator.LastOperationMessage+" | سجل الدفعات: "+folder
+                    :"تعذر إنشاء الدفعة: "+creator.LastOperationMessage;
                 return;
             }
             var confirmed=creator.ConfirmedBatch().ToArray();

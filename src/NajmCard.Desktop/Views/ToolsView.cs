@@ -68,7 +68,7 @@ public class ToolsView : UserControl
         neighborActions.Children.Add(copyNeighbor);
         neighborPanel.Children.Add(neighborActions);
         neighborPanel.Children.Add(PageUi.Label("بحث بالاسم أو IP أو MAC أو الواجهة"));
-        var neighborSearch=PageUi.Input();
+        var neighborSearch=PageUi.SearchInput();
         neighborPanel.Children.Add(neighborSearch);
         var detailedNeighbors=PageUi.Table(
             ("الجهاز","Identity"),("IPv4 / العنوان","PreferredAddress"),
@@ -539,7 +539,8 @@ public class ToolsView : UserControl
             try
             {
                 var current=workspace;
-                int count=await Task.Run(()=>current.ExportZip(dialog.FileName));
+                var exportFileName=dialog.FileName;
+                int count=await Task.Run(()=>current.ExportZip(exportFileName));
                 status.Text="اكتمل تصدير "+count+" ملفاً إلى "+dialog.FileName+
                     ". ملف ZIP محلي فقط؛ لم يرفع شيء إلى MikroTik.";
             }
