@@ -96,6 +96,14 @@ internal static class PageUi
     internal static TextBlock Status() => new() { TextWrapping = TextWrapping.Wrap,
         Foreground = Muted, Margin = new Thickness(0, 3, 0, 3), FontSize = 12, FontWeight=FontWeights.SemiBold };
     internal static TextBox Input(string value = "") => new() { Text = value, FlowDirection = FlowDirection.LeftToRight };
+    // Consistent compact search control across operator tables and lists.
+    internal static TextBox SearchInput() => new()
+    {
+        Width=170,MinWidth=170,MaxWidth=170,Height=35,MinHeight=35,MaxHeight=35,
+        FlowDirection=FlowDirection.LeftToRight,
+        Margin=new Thickness(3,2,3,2),
+        ToolTip="ابحث داخل النتائج المعروضة"
+    };
     // Bounded numeric presets, with the original TextBox kept as the single
     // source of truth for saved package settings and form validation.
     internal static ComboBox CompactNumberChoice(TextBox value,params string[] choices)
