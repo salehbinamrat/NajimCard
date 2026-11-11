@@ -315,11 +315,12 @@ public partial class PrintingView : UserControl
 
         FixedDocument? prepared=null;
         VoucherCardAppearance? designUsed=null;
+        CardPrintOptions? optionsUsed=null;
         Voucher[] preparedCards=[];
         int preparedCount=0;
         void Clear()
         {
-            prepared=null;designUsed=null;preparedCards=[];preparedCount=0;
+            prepared=null;designUsed=null;optionsUsed=null;preparedCards=[];preparedCount=0;
             viewer.Document=null;printButton.IsEnabled=false;
         }
         _invalidate=()=>{Clear();if(selectedBatch is not null)batchSelector.SelectedIndex=0;};
@@ -519,7 +520,7 @@ public partial class PrintingView : UserControl
                 store.SaveBatchPrintSnapshot(SnapshotForPrint(
                     cards,opts,style,GetOutputPreferences()));
                 preparedCards=cards.ToArray();
-                preparedCount=cards.Length;designUsed=style;
+                preparedCount=cards.Length;designUsed=style;optionsUsed=opts;
                 viewer.Document=prepared;
                 printButton.IsEnabled=true;
                 _status.Text="جاهزة: "+cards.Length+" كرت، "+
@@ -539,8 +540,8 @@ public partial class PrintingView : UserControl
                     ??selectedAppearance?.Invoke()??store.LoadCardAppearance());
 
         bool VerifyPreparedBatch() =>
-            prepared is not null && designUsed is not null &&
-            SameVerifiedBatch(preparedCards,designUsed,Options());
+            prepared is not null && designUsed is not null && optionsUsed is not null &&
+            SameVerifiedBatch(preparedCards,designUsed,optionsUsed);
 
         void Print()
         {
