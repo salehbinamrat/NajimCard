@@ -41,9 +41,12 @@ public static class VoucherGenerator
             throw new ArgumentException("البادئة تشغل رقم الكرت كاملا؛ لا يمكن إنشاء عدة كروت مختلفة.");
         var passwordLength=options.PasswordLength==0 && options.PasswordCharacters is null
             ? options.Length : options.PasswordLength;
-        var passwordChars=options.PasswordCharacters is null ? chars
-            : Alphabet(options.PasswordCharacters,"أحرف كلمة المرور",minimum:1);
-        if(!options.PasswordEqualsUsername &&
+        // Hadramout's code_only mode carries an empty password, not the
+        // username as a synthetic hidden password. These are three distinct
+        // modes: username-only, same password, and a separate password.
+        var passwordChars=options.UsernameOnly || options.PasswordCharacters is null
+            ? chars : Alphabet(options.PasswordCharacters,"أحرف كلمة المرور",minimum:1);
+        if(!options.UsernameOnly && !options.PasswordEqualsUsername &&
             passwordLength is < 1 or > 64)
             throw new ArgumentException("طول كلمة المرور يجب أن يكون من 1 إلى 64.");
         if(BigInteger.Pow(chars.Length,suffixLength)<options.Count)
@@ -61,8 +64,9 @@ public static class VoucherGenerator
     {
         var p=Prepare(options);
         var username=p.Prefix+NextToken(p.Characters,p.SuffixLength);
-        var password=options.PasswordEqualsUsername ? username
-            : DifferentPassword(p.PasswordCharacters,p.PasswordLength,username);
+        var password=options.UsernameOnly ? "" :
+            options.PasswordEqualsUsername ? username :
+            DifferentPassword(p.PasswordCharacters,p.PasswordLength,username);
         return (username,password);
     }
 
@@ -88,8 +92,9 @@ public static class VoucherGenerator
         {
             string username=p.Prefix+NextToken(p.Characters,p.SuffixLength);
             if(!used.Add(username))continue;
-            string password=options.PasswordEqualsUsername ? username
-                : DifferentPassword(p.PasswordCharacters,p.PasswordLength,username);
+            string password=options.UsernameOnly ? "" :
+                options.PasswordEqualsUsername ? username :
+                DifferentPassword(p.PasswordCharacters,p.PasswordLength,username);
             results.Add(new Voucher(username,password,options.Profile,batch,DateTimeOffset.UtcNow));
         }
         if(results.Count!=options.Count)
