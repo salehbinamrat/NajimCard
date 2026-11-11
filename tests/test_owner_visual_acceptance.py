@@ -60,7 +60,8 @@ class OwnerVisualAcceptance(unittest.TestCase):
         self.assertNotIn('Text="● نشطة"', raw)
         self.assertNotIn('Text="● منتهية"', raw)
         self.assertNotIn('Text="● صالحة"', raw)
-        self.assertIn('<UniformGrid Columns="3">', raw)
+        self.assertIn('<UniformGrid Columns="3" Rows="1"', raw)
+        self.assertNotIn('Text="إجراءات سريعة"', raw)
         self.assertIn("عرض النشطة", raw)
         self.assertIn("عرض المنتهية", raw)
 
