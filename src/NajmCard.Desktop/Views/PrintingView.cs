@@ -133,24 +133,6 @@ public partial class PrintingView : UserControl
     internal static void OpenPreviewPdf(string path) =>
         Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
 
-    private static string NewPreviewPdfPath()
-    {
-        var directory=Path.Combine(Environment.GetFolderPath(
-            Environment.SpecialFolder.LocalApplicationData),"NajmCard","Preview");
-        Directory.CreateDirectory(directory);
-        foreach(var file in Directory.EnumerateFiles(directory,"Najm_*.pdf"))
-        {
-            try
-            {
-                if(File.GetLastWriteTimeUtc(file)<DateTime.UtcNow.AddDays(-2))
-                    File.Delete(file);
-            }
-            catch(IOException) { }
-            catch(UnauthorizedAccessException) { }
-        }
-        return Path.Combine(directory,"Najm_"+Guid.NewGuid().ToString("N")+".pdf");
-    }
-
     public PrintingView(VoucherStore store,bool embedded=false,
         Func<IReadOnlyList<Voucher>>? selectedBatch=null,
         Func<VoucherCardAppearance>? selectedAppearance=null)
