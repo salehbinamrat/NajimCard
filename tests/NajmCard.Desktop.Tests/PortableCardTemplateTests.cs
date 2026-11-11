@@ -59,16 +59,17 @@ public sealed class PortableCardTemplateTests
             // global design persistence and survive the imported file's loss.
             using(var store=new VoucherStore(Path.Combine(directory,"data")))
                 store.SaveCardAppearance(repaired);
-            var global=new VoucherStore(Path.Combine(directory,"data")).LoadCardAppearance();
-            Assert.NotEqual(repaired.TemplateImagePath,global.TemplateImagePath);
-            Assert.Equal(bytes,File.ReadAllBytes(global.TemplateImagePath));
+            using var reopened=new VoucherStore(Path.Combine(directory,"data"));
+            var savedAppearance=reopened.LoadCardAppearance();
+            Assert.NotEqual(repaired.TemplateImagePath,savedAppearance.TemplateImagePath);
+            Assert.Equal(bytes,File.ReadAllBytes(savedAppearance.TemplateImagePath));
             File.Delete(repaired.TemplateImagePath);
-            Assert.Equal(bytes,File.ReadAllBytes(global.TemplateImagePath));
+            Assert.Equal(bytes,File.ReadAllBytes(savedAppearance.TemplateImagePath));
 
             var bitmap=new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption=BitmapCacheOption.OnLoad;
-            bitmap.UriSource=new Uri(global.TemplateImagePath);
+            bitmap.UriSource=new Uri(savedAppearance.TemplateImagePath);
             bitmap.EndInit();
             Assert.Equal(1,bitmap.PixelWidth);
         }
