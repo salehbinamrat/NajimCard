@@ -38,8 +38,8 @@ class CreatorReferenceScreenTests(unittest.TestCase):
     def test_lower_right_live_designer_and_footer_actions(self):
         self.assertIn('Grid.SetColumn(designSurface,1)', self.layout)
         self.assertIn('BuildSampleVoucherVisual()', self.creator)
-        for label in ("إنشاء وإرسال واحد", "إنشاء وإرسال", "معاينة قبل الإنشاء",
-                      "ملف PDF", "طباعة دفعة"):
+        for label in ("إنشاء وإرسال وحفظ", "إنشاء وإرسال فقط", "معاينة قبل الإنشاء",
+                      "ملف PDF", "طباعة الدفعة"):
             self.assertIn(label, self.workspace)
         self.assertIn('CreateAndSendAsync(singleCard:true)', self.workspace)
         self.assertIn('buttonsGrid=new UniformGrid{Columns=6', self.workspace)
