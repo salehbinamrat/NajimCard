@@ -102,4 +102,33 @@ public sealed class HadramoutBatchPrintSnapshotTests : IDisposable
         Assert.Equal("B",store.LoadBatchPrintSnapshot(
             "userman","second")!.Appearance.NetworkTitle);
     }
+
+    [Fact]
+    public void Historical_Snapshot_Preserves_Artwork_After_Source_File_Disappears()
+    {
+        var external=Path.Combine(Path.GetTempPath(),"najm-sample-"+Guid.NewGuid().ToString("N")+".png");
+        File.WriteAllBytes(external,Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/X/0AAAAASUVORK5CYII="));
+        try
+        {
+            var card=Card("867530","artwork-batch");
+            using(var store=new VoucherStore(_root))
+            {
+                var design=Snapshot(card) with
+                {Appearance=new VoucherCardAppearance(TemplateImagePath:external)};
+                store.SaveBatch([card],design);
+            }
+            File.Delete(external);
+            using var reopened=new VoucherStore(_root);
+            var kept=reopened.LoadBatchPrintSnapshot("userman","artwork-batch");
+            Assert.NotNull(kept);
+            Assert.NotEqual(external,kept.Appearance.TemplateImagePath);
+            Assert.True(File.Exists(kept.Appearance.TemplateImagePath));
+            Assert.StartsWith(Path.GetFullPath(_root),
+                Path.GetFullPath(kept.Appearance.TemplateImagePath));
+        }
+        finally{if(File.Exists(external))File.Delete(external);}
+    }
+
+
 }
