@@ -41,7 +41,9 @@ class CreatorReferenceScreenTests(unittest.TestCase):
         for label in ("إنشاء وإرسال وحفظ", "إنشاء وإرسال فقط", "معاينة قبل الإنشاء",
                       "ملف PDF", "طباعة الدفعة"):
             self.assertIn(label, self.workspace)
-        self.assertIn('CreateAndSendAsync(singleCard:true)', self.workspace)
+        self.assertIn('var sent=await creator.CreateAndSendAsync();', self.workspace)
+        self.assertIn('creator.CreateAndSendAsync(saveBeforeSend:', self.workspace)
+        self.assertNotIn('CreateAndSendAsync(singleCard:true)', self.workspace)
         self.assertIn('buttonsGrid=new UniformGrid{Columns=6', self.workspace)
 
     def test_workspace_styles_are_local_and_do_not_touch_navigation(self):
