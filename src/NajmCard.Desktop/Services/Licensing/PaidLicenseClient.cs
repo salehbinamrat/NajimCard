@@ -83,8 +83,10 @@ public static class PaidLicenseFeedVerifier
             var status=entry.GetProperty("status").GetString();
             string? bound=entry.TryGetProperty("device",out var d) &&
                 d.ValueKind==JsonValueKind.String?d.GetString():null;
-            var expires=entry.TryGetProperty("expires",out var exp) &&
-                exp.ValueKind==JsonValueKind.String?exp.GetString():null;
+            if(entry.TryGetProperty("expires",out var exp) &&
+                exp.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
+                return Denied("feed_invalid","نوع تاريخ انتهاء الترخيص غير صالح.");
+            var expires=exp.ValueKind==JsonValueKind.String?exp.GetString():null;
             if(expires is not null)
             {
                 if(!DateOnly.TryParseExact(expires,"yyyy-MM-dd",

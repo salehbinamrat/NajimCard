@@ -100,7 +100,7 @@ public sealed class SharedLicenseAndTrialTests
     private static readonly byte[] Seed=Enumerable.Range(0,32).Select(x=>(byte)(x+1)).ToArray();
     private static readonly Ed25519PrivateKeyParameters Secret=new(Seed,0);
     private static byte[] SignedFeed(string code,string device,string status="active",
-        string? expires=null,DateTimeOffset? issuedAtUtc=null)
+        object? expires=null,DateTimeOffset? issuedAtUtc=null)
     {
         var hash=Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(code)));
         var issued=(issuedAtUtc??DateTimeOffset.UtcNow.AddMinutes(-2))
@@ -276,6 +276,22 @@ public sealed class SharedLicenseAndTrialTests
         Assert.Equal("expired",PaidLicenseFeedVerifier.Verify(bytes,code,device,now.AddSeconds(1),
             Secret.GeneratePublicKey().GetEncoded()).Mode);
     }
+    [Theory]
+    [InlineData(123)]
+    [InlineData(false)]
+    [InlineData("")]
+    [InlineData("invalid-date")]
+    public void Signed_Invalid_Expiry_Cannot_Become_A_Permanent_License(object expiry)
+    {
+        const string code = "0123456789ABCDEF0123456789ABCDEF";
+        var device = new string('A', 64);
+        var feed = SignedFeed(code, device, expires: expiry);
+        var result = PaidLicenseFeedVerifier.Verify(feed, code, device,
+            DateTimeOffset.UtcNow, Secret.GeneratePublicKey().GetEncoded());
+        Assert.Equal("feed_invalid", result.Mode);
+        Assert.False(result.Permitted);
+    }
+
     private sealed class CaptureHandler(byte[] pendingFeed):HttpMessageHandler
     {
         public int Claims;

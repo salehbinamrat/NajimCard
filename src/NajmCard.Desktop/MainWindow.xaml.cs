@@ -428,7 +428,9 @@ public partial class MainWindow : Window
                 }
             }
             else if(_activeLicenseMode=="active" && _paidLicense is not null &&
-                DateTimeOffset.UtcNow>=_nextPaidVerifyUtc)
+                (DateTimeOffset.UtcNow>=_nextPaidVerifyUtc ||
+                 _lastLicenseStatus?.ExpiresAtUtc is DateTimeOffset expires &&
+                 DateTimeOffset.UtcNow>=expires))
             {
                 _nextPaidVerifyUtc=DateTimeOffset.UtcNow.AddMinutes(30);
                 var check=await _paidLicense.VerifyAsync(_storedPaidCode);
