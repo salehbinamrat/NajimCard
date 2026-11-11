@@ -29,13 +29,15 @@ public partial class GeneratorView
             Padding=new Thickness(13,9,13,9),Margin=new Thickness(0,4,0,0)
         };
         popup.Child=surface;
-        var timer=new DispatcherTimer{Interval=TimeSpan.FromSeconds(3)};
+        var timer=new DispatcherTimer{Interval=TimeSpan.FromSeconds(7)};
         timer.Tick+=(_,_)=>{timer.Stop();popup.IsOpen=false;};
         saveButton.Click+=(_,_) =>
         {
             var saved=SaveCurrentPackage();
             message.Text=_status.Text;
-            _status.Text="";
+            // Keep the exact validation failure visible after the popup closes.
+            if(saved)_status.Text="";
+            else _status.ToolTip=message.Text;
             surface.Background=(Brush)new BrushConverter().ConvertFrom(
                 saved?"#176D4F":"#96243F")!;
             popup.IsOpen=true;
