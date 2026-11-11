@@ -76,7 +76,7 @@ public sealed class SavedRouterConnectionStore
             c.Port is < 1 or > 65535 ||
             string.IsNullOrWhiteSpace(c.Username) || c.Username.Length > 100 ||
             c.Mode is not ("local" or "remote") ||
-            c.Password.Length > 4096)
+            c.Password is null || c.Password.Length > 4096)
             throw new ArgumentException("بيانات الاتصال المحفوظ غير صالحة.");
     }
 
@@ -93,9 +93,21 @@ public sealed class SavedRouterConnectionStore
             if (rows is null || rows.Count > MaximumProfiles || rows.Any(r => r is null))
                 throw new InvalidDataException("صيغة محفوظات الاتصال غير صالحة.");
             foreach(var row in rows)
-                Validate(new SavedRouterConnection(row.Host,row.Port,row.Username,
-                    row.UseTls,row.Mode));
-            if (rows.Any(r => r.PasswordBlob.Length > 10000))
+            {
+                try
+                {
+                    Validate(new SavedRouterConnection(row.Host,row.Port,row.Username,
+                        row.UseTls,row.Mode));
+                }
+                catch(ArgumentException ex)
+                {
+                    // External JSON is untrusted. Keep the original file intact
+                    // and report malformed profile data consistently.
+                    throw new InvalidDataException(
+                        "ملف الاتصالات يحتوي حقول اتصال غير صالحة؛ لم يتم تغييره.",ex);
+                }
+            }
+            if (rows.Any(r => r.PasswordBlob is null || r.PasswordBlob.Length > 10000))
                 throw new InvalidDataException("حقل كلمة المرور المحمية غير صالح.");
             return rows;
         }

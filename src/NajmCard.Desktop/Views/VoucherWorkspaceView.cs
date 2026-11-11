@@ -279,7 +279,10 @@ public sealed class VoucherWorkspaceView : UserControl
             var safe=new string(raw.Where(c=>!Path.GetInvalidFileNameChars().Contains(c))
                 .Take(55).ToArray());
             if(string.IsNullOrWhiteSpace(safe))safe="Batch";
-            var filename="NajmCard-"+safe+"-"+DateTime.Now.ToString("yyyyMMdd-HHmmss");
+            // The same batch can be exported repeatedly; never silently overwrite
+            // a prior CSV/XLSX created within the same second.
+            var filename="NajmCard-"+safe+"-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+
+                "-"+Guid.NewGuid().ToString("N")[..8];
             var folder=picker.FolderName;
             var csv=printer.ExportCsvAfterSend;
             var excel=printer.ExportExcelAfterSend;

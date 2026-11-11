@@ -66,6 +66,19 @@ public sealed class SavedRouterConnectionTests : IDisposable
         Assert.False(File.Exists(Path.Combine(folder,"profiles.json")));
     }
 
+    [Theory]
+    [InlineData("""[{"Host":"192.168.88.1","Port":8728,"Username":"admin","UseTls":false,"Mode":"local","PasswordBlob":null}]""")]
+    [InlineData("""[{"Host":null,"Port":8728,"Username":"admin","UseTls":false,"Mode":"local","PasswordBlob":""}]""")]
+    public void Malformed_Null_Fields_Fail_Closed_Without_Overwriting_History(string json)
+    {
+        var path=Path.Combine(folder,"profiles.json");
+        File.WriteAllText(path,json);
+        var store=new SavedRouterConnectionStore(folder);
+        Assert.ThrowsAny<InvalidDataException>(()=>store.Load());
+        Assert.ThrowsAny<InvalidDataException>(()=>store.Save(Entry(),false));
+        Assert.Equal(json,File.ReadAllText(path));
+    }
+
     [Fact]
     public void Damaged_Profile_File_Must_Not_Silently_Replace_User_Data()
     {
