@@ -267,7 +267,7 @@ public partial class MainWindow : Window
     {
         if(status.Mode=="expired")return
             "انتهت التجربة المجانية. شكرا لتجربة نجم كارد لمدة 20 يوما. "+
-            "للاستمرار دون انقطاع، اطلب رمز ترخيص مدفوع من مركز تراخيص حضرموت.";
+            "للاستمرار دون انقطاع، اطلب رمز ترخيص مدفوع من مركز تراخيص نجم كارد.";
         if(status.Mode=="clock_error")return status.Message;
         if(status.Mode!="trial")return status.Message;
         if(status.RemainingSeconds<=86400)return
