@@ -466,7 +466,11 @@ public partial class GeneratorView : UserControl
         };
         _customer.SelectionChanged += (_,_) =>
         {
-            if(_restoringPreset)return;
+            if(_restoringPreset || _applyingProfileCatalog)return;
+            // User Manager owners are separate profiles for issuing purposes.
+            // Never leave a pending batch tied to another owner's credentials.
+            _batch=[];
+            BatchChanged?.Invoke();
             RestorePackagePreset();
         };
         SubscribeLiveCardPreview();
