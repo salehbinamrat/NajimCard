@@ -562,6 +562,7 @@ public partial class PrintingView : UserControl
             if(!PageUi.Confirm("إرسال "+preparedCount+
                 " كرتا مؤكدا إرساله إلى الطابعة؛ هل مقاس الورق والاتجاه صحيحان؟"))return;
             LocalPrintServer? chosenServer=null;
+            bool submittedToSpooler=false;
             try
             {
                 var dlg=new PrintDialog();
@@ -586,10 +587,17 @@ public partial class PrintingView : UserControl
                     _status.Text="تغيرت بيانات الدفعة أثناء نافذة الطباعة؛ أُلغيت المهمة.";
                     return;
                 }
+                submittedToSpooler=true;
                 dlg.PrintDocument(prepared!.DocumentPaginator,"NajmCard Confirmed Voucher Batch");
                 _status.Text="أُرسلت المهمة للطابعة؛ راجع محاذاة الورق على نسخة اختبار.";
             }
-            catch(Exception ex){_status.Text="تعذرت الطباعة: "+ex.Message;}
+            catch(Exception ex)
+            {
+                _status.Text=submittedToSpooler
+                    ?"حالة مهمة الطباعة غير مؤكدة بعد التسليم إلى Windows: "+
+                        ex.Message+" | راجع قائمة انتظار الطابعة والورق قبل إعادة الطباعة لمنع التكرار."
+                    :"تعذرت الطباعة قبل التسليم إلى Windows: "+ex.Message;
+            }
             finally{chosenServer?.Dispose();}
         }
         async Task<bool> Export(string path)
