@@ -9,10 +9,27 @@ Set-Location $root
 $rid = if ($Arch -eq 'x86') {'win-x86'} else {'win-x64'}
 $outRoot = Join-Path $root $Output
 $publishDir = Join-Path $outRoot "publish-$Arch"
+# Delete only the architecture-specific, generated publish directory.
+# Otherwise a previous release may silently inject obsolete files into the
+# next portable ZIP and installer even after the source was removed.
+if (Test-Path -LiteralPath $publishDir) {
+    Remove-Item -LiteralPath $publishDir -Recurse -Force
+}
 New-Item -ItemType Directory -Force -Path $publishDir | Out-Null
 
-dotnet publish src/NajmCard.Desktop/NajmCard.Desktop.csproj --configuration Release --runtime $rid --self-contained true --output $publishDir -p:PublishReadyToRun=false -p:PublishTrimmed=false
+# Preserve a fully self-contained WPF runtime and reflection-based components.
+# Restrict only .NET/NuGet *satellite translations* to Arabic and English:
+# program UI is Arabic, and fallback English is embedded in base assemblies.
+# Do not use PublishTrimmed, single-file extraction or invariant globalization.
+# Symbols stay in CI build output, not in end-user installers/portable ZIPs.
+dotnet publish src/NajmCard.Desktop/NajmCard.Desktop.csproj --configuration Release --runtime $rid --self-contained true --output $publishDir -p:PublishReadyToRun=false -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false '-p:SatelliteResourceLanguages=ar%3Ben'
 if ($LASTEXITCODE -ne 0) { throw "Publish failed for $rid" }
+
+# Never ship debug symbol files in public packages. This does not remove any
+# executable/native/managed DLL or change the application's runtime logic.
+Get-ChildItem -LiteralPath $publishDir -Filter '*.pdb' -File -Recurse |
+    Remove-Item -Force
+
 $exe = Join-Path $publishDir 'NajmCard.exe'
 if (!(Test-Path $exe)) { throw 'Published EXE missing' }
 $sourceIcon=Join-Path $root 'src/NajmCard.Desktop/Assets/NajmCard.ico'
