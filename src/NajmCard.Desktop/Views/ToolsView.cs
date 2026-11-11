@@ -539,7 +539,8 @@ public class ToolsView : UserControl
             try
             {
                 var current=workspace;
-                int count=await Task.Run(()=>current.ExportZip(dialog.FileName));
+                var exportFileName=dialog.FileName;
+                int count=await Task.Run(()=>current.ExportZip(exportFileName));
                 status.Text="اكتمل تصدير "+count+" ملفاً إلى "+dialog.FileName+
                     ". ملف ZIP محلي فقط؛ لم يرفع شيء إلى MikroTik.";
             }
