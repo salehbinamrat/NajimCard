@@ -152,10 +152,10 @@
                                     <Label Content="كلمة المرور"/>
                                     <Grid>
                                         <PasswordBox x:Name="PasswordInput" FlowDirection="LeftToRight"
-                                                     MinHeight="36" Padding="44,6,8,6"/>
+                                                     MinHeight="36" Padding="8,6,44,6"/>
                                         <TextBox x:Name="VisiblePasswordInput" FlowDirection="LeftToRight"
                                                  Visibility="Collapsed" MinHeight="36"
-                                                 Padding="44,6,8,6" Background="#270D1D" Foreground="#FFF5E8"/>
+                                                 Padding="8,6,44,6" Background="#270D1D" Foreground="#FFF5E8"/>
                                         <ToggleButton x:Name="ShowPasswordInput" Width="35" Height="30"
                                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                                       Margin="0,0,4,0" ToolTip="إظهار أو إخفاء كلمة المرور"
