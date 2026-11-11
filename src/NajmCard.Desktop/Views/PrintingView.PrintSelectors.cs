@@ -110,6 +110,15 @@ public partial class PrintingView
                 selectedPrinter.Items.Clear();
                 selectedPrinter.Items.Add("الافتراضية");
                 foreach(var name in printers)selectedPrinter.Items.Add(name);
+                if(selected is not null && !selectedPrinter.Items.Contains(selected))
+                {
+                    // Never substitute another printer for the saved one.
+                    // Keeping the unavailable name makes GetPrintQueue fail
+                    // closed at print time instead of printing elsewhere.
+                    selectedPrinter.Items.Add(selected);
+                    _status.Text="الطابعة المحفوظة «"+selected+
+                        "» غير مثبتة على Windows الحالي. اختر طابعة صحيحة قبل الطباعة.";
+                }
                 selectedPrinter.SelectedItem=selected is not null &&
                     selectedPrinter.Items.Contains(selected)?selected: selectedPrinter.Items[0];
             }
