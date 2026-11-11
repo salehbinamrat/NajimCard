@@ -346,10 +346,11 @@ public partial class PrintingView : UserControl
 
         FixedDocument? prepared=null;
         VoucherCardAppearance? designUsed=null;
+        Voucher[] preparedCards=[];
         int preparedCount=0;
         void Clear()
         {
-            prepared=null;designUsed=null;preparedCount=0;
+            prepared=null;designUsed=null;preparedCards=[];preparedCount=0;
             viewer.Document=null;printButton.IsEnabled=false;
         }
         _invalidate=()=>{Clear();if(selectedBatch is not null)batchSelector.SelectedIndex=0;};
@@ -562,6 +563,7 @@ public partial class PrintingView : UserControl
                 if(ConfirmPrintJob() is not { } job)return false;
                 var (cards,style,opts)=job;
                 prepared=MakeDocument(cards,opts,style);
+                preparedCards=cards.ToArray();
                 preparedCount=cards.Length;designUsed=style;
                 viewer.Document=prepared;
                 printButton.IsEnabled=true;
@@ -573,9 +575,36 @@ public partial class PrintingView : UserControl
             catch(Exception ex){_status.Text="تعذر إعداد معاينة الطباعة: "+ex.Message;return false;}
         }
 
+        bool VerifyPreparedBatch()
+        {
+            if(prepared is null || preparedCards.Length==0)return false;
+            var requested=(batchSelector.SelectedItem as ComboBoxItem)?.Tag is
+                PrintableBatchSummary previous
+                ?store.GetBatchVouchers(previous.Service,previous.BatchId)
+                :selectedBatch is null
+                    ?store.GetPrintableVouchers(Math.Clamp(Int(qty.Text),1,10000))
+                    :selectedBatch();
+            var confirmed=requested.Where(v=>
+                v.DeliveryStatus=="SENT"&&v.SentToRouter).ToArray();
+            return confirmed.Length==preparedCards.Length &&
+                confirmed.SequenceEqual(preparedCards) &&
+                Equals(Options(),_getOptions()) &&
+                Equals(designUsed,(selectedAppearance?.Invoke()??
+                    store.LoadCardAppearance()).Validate());
+        }
+
         void Print()
         {
             if(prepared is null&&!Prepare())return;
+            // A preview is not an authorization to print stale credentials.
+            // Read the exact selected batch again before submitting a job.
+            if(!VerifyPreparedBatch())
+            {
+                Clear();
+                _status.Text="تغيرت الدفعة أو حالة إرسال أحد الكروت منذ المعاينة. "+
+                    "حدّث المعاينة قبل الطباعة لمنع طباعة كروت غير مؤكدة.";
+                return;
+            }
             if(!PageUi.Confirm("إرسال "+preparedCount+
                 " كرتا مؤكدا إرساله إلى الطابعة؛ هل مقاس الورق والاتجاه صحيحان؟"))return;
             LocalPrintServer? chosenServer=null;
@@ -597,6 +626,13 @@ public partial class PrintingView : UserControl
                     ?PageOrientation.Landscape:PageOrientation.Portrait;
                 dlg.PrintTicket=ticket;
                 if(dlg.ShowDialog()!=true)return;
+                if(!VerifyPreparedBatch())
+                {
+                    Clear();
+                    _status.Text="تغيرت الكروت بعد فتح نافذة الطباعة؛ "+
+                        "أُلغيت المهمة. أعد المعاينة أولا.";
+                    return;
+                }
                 dlg.PrintDocument(prepared!.DocumentPaginator,"NajmCard Confirmed Voucher Batch");
                 _status.Text="أُرسلت المهمة للطابعة؛ راجع محاذاة الورق على نسخة اختبار.";
             }
