@@ -41,7 +41,9 @@ public sealed class RouterOsClient : IAsyncDisposable, IRouterReceiptClient, IRo
         CancellationToken cancellationToken = default)
     {
         endpoint.Validate();
-        var tcp = new TcpClient();
+        // Avoid Nagle/delayed-ACK latency when the router confirms many
+        // small API commands during card issuance.
+        var tcp = new TcpClient { NoDelay = true };
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         limit.CancelAfter(TimeSpan.FromSeconds(12));
         Stream? stream = null;
