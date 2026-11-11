@@ -735,7 +735,71 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
                     ["customer"] = customer,
                     ["profile"] = voucher.Profile
                 }, ct);
-            return new UserManagerV6DeliveryResult(true, false, id, null);
+            // Hadramout uses /add followed by create-and-activate-profile.
+            // That sequence is necessary, but !done only confirms RouterOS
+            // accepted the command. A voucher may still be absent or lack
+            // an actual profile. Do not mark it SENT/printable until a live
+            // exact-ID read confirms both the username and assigned profile.
+            // Never replay either write, even if this read is unavailable.
+            // RouterOS readback failures are NOT activation traps.
+            // Never roll back an account after activation has been ACKed.
+            try
+            {
+                if (client is not IRouterQueryClient lookup)
+                    return new UserManagerV6DeliveryResult(false, true, id,
+                        "قبل الراوتر أمر الربط، لكن لا تتوفر قراءة للتحقق من الحساب؛ لم يُعتمد للطباعة.");
+                const string verifyPath = "/tool/user-manager/user/print";
+                var projection = new Dictionary<string,string>
+                {
+                    [".proplist"] = ".id,username,actual-profile,customer"
+                };
+                string? lastVerificationError = null;
+                for (int attempt=0;attempt<3;attempt++)
+                {
+                    if(attempt>0)await Task.Delay(attempt==1?150:300,ct);
+                    var found=await lookup.QueryByIdAsync(verifyPath,id,projection,ct);
+                    // Older RouterOS 6 builds sometimes omit projected columns.
+                    // Retry the same ID with all fields, never read the full table.
+                    if(found.Count==1 && (!found[0].ContainsKey("username")
+                        || !found[0].ContainsKey("actual-profile")))
+                        found=await lookup.QueryByIdAsync(verifyPath,id,cancellationToken:ct);
+                    if(found.Count!=1)
+                    {
+                        lastVerificationError="لم يرجع الراوتر حسابا واحدا بالمعرف الذي أُنشئ.";
+                        continue;
+                    }
+                    var actual=found[0];
+                    if(Get(actual,".id")!=id ||
+                       !string.Equals(Get(actual,"username"),voucher.Username,
+                           StringComparison.Ordinal))
+                    {
+                        lastVerificationError="هوية الحساب المقروء لا تطابق رقم الكرت الذي أُنشئ.";
+                        break;
+                    }
+                    if(actual.TryGetValue("customer",out var reportedCustomer) &&
+                       !string.IsNullOrWhiteSpace(reportedCustomer) &&
+                       !string.Equals(reportedCustomer,customer,StringComparison.OrdinalIgnoreCase))
+                    {
+                        lastVerificationError="حساب مدير الكرت لا يطابق حساب المدير المحدد.";
+                        break;
+                    }
+                    if(string.Equals(Get(actual,"actual-profile"),voucher.Profile,
+                       StringComparison.OrdinalIgnoreCase))
+                        return new UserManagerV6DeliveryResult(true,false,id,null);
+                    lastVerificationError="حساب الكرت موجود لكن باقته لم تتأكد في User Manager.";
+                }
+                return new UserManagerV6DeliveryResult(false,true,id,
+                    (lastVerificationError??"تعذر تأكيد ظهور الكرت وباقته.")+
+                    " راجع الكرت بالاسم في User Manager قبل الطباعة، ولا تُعد إرساله.");
+
+            }
+            catch (Exception ex) when (ex is IOException or OperationCanceledException
+                or InvalidDataException or ObjectDisposedException)
+            {
+                return new UserManagerV6DeliveryResult(false,true,id,
+                    "استجاب الراوتر لأمر إنشاء الحساب وربط الباقة، لكن تعذر تأكيد ظهوره: "+
+                    ex.Message+" | لا تُعد إصدار الكرت أو طباعته قبل التحقق.");
+            }
         }
         catch (RouterOsTrapException ex)
         {

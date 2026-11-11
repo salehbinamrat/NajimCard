@@ -56,7 +56,9 @@ class HadramoutQuickSaveUi(unittest.TestCase):
         printer=(VIEW/"PrintingView.cs").read_text(encoding="utf-8")
         self.assertIn('x.DeliveryStatus=="SENT"&&x.SentToRouter',printer)
         self.assertIn("await _renderPdfAsync(job.Cards,job.Style,job.Options,path)",printer)
-        self.assertIn("worker.SetApartmentState(ApartmentState.STA)",printer)
+        draft_worker=(VIEW/"PrintingView.DraftDelivery.cs").read_text(encoding="utf-8")
+        self.assertIn("worker.SetApartmentState(ApartmentState.STA)",draft_worker)
+        self.assertIn("RenderDocumentPdfOnStaAsync(",printer)
         self.assertIn("await printer.SavePdfAsync()",self.w)
         self.assertIn("status.Text=printer.LastOperationMessage",self.w)
 

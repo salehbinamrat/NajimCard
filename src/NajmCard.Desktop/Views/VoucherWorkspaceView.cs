@@ -306,7 +306,7 @@ public sealed class VoucherWorkspaceView : UserControl
             {
                 folder=VoucherBatchArchive.CreateDirectory(picker.FolderName,cards);
                 savedBeforeSend=Path.Combine(folder,"محفوظة-قبل-الإرسال-لا-تطبع.pdf");
-                await printer.SaveBatchArchivePdfAsync(cards,appearance,options,savedBeforeSend);
+                await printer.SaveDraftArchivePdfAsync(cards,appearance,options,savedBeforeSend);
                 archivedCount=cards.Count;
                 status.Text="حُفظت "+cards.Count+" كرتا قبل الإرسال في: "+folder;
             });
@@ -319,10 +319,12 @@ public sealed class VoucherWorkspaceView : UserControl
             }
             var confirmed=creator.ConfirmedBatch().ToArray();
             var path=Path.Combine(folder!,"كروت-مؤكدة-"+confirmed.Length+".pdf");
-            if(confirmed.Length==archivedCount)
-                File.Move(savedBeforeSend!,path);
-            else
-                await printer.SaveBatchArchivePdfAsync(confirmed,appearance,options,path);
+            // A pre-send PDF is visibly watermarked, never promoted as if
+            // those unverified cards had been activated. Render the final PDF
+            // solely from readback-confirmed vouchers, then remove the draft.
+            await printer.SaveBatchArchivePdfAsync(confirmed,appearance,options,path);
+            if(savedBeforeSend is not null && File.Exists(savedBeforeSend))
+                File.Delete(savedBeforeSend);
             status.Text="حُفظت الكروت وأُرسل "+confirmed.Length+" كرتا. ملف PDF: "+path;
             if(confirmed.Length<archivedCount) status.Text+=" | راجع بقية الكروت في «سجل الدفعات».";
             try {PrintingView.OpenPreviewPdf(path);}
@@ -348,7 +350,8 @@ public sealed class VoucherWorkspaceView : UserControl
             try
             {
                 PrintingView.OpenPreviewPdf(path);
-                status.Text="معاينة PDF لـ "+cards.Length+" كرت تجريبي دون حفظ دفعة أو إرسالها.";
+                status.Text="معاينة تجريبية غير مفعلة: "+cards.Length+
+                    " كرتا بعلامة «غير مفعلة في الراوتر». لا تُستخدم للدخول.";
             }
             catch(System.ComponentModel.Win32Exception)
             {
@@ -363,10 +366,14 @@ public sealed class VoucherWorkspaceView : UserControl
         });
         actions[4].Click+=async(_,_)=>await Execute(async()=>
         {
-            if(creator.HasBatch || printer.HasSavedBatchSelection)await printer.PreviewPdfAsync();
-            else await PreviewDraftPdf();
-            if(creator.HasBatch || printer.HasSavedBatchSelection)
-                status.Text=printer.LastOperationMessage;
+            if(!creator.HasBatch && !printer.HasSavedBatchSelection)
+            {
+                status.Text="لا توجد دفعة مؤكدة للإرسال. استخدم «معاينة قبل الإنشاء» "+
+                    "للقوالب التجريبية؛ أرقام المعاينة ليست كروتا عاملة.";
+                return;
+            }
+            await printer.PreviewPdfAsync();
+            status.Text=printer.LastOperationMessage;
         });
         actions[5].Click+=(_,_)=>_ = Execute(()=>
         {

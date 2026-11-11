@@ -44,6 +44,7 @@ public partial class PrintingView : UserControl
     private readonly Action _printBatch;
     private readonly Func<string,Task<bool>> _exportPdf;
     private readonly Func<IReadOnlyList<Voucher>,VoucherCardAppearance,CardPrintOptions,string,Task> _renderPdfAsync;
+    private readonly Func<IReadOnlyList<Voucher>,VoucherCardAppearance,CardPrintOptions,string,Task> _renderDraftPdfAsync;
     private readonly Action _invalidate;
     private readonly TextBlock _status;
     private readonly CheckBox _additionalExport = new() {Content="تصدير إضافي مع الإرسال",IsChecked=false};
@@ -117,9 +118,13 @@ public partial class PrintingView : UserControl
         VoucherCardAppearance appearance,CardPrintOptions options)
     {
         var path=NewPreviewPdfPath();
-        await _renderPdfAsync(cards,appearance,options,path);
+        await _renderDraftPdfAsync(cards,appearance,options,path);
         return path;
     }
+
+    internal Task SaveDraftArchivePdfAsync(IReadOnlyList<Voucher> cards,
+        VoucherCardAppearance appearance,CardPrintOptions options,string path) =>
+        _renderDraftPdfAsync(cards,appearance,options,path);
 
     internal Task SaveBatchArchivePdfAsync(IReadOnlyList<Voucher> cards,
         VoucherCardAppearance appearance,CardPrintOptions options,string path) =>
@@ -356,7 +361,7 @@ public partial class PrintingView : UserControl
             choice.SelectionChanged+=(_,_)=>Clear();
 
         static FixedDocument MakeDocument(IReadOnlyList<Voucher> cards,
-            CardPrintOptions opts,VoucherCardAppearance appearance)
+            CardPrintOptions opts,VoucherCardAppearance appearance,bool previewOnly=false)
         {
             var plan=CardPrintLayoutPlanner.Calculate(opts,cards.Count);
             var doc=new FixedDocument();
@@ -506,6 +511,9 @@ public partial class PrintingView : UserControl
                     FixedPage.SetLeft(cardBorder,Dip(slot.LeftMm));
                     FixedPage.SetTop(cardBorder,Dip(slot.TopMm));
                     page.Children.Add(cardBorder);
+                    if(previewOnly)
+                        AddDraftWatermark(page,Dip(opts.CardWidthMm),
+                            Dip(opts.CardHeightMm),Dip(slot.LeftMm),Dip(slot.TopMm));
                 }
                 var pageContent=new PageContent();
                 ((System.Windows.Markup.IAddChild)pageContent).AddChild(page);
@@ -515,22 +523,11 @@ public partial class PrintingView : UserControl
         }
 
         _renderPdfAsync=(cards,appearance,options,path)=>
-        {
-            var completion=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            // WPF creates and rasterizes the document on the same STA thread.
-            var worker=new Thread(()=>
-            {
-                try
-                {
-                    VoucherPdfExporter.Export(MakeDocument(cards,options,appearance),path);
-                    completion.SetResult();
-                }
-                catch(Exception ex){completion.SetException(ex);}
-            }){IsBackground=true};
-            worker.SetApartmentState(ApartmentState.STA);
-            worker.Start();
-            return completion.Task;
-        };
+            RenderDocumentPdfOnStaAsync(
+                ()=>MakeDocument(cards,options,appearance),path);
+        _renderDraftPdfAsync=(cards,appearance,options,path)=>
+            RenderDocumentPdfOnStaAsync(
+                ()=>MakeDocument(cards,options,appearance,true),path);
 
         (Voucher[] Cards,VoucherCardAppearance Style,CardPrintOptions Options)? ConfirmPrintJob()
         {
