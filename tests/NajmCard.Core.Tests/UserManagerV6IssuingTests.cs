@@ -255,7 +255,7 @@ public sealed class UserManagerV6IssuingTests
         await new RouterGateway(spy).AddHotspotUserAsync(card);
         var args=Assert.Single(spy.Calls).Args;
         Assert.Equal(card.Username,args["name"]);
-        Assert.Equal("",args["password"]);
+        Assert.False(args.ContainsKey("password"));
     }
 
 
