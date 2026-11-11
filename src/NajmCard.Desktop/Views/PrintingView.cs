@@ -358,7 +358,7 @@ public partial class PrintingView : UserControl
             Clear();
             RestoreArchivePrintTemplate(
                 (batchSelector.SelectedItem as ComboBoxItem)?.Tag as PrintableBatchSummary,
-                store,Apply);
+                store,Apply,Options);
         };
         _getOptions=Options;
         _applyOptions=Apply;
