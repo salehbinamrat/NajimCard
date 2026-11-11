@@ -368,9 +368,27 @@ public sealed class VoucherWorkspaceView : UserControl
         });
         DockPanel.SetDock(footer,Dock.Bottom);
         root.Children.Add(footer);
-        var titleLabel=new TextBlock{Text="إنشاء وطباعة الكروت"};
+        var titleLabel=new TextBlock{Text="إنشاء وطباعة الكروت",
+            HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Center,
+            FlowDirection=FlowDirection.RightToLeft};
         titleLabel.SetResourceReference(StyleProperty,"WorkspaceTitleText");
-        var header=new Border{Child=titleLabel};
+        // One save action for the complete profile settings, print options,
+        // card appearance and generation parameters. It lives in the title row.
+        var pageSave=creator.PackageSaveButton;
+        pageSave.HorizontalAlignment=HorizontalAlignment.Left;
+        pageSave.VerticalAlignment=VerticalAlignment.Center;
+        pageSave.Margin=new Thickness(6,2,8,2);
+        pageSave.MinHeight=34;
+        pageSave.MinWidth=165;
+        pageSave.Padding=new Thickness(11,5,11,5);
+        var titleGrid=new Grid{FlowDirection=FlowDirection.LeftToRight,MinHeight=43};
+        titleGrid.ColumnDefinitions.Add(new ColumnDefinition{Width=GridLength.Auto});
+        titleGrid.ColumnDefinitions.Add(new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)});
+        Grid.SetColumn(pageSave,0);
+        Grid.SetColumn(titleLabel,1);
+        titleGrid.Children.Add(pageSave);
+        titleGrid.Children.Add(titleLabel);
+        var header=new Border{Child=titleGrid};
         header.SetResourceReference(StyleProperty,"WorkspaceTitleFrame");
         DockPanel.SetDock(header,Dock.Top);
         root.Children.Add(header);
