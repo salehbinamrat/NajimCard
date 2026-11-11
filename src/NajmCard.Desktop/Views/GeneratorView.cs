@@ -682,7 +682,7 @@ public partial class GeneratorView : UserControl
             var result = await new VoucherBatchDispatcher(_gateway, _store).SendAsync(current);
             if (result.UncertainOutcome)
             {
-                _batch = _store.GetBatchVouchers(service, current[0].BatchId).ToArray();
+                _batch = await Task.Run(()=>_store.GetBatchVouchers(service, current[0].BatchId).ToArray());
                 BatchChanged?.Invoke();
                 _table.ItemsSource = _batch.Take(500).ToArray();
                 var reason=_store.FirstDeliveryError(service,current[0].BatchId);
@@ -692,7 +692,7 @@ public partial class GeneratorView : UserControl
             }
             else
             {
-                var persisted = _store.GetBatchVouchers(service, current[0].BatchId).ToArray();
+                var persisted = await Task.Run(()=>_store.GetBatchVouchers(service, current[0].BatchId).ToArray());
                 _batch = persisted;
                 BatchChanged?.Invoke();
                 _table.ItemsSource = _batch.Take(500).ToArray();
@@ -704,7 +704,26 @@ public partial class GeneratorView : UserControl
                     (string.IsNullOrWhiteSpace(reason)?"":" السبب: "+reason);
             }
         }
-        catch (Exception ex) { _status.Text = "فشل الإرسال: " + ex.Message; }
+        catch (Exception ex)
+        {
+            _status.Text = "توقف الإرسال: " + ex.Message;
+            // Earlier cards may already be committed even when a later
+            // database/network operation throws. Never leave stale CREATED
+            // objects in the UI or infer that the whole batch failed.
+            try
+            {
+                var batchId=_batch[0].BatchId;
+                _batch=await Task.Run(()=>_store.GetBatchVouchers(service,batchId).ToArray());
+                _table.ItemsSource=_batch.Take(500).ToArray();
+                BatchChanged?.Invoke();
+                _status.Text+=" | حُدثت الحالات المحفوظة؛ راجع سجل الدفعات قبل أي إعادة إرسال.";
+            }
+            catch(Exception refreshError)
+            {
+                _status.Text+=" | تعذر تحديث الحالات: "+refreshError.Message+
+                    "؛ راجع سجل الدفعات والراوتر قبل إعادة المحاولة.";
+            }
+        }
         finally
         {
             _sending = false;
