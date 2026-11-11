@@ -19,7 +19,8 @@ public partial class GeneratorView
             throw new ArgumentException("حدد العدد وطول اسم المستخدم بشكل صحيح.");
 
         bool usernameOnly=_credentialMode.SelectedIndex==0;
-        bool same=_samePassword.IsChecked==true;
+        // Matching passwords are valid only in the explicit two-credential mode.
+        bool same=!usernameOnly && _credentialsSame.IsChecked==true;
         int passwordLength=0;
         if(!usernameOnly && !same && !int.TryParse(_passwordLength.Text,NumberStyles.Integer,
                CultureInfo.InvariantCulture,out passwordLength))

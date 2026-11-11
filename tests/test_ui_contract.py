@@ -55,6 +55,7 @@ class UiDesignContract(unittest.TestCase):
             if view=="GeneratorView":
                 expected.add("GeneratorView.PackageNavigation.cs")
                 expected.add("GeneratorView.LivePreview.cs")
+                expected.add("GeneratorView.CredentialMode.cs")
                 expected.update({"GeneratorView.CardDesign.cs",
                     "GeneratorView.ReferenceLayout.cs",
                     "GeneratorView.DesignerPanel.cs",

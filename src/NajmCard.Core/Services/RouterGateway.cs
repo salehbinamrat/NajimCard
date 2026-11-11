@@ -870,13 +870,17 @@ public sealed partial class RouterGateway(IRouterCommandClient client)
         if (voucher.Username.Length is < 1 or > 64 ||
             voucher.Password is null || voucher.Password.Length > 128)
             throw new ArgumentException("بيانات الكرت غير صالحة.");
-        await client.CommandAsync("/ip/hotspot/user/add", new Dictionary<string, string>
+        // Hadramout's username-only Hotspot mode omits the password property.
+        // Sending a matching password here would silently change the login mode.
+        var args = new Dictionary<string, string>
         {
             ["name"] = voucher.Username,
-            ["password"] = voucher.Password,
             ["profile"] = voucher.Profile,
             ["comment"] = "NajmCard batch " + voucher.BatchId
-        }, ct);
+        };
+        if (voucher.Password.Length > 0)
+            args["password"] = voucher.Password;
+        await client.CommandAsync("/ip/hotspot/user/add", args, ct);
     }
 
     public async Task<BatchDeliveryResult> UploadBatchAsync(IReadOnlyList<Voucher> vouchers, CancellationToken ct = default)

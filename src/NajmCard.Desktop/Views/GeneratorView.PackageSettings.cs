@@ -24,7 +24,9 @@ public partial class GeneratorView
                     "اختر all حتى لا توزع الكروت على السيرفر الخطأ.");
             int length=int.Parse(_length.Text,CultureInfo.InvariantCulture);
             bool usernameOnly=_credentialMode.SelectedIndex==0;
-            bool same=_samePassword.IsChecked==true;
+            // Persist mutually exclusive credential modes; never save a hidden
+            // matching-password choice as part of username-only mode.
+            bool same=!usernameOnly && _credentialsSame.IsChecked==true;
             var saved=new VoucherPackagePreset(_routerKey,SelectedService,profile,
                 SelectedService=="userman"?_customer.SelectedItem?.ToString()??"":"",
                 int.Parse(_count.Text,CultureInfo.InvariantCulture),_prefix.Text.Trim(),
