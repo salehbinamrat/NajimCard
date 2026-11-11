@@ -46,9 +46,39 @@ public sealed class VoucherWorkspaceView : UserControl
         // WITHOUT changing the dark sidebar or the application's theme.
         var cream=(Brush)new BrushConverter().ConvertFrom("#FFFAF0")!;
         var maroon=(Brush)new BrushConverter().ConvertFrom("#471A30")!;
+        // Cream input dropdowns need cream rows and maroon text in every
+        // state; the shared burgundy popup style must not obscure the list.
+        var optionStyle=new Style(typeof(ComboBoxItem));
+        optionStyle.Setters.Add(new Setter(Control.BackgroundProperty,cream));
+        optionStyle.Setters.Add(new Setter(Control.ForegroundProperty,maroon));
+        optionStyle.Setters.Add(new Setter(Control.PaddingProperty,new Thickness(8,4,8,4)));
+        var optionSurface=new FrameworkElementFactory(typeof(Border));
+        optionSurface.SetBinding(Border.BackgroundProperty,new System.Windows.Data.Binding("Background")
+        {
+            RelativeSource=new System.Windows.Data.RelativeSource(
+                System.Windows.Data.RelativeSourceMode.TemplatedParent)
+        });
+        var optionPresenter=new FrameworkElementFactory(typeof(ContentPresenter));
+        optionPresenter.SetValue(FrameworkElement.VerticalAlignmentProperty,VerticalAlignment.Center);
+        optionSurface.AppendChild(optionPresenter);
+        var optionControlTemplate=new ControlTemplate(typeof(ComboBoxItem))
+        {
+            VisualTree=optionSurface
+        };
+        optionStyle.Setters.Add(new Setter(Control.TemplateProperty,optionControlTemplate));
+        var hovered=new Trigger{Property=ComboBoxItem.IsHighlightedProperty,Value=true};
+        hovered.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#F0D8CE")!));
+        optionStyle.Triggers.Add(hovered);
+        var selected=new Trigger{Property=ComboBoxItem.IsSelectedProperty,Value=true};
+        selected.Setters.Add(new Setter(Control.BackgroundProperty,
+            (Brush)new BrushConverter().ConvertFrom("#EAC67F")!));
+        optionStyle.Triggers.Add(selected);
+        dropdown.Setters.Add(new Setter(ItemsControl.ItemContainerStyleProperty,optionStyle));
+        dropdown.Setters.Add(new Setter(ComboBox.MaxDropDownHeightProperty,240d));
         var optionTemplate=new DataTemplate();
         var optionBacking=new FrameworkElementFactory(typeof(Border));
-        optionBacking.SetValue(Border.BackgroundProperty,cream);
+        optionBacking.SetValue(Border.BackgroundProperty,Brushes.Transparent);
         optionBacking.SetValue(Border.PaddingProperty,new Thickness(3,1,3,1));
         var optionText=new FrameworkElementFactory(typeof(TextBlock));
         optionText.SetBinding(TextBlock.TextProperty,
