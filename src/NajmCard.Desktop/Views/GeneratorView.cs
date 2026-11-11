@@ -705,8 +705,10 @@ public partial class GeneratorView : UserControl
                 _batch = _store.GetBatchVouchers(service, current[0].BatchId).ToArray();
                 BatchChanged?.Invoke();
                 _table.ItemsSource = _batch.Take(500).ToArray();
+                var reason=_store.FirstDeliveryError(service,current[0].BatchId);
                 _status.Text = "الاتصال أو رد الراوتر غير مؤكد. يُمنع إعادة إرسال كروت " +
-                    "UNKNOWN/SENDING أو طباعتها قبل التحقق من الراوتر.";
+                    "UNKNOWN/SENDING أو طباعتها قبل التحقق من الراوتر." +
+                    (string.IsNullOrWhiteSpace(reason)?"":" السبب: "+reason);
             }
             else
             {
@@ -714,9 +716,12 @@ public partial class GeneratorView : UserControl
                 _batch = persisted;
                 BatchChanged?.Invoke();
                 _table.ItemsSource = _batch.Take(500).ToArray();
+                var reason=result.Failed.Count>0?
+                    _store.FirstDeliveryError(service,current[0].BatchId):null;
                 _status.Text = "تم إرسال " + result.Succeeded +
                     " كرتاً، وفشل " + result.Failed.Count +
-                    ". جميع الحالات محفوظة محلياً.";
+                    ". جميع الحالات محفوظة محلياً." +
+                    (string.IsNullOrWhiteSpace(reason)?"":" السبب: "+reason);
             }
         }
         catch (Exception ex) { _status.Text = "فشل الإرسال: " + ex.Message; }
