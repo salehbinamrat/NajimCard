@@ -147,7 +147,22 @@ public sealed class VoucherWorkspaceView : UserControl
             TextAlignment=TextAlignment.Center,
             Margin=new Thickness(3,1,3,2)
         };
-        footer.Children.Add(status);
+        var history = PageUi.Button("سجل الدفعات", false);
+        history.MinHeight = 24;
+        history.Padding = new Thickness(7, 2, 7, 2);
+        history.Margin = new Thickness(4, 2, 4, 2);
+        history.FontSize = 11;
+        history.Click += (_, _) =>
+        {
+            var dialog = new VoucherDeliveryHistoryWindow(store);
+            if (Window.GetWindow(this) is Window owner) dialog.Owner = owner;
+            dialog.ShowDialog();
+        };
+        var statusRow = new DockPanel();
+        DockPanel.SetDock(history, Dock.Left);
+        statusRow.Children.Add(history);
+        statusRow.Children.Add(status);
+        footer.Children.Add(statusRow);
         var buttonsGrid=new UniformGrid{Columns=6,Margin=new Thickness(2,0,2,3)};
         footer.Children.Add(buttonsGrid);
         Button MakeButton(string title,string bg,string fg)
@@ -182,7 +197,7 @@ public sealed class VoucherWorkspaceView : UserControl
             _busy=true;
             foreach(var btn in actions)btn.IsEnabled=false;
             foreach(var btn in tabButtons.Values)btn.IsEnabled=false;
-            creator.IsEnabled=false;
+            creator.IsEnabled=history.IsEnabled=false;
             try{await work();}
             catch(Exception ex){status.Text="تعذر تنفيذ العملية: "+ex.Message;}
             finally
@@ -190,7 +205,7 @@ public sealed class VoucherWorkspaceView : UserControl
                 _busy=false;
                 foreach(var btn in actions)btn.IsEnabled=true;
                 foreach(var btn in tabButtons.Values)btn.IsEnabled=true;
-                creator.IsEnabled=true;
+                creator.IsEnabled=history.IsEnabled=true;
             }
         }
         async Task ExportAdditionalAsync()
@@ -269,7 +284,7 @@ public sealed class VoucherWorkspaceView : UserControl
             if(!sent)
             {
                 status.Text=archivedCount>0
-                    ?"حُفظت الدفعة ولم يتأكد إرسالها. راجع حالتها في: "+folder
+                    ?"حُفظت الدفعة ولم يتأكد إرسالها. راجع «سجل الدفعات». مجلد الحفظ: "+folder
                     :"تعذر إنشاء الدفعة. راجع إعدادات الباقة.";
                 return;
             }
@@ -280,6 +295,7 @@ public sealed class VoucherWorkspaceView : UserControl
             else
                 await printer.SaveBatchArchivePdfAsync(confirmed,appearance,options,path);
             status.Text="حُفظت الكروت وأُرسل "+confirmed.Length+" كرتا. ملف PDF: "+path;
+            if(confirmed.Length<archivedCount) status.Text+=" | راجع بقية الكروت في «سجل الدفعات».";
             try {PrintingView.OpenPreviewPdf(path);}
             catch(System.ComponentModel.Win32Exception)
             {status.Text+=" | افتح الملف من مجلد الحفظ للمعاينة.";}
