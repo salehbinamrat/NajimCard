@@ -152,11 +152,18 @@ public sealed partial class VoucherStore : IDisposable
         tx.Commit();
     }
 
-    private static string Protect(string raw) => Convert.ToBase64String(ProtectedData.Protect(
-        Encoding.UTF8.GetBytes(raw), null, DataProtectionScope.CurrentUser));
+    // No password is a legitimate Hadramout code_only voucher. Do not call
+    // Windows DPAPI with an empty byte array; store a non-secret marker.
+    private const string EmptyPasswordMarker="no-password:v1";
+    private static string Protect(string raw) => raw.Length==0
+        ? EmptyPasswordMarker
+        : Convert.ToBase64String(ProtectedData.Protect(
+            Encoding.UTF8.GetBytes(raw), null, DataProtectionScope.CurrentUser));
 
-    private static string Unprotect(string coded) => Encoding.UTF8.GetString(ProtectedData.Unprotect(
-        Convert.FromBase64String(coded), null, DataProtectionScope.CurrentUser));
+    private static string Unprotect(string coded) => coded==EmptyPasswordMarker
+        ? ""
+        : Encoding.UTF8.GetString(ProtectedData.Unprotect(
+            Convert.FromBase64String(coded), null, DataProtectionScope.CurrentUser));
 
     private static void Validate(Voucher voucher)
     {
@@ -165,7 +172,7 @@ public sealed partial class VoucherStore : IDisposable
             throw new ArgumentException("خدمة الكرت غير مدعومة.", nameof(voucher));
         if (string.IsNullOrWhiteSpace(voucher.Username)
             || string.IsNullOrWhiteSpace(voucher.Profile)
-            || string.IsNullOrEmpty(voucher.Password))
+            || voucher.Password is null)
             throw new ArgumentException("بيانات الكرت غير مكتملة.", nameof(voucher));
         if (voucher.Service == "userman" && string.IsNullOrWhiteSpace(voucher.Customer))
             throw new ArgumentException("حساب مدير User Manager v6 مطلوب.", nameof(voucher));
