@@ -8,11 +8,13 @@ namespace NajmCard.Desktop.Views;
 public partial class PrintingView
 {
     private VoucherBatchPrintSnapshot? _selectedArchiveTemplate;
+    private bool _archiveTemplateReadFailed;
 
     private void RestoreArchivePrintTemplate(PrintableBatchSummary? selected,
         VoucherStore store,Action<CardPrintOptions> applyPrint)
     {
         _selectedArchiveTemplate=null;
+        _archiveTemplateReadFailed=false;
         if(selected is null)return;
         try
         {
@@ -32,9 +34,66 @@ public partial class PrintingView
         catch(Exception ex)
         {
             _selectedArchiveTemplate=null;
+            _archiveTemplateReadFailed=true;
             _status.Text="تعذر استعادة قالب الدفعة السابقة: "+ex.Message+
                 "؛ لا تطبع قبل مراجعة القالب.";
         }
+    }
+
+    private (Voucher[] Cards,VoucherCardAppearance Style,CardPrintOptions Options)?
+        ConfirmPrintJob(VoucherStore store,ComboBox batchSelector,
+        Func<IReadOnlyList<Voucher>>? currentBatch,
+        Func<VoucherCardAppearance>? currentAppearance,
+        Func<CardPrintOptions> currentOptions,int maxCount)
+    {
+        var archive=(batchSelector.SelectedItem as ComboBoxItem)?.Tag
+            as PrintableBatchSummary;
+        IReadOnlyList<Voucher> requested;
+        if(archive is not null)
+            requested=store.GetBatchVouchers(archive.Service,archive.BatchId);
+        else if(currentBatch is not null)
+            requested=currentBatch();
+        else
+        {
+            // A "latest" print must mean ONE batch; the old global query
+            // mixed credentials from unrelated services and packages.
+            var latest=store.ListPrintableBatches(1).FirstOrDefault();
+            requested=latest is null?[]:
+                store.GetBatchVouchers(latest.Service,latest.BatchId)
+                    .Take(maxCount).ToArray();
+        }
+
+        var cards=requested.Where(card=>card.SentToRouter &&
+            card.DeliveryStatus=="SENT").ToArray();
+        if(cards.Length==0)
+        {
+            _status.Text="لا توجد كروت مؤكدة الإرسال لهذه الدفعة. "+
+                "لا تُطبع الحالات CREATED/UNKNOWN/FAILED.";
+            return null;
+        }
+        if(cards.Select(card=>card.Username)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Count()!=cards.Length)
+            throw new InvalidOperationException("أرقام كروت مكررة في الدفعة؛ أُوقفت الطباعة.");
+
+        if(archive is not null && _archiveTemplateReadFailed)
+            throw new InvalidDataException(
+                "قالب الدفعة المحفوظ غير قابل للقراءة. يجب إصلاح بياناته قبل الطباعة.");
+        if(archive is not null && _selectedArchiveTemplate is null &&
+            !PageUi.Confirm(
+                "هذه دفعة قديمة بلا قالب طباعة محفوظ. هل تريد استخدام "+
+                "الإعدادات الحالية بعد مراجعة أبعاد الورق والتصميم؟"))
+            return null;
+
+        var style=(_selectedArchiveTemplate?.Appearance ??
+            currentAppearance?.Invoke()??store.LoadCardAppearance()).Validate();
+        var options=currentOptions();
+        // Also prevents printing two different profiles under one shared layout.
+        _=SnapshotForPrint(cards,options,style,GetOutputPreferences());
+        if(!PageUi.Confirm("هل تريد معاينة "+cards.Length+
+            " كرتا مؤكدا إرساله، "+
+            (style.ShowPassword?"مع كلمات المرور؟":"دون كلمات المرور؟")))
+            return null;
+        return (cards,style,options);
     }
 
     private static VoucherBatchPrintSnapshot SnapshotForPrint(
