@@ -20,7 +20,7 @@ internal static class PageUi
     {
         var surface=new Border
         {
-            Child=content,CornerRadius=new CornerRadius(12),Padding=new Thickness(12),
+            Child=content,CornerRadius=new CornerRadius(10),Padding=new Thickness(10),
             Margin=new Thickness(0,0,0,8),BorderThickness=new Thickness(1),
             Background=new SolidColorBrush(Color.FromRgb(255,243,223)),
             BorderBrush=new SolidColorBrush(Color.FromRgb(114,32,58))
@@ -35,13 +35,13 @@ internal static class PageUi
         return surface;
     }
     internal static StackPanel Column() => new() { Orientation = Orientation.Vertical };
-    internal static TextBlock Title(string text) => new() { Text = text, FontSize = 23, FontWeight = FontWeights.Bold, FontFamily=new FontFamily("Arial"),
+    internal static TextBlock Title(string text) => new() { Text = text, FontSize = 18, FontWeight = FontWeights.Bold, FontFamily=new FontFamily("Arial"),
         Foreground = Brushes.White,
         Background = new SolidColorBrush(Color.FromRgb(114, 32, 58)),
         Padding = new Thickness(8,5,8,5),Margin = new Thickness(0, 0, 0, 6) };
-    internal static TextBlock Hint(string text) => new() { Text = text, Foreground = Muted, FontSize = 14, FontWeight = FontWeights.Medium,
+    internal static TextBlock Hint(string text) => new() { Text = text, Foreground = Muted, FontSize = 13, FontWeight = FontWeights.Medium,
         TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
-    internal static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(74, 25, 46)), FontSize = 15, FontWeight=FontWeights.SemiBold,
+    internal static TextBlock Label(string text) => new() { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(74, 25, 46)), FontSize = 13, FontWeight=FontWeights.Bold,
         Margin = new Thickness(0, 3, 0, 2) };
     internal static Button Button(string name,bool primary=true)
     {
@@ -49,7 +49,7 @@ internal static class PageUi
         {
             Content=name,Style=(Style)Application.Current.FindResource(
                 primary?"PrimaryButton":"OutlineButton"),
-            Margin=new Thickness(0,0,5,0),MinWidth=112,MinHeight=34,
+            Margin=new Thickness(0,0,6,4),MinWidth=112,MinHeight=36,
             Padding=new Thickness(9,6,9,6),FontFamily=new FontFamily("Arial"),
             FontWeight=FontWeights.Bold,FontSize=13
         };
