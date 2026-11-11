@@ -47,10 +47,28 @@ public sealed class PortableCardTemplateTests
             var imported=PortableCardTemplate.Import(template,Path.Combine(directory,"receiver"));
             Assert.Equal(design with {TemplateImagePath=imported.TemplateImagePath},imported);
             Assert.Equal(bytes,File.ReadAllBytes(imported.TemplateImagePath));
+            // A second import must repair an existing corrupted hash-named
+            // .img rather than returning it as though it were valid.
+            File.WriteAllBytes(imported.TemplateImagePath,[1,2,3,4]);
+            var repaired=PortableCardTemplate.Import(
+                template,Path.Combine(directory,"receiver"));
+            Assert.Equal(imported.TemplateImagePath,repaired.TemplateImagePath);
+            Assert.Equal(bytes,File.ReadAllBytes(repaired.TemplateImagePath));
+
+            // The image output by .najmtemplate import must be accepted by
+            // global design persistence and survive the imported file's loss.
+            using(var store=new VoucherStore(Path.Combine(directory,"data")))
+                store.SaveCardAppearance(repaired);
+            var global=new VoucherStore(Path.Combine(directory,"data")).LoadCardAppearance();
+            Assert.NotEqual(repaired.TemplateImagePath,global.TemplateImagePath);
+            Assert.Equal(bytes,File.ReadAllBytes(global.TemplateImagePath));
+            File.Delete(repaired.TemplateImagePath);
+            Assert.Equal(bytes,File.ReadAllBytes(global.TemplateImagePath));
+
             var bitmap=new BitmapImage();
             bitmap.BeginInit();
             bitmap.CacheOption=BitmapCacheOption.OnLoad;
-            bitmap.UriSource=new Uri(imported.TemplateImagePath);
+            bitmap.UriSource=new Uri(global.TemplateImagePath);
             bitmap.EndInit();
             Assert.Equal(1,bitmap.PixelWidth);
         }
