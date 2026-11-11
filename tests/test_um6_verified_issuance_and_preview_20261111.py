@@ -28,18 +28,19 @@ class UserManagerDeliveryParity(unittest.TestCase):
 
     def test_durable_write_and_safe_print_order(self):
         dispatch=(SERVICES/"VoucherBatchDispatcher.cs").read_text(encoding="utf-8")
-        printer=(VIEWS/"PrintingView.cs").read_text(encoding="utf-8")
+        printer=(VIEWS/"PrintingView.cs").read_text(encoding="utf-8")+(VIEWS/"PrintingView.BatchSnapshots.cs").read_text(encoding="utf-8")
         self.assertLess(dispatch.index("store.BeginSend(voucher);"),
                         dispatch.index("gateway.CreateAndActivateUserManagerV6Async("))
         self.assertIn('state = result.Success ? "SENT" :',dispatch)
         self.assertIn('result.UncertainOutcome ? "UNKNOWN" : "FAILED"',dispatch)
         self.assertIn('store.FinishSend(voucher, state, error)',dispatch)
-        self.assertIn('x.DeliveryStatus=="SENT"&&x.SentToRouter',printer)
-        self.assertIn('لا تُطبع حالات UNKNOWN/FAILED',printer)
+        self.assertIn('card.SentToRouter &&',printer)
+        self.assertIn('card.DeliveryStatus=="SENT"',printer)
+        self.assertIn('لا تُطبع الحالات CREATED/UNKNOWN/FAILED',printer)
 
     def test_preview_and_presend_pdf_are_visibly_invalid_and_never_promoted(self):
         ui=(VIEWS/"VoucherWorkspaceView.cs").read_text(encoding="utf-8")
-        printer=(VIEWS/"PrintingView.cs").read_text(encoding="utf-8")
+        printer=(VIEWS/"PrintingView.cs").read_text(encoding="utf-8")+(VIEWS/"PrintingView.BatchSnapshots.cs").read_text(encoding="utf-8")
         self.assertIn('printer.SaveDraftArchivePdfAsync(cards,appearance,options,savedBeforeSend)',ui)
         self.assertIn('await printer.SaveBatchArchivePdfAsync(confirmed,appearance,options,path)',ui)
         self.assertNotIn('File.Move(savedBeforeSend!',ui)
