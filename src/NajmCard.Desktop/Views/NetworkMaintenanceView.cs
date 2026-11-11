@@ -79,7 +79,7 @@ public sealed class NetworkMaintenanceView : UserControl
         devicePanel.Children.Add(PageUi.Title("الأجهزة المتصلة والمكتشفة"));
         devicePanel.Children.Add(PageUi.Hint(
             "الأجهزة المجاورة كما يعيدها MikroTik Neighbors؛ هذه ليست عملية مسح IP للشبكة."));
-        var deviceSearch=PageUi.Input();
+        var deviceSearch=PageUi.SearchInput();
         var deviceGrid=PageUi.Table(("الواجهة","Interface"),("IP","PreferredAddress"),
             ("MAC","MacAddress"),("اسم الجهاز","Identity"),
             ("المنصة","Platform"),("الإصدار","Version"),("اللوحة","Board"));
