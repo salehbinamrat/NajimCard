@@ -126,7 +126,7 @@
                         <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True"
                                PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
                                IsOpen="{TemplateBinding IsDropDownOpen}" Focusable="False">
-                            <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource GoldBrush}"
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{StaticResource GoldBrush}"
                                     BorderThickness="1" MinWidth="{TemplateBinding ActualWidth}"
                                     MaxHeight="{TemplateBinding MaxDropDownHeight}">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
