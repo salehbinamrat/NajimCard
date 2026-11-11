@@ -100,6 +100,11 @@ public sealed partial class VoucherStore
                 ON vouchers(service,batch_id,created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_vouchers_printable
                 ON vouchers(delivery_status,sent,created_at DESC);
+            -- Cover the per-card durable batch summary query. Without this,
+            -- 2000 receipts can cause millions of table-row fetches while
+            -- updating the single aggregate activity event.
+            CREATE INDEX IF NOT EXISTS idx_vouchers_batch_delivery
+                ON vouchers(service,batch_id,delivery_status,sent);
             """;
         cmd.ExecuteNonQuery();
     }
