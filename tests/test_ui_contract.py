@@ -64,6 +64,7 @@ class UiDesignContract(unittest.TestCase):
             if view=="PrintingView":
                 expected.add("PrintingView.PrintSelectors.cs")
                 expected.add("PrintingView.DraftDelivery.cs")
+                expected.add("PrintingView.Preflight.cs")
             self.assertEqual(set(matches), expected,
                              f"{view}: one main owner plus only explicitly reviewed partials")
         for path, content in sources:
